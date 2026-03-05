@@ -16,7 +16,7 @@ import {
   ETranslationFiles,
 } from "../constants";
 // core translations imports
-import { enCore, locales } from "../locales";
+import { enCore, jaCore, locales } from "../locales";
 // types
 import type { TLanguage, ILanguageOption, ITranslations } from "../types";
 
@@ -26,16 +26,17 @@ import type { TLanguage, ILanguageOption, ITranslations } from "../types";
  * Uses IntlMessageFormat to format the translations
  */
 export class TranslationStore {
-  // Core translations that are always loaded
+  // Core translations that are always loaded（ja 同步加载，确保注册页首次即显示日语）
   private coreTranslations: ITranslations = {
     en: enCore,
+    ja: jaCore,
   };
   // List of translations for each language
   private translations: ITranslations = {};
   // Cache for IntlMessageFormat instances
   private messageCache: Map<string, IntlMessageFormat> = new Map();
-  // Current language
-  currentLocale: TLanguage = FALLBACK_LANGUAGE;
+  // Current language（初始为默认语言，新用户注册页即显示日语）
+  currentLocale: TLanguage = DEFAULT_LANGUAGE;
   // Loading state
   isLoading: boolean = true;
   isInitialized: boolean = false;
@@ -47,8 +48,8 @@ export class TranslationStore {
    */
   constructor() {
     makeAutoObservable(this);
-    // Initialize with core translations immediately
-    this.translations = this.coreTranslations;
+    // Initialize with core translations immediately（含 en + ja）
+    this.translations = { ...this.coreTranslations };
     // Initialize language
     this.initializeLanguage();
     // Load all the translations
