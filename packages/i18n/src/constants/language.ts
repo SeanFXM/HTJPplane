@@ -8,6 +8,9 @@ import type { TLanguage, ILanguageOption } from "../types";
 
 export const FALLBACK_LANGUAGE: TLanguage = "en";
 
+/** 新用户默认语言（无保存偏好时使用） */
+export const DEFAULT_LANGUAGE: TLanguage = "ja";
+
 export const SUPPORTED_LANGUAGES: ILanguageOption[] = [
   { label: "English", value: "en" },
   { label: "Français", value: "fr" },

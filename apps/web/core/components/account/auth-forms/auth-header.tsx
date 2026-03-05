@@ -24,34 +24,16 @@ type TAuthHeader = {
   currentAuthStep: EAuthSteps;
 };
 
-const Titles = {
+const DEFAULT_TITLES = {
   [EAuthModes.SIGN_IN]: {
-    [EAuthSteps.EMAIL]: {
-      header: "Work in all dimensions.",
-      subHeader: "Welcome back.",
-    },
-    [EAuthSteps.PASSWORD]: {
-      header: "Work in all dimensions.",
-      subHeader: "Welcome back.",
-    },
-    [EAuthSteps.UNIQUE_CODE]: {
-      header: "Work in all dimensions.",
-      subHeader: "Welcome back.",
-    },
+    [EAuthSteps.EMAIL]: { header: null, subHeader: null },
+    [EAuthSteps.PASSWORD]: { header: null, subHeader: null },
+    [EAuthSteps.UNIQUE_CODE]: { header: null, subHeader: null },
   },
   [EAuthModes.SIGN_UP]: {
-    [EAuthSteps.EMAIL]: {
-      header: "Work in all dimensions.",
-      subHeader: "Create your account.",
-    },
-    [EAuthSteps.PASSWORD]: {
-      header: "Work in all dimensions.",
-      subHeader: "Create your account.",
-    },
-    [EAuthSteps.UNIQUE_CODE]: {
-      header: "Work in all dimensions.",
-      subHeader: "Create your account.",
-    },
+    [EAuthSteps.EMAIL]: { header: null, subHeader: null },
+    [EAuthSteps.PASSWORD]: { header: null, subHeader: null },
+    [EAuthSteps.UNIQUE_CODE]: { header: null, subHeader: null },
   },
 };
 
@@ -94,7 +76,7 @@ export const AuthHeader = observer(function AuthHeader(props: TAuthHeader) {
       };
     }
 
-    return Titles[mode][step];
+    return DEFAULT_TITLES[mode][step];
   };
 
   const { header, subHeader } = getHeaderSubHeader(currentAuthStep, authMode, invitation || undefined, invitationEmail);
@@ -106,12 +88,14 @@ export const AuthHeader = observer(function AuthHeader(props: TAuthHeader) {
       </div>
     );
 
+  if (header == null && subHeader == null) return null;
+
   return <AuthHeaderBase subHeader={subHeader} header={header} />;
 });
 
 type TAuthHeaderBase = {
   header: React.ReactNode;
-  subHeader: string;
+  subHeader: string | null;
 };
 
 export function AuthHeaderBase(props: TAuthHeaderBase) {

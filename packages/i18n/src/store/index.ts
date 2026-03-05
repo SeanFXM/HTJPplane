@@ -8,7 +8,13 @@ import IntlMessageFormat from "intl-messageformat";
 import { get, merge } from "lodash-es";
 import { makeAutoObservable, runInAction } from "mobx";
 // constants
-import { FALLBACK_LANGUAGE, SUPPORTED_LANGUAGES, LANGUAGE_STORAGE_KEY, ETranslationFiles } from "../constants";
+import {
+  DEFAULT_LANGUAGE,
+  FALLBACK_LANGUAGE,
+  SUPPORTED_LANGUAGES,
+  LANGUAGE_STORAGE_KEY,
+  ETranslationFiles,
+} from "../constants";
 // core translations imports
 import { enCore, locales } from "../locales";
 // types
@@ -59,8 +65,8 @@ export class TranslationStore {
       return;
     }
 
-    // Fallback to default language
-    this.setLanguage(FALLBACK_LANGUAGE);
+    // 无保存偏好时使用默认语言
+    this.setLanguage(DEFAULT_LANGUAGE);
   }
 
   /** Loads the translations for the current language */

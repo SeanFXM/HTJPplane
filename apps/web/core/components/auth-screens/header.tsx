@@ -6,27 +6,13 @@
 
 import React from "react";
 import { observer } from "mobx-react";
-import Link from "next/link";
-import { AUTH_TRACKER_ELEMENTS } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
-import hotoneLogo from "@/app/assets/logos/hotone-logo.png?url";
 import { PageHead } from "@/components/core/page-title";
 import { EAuthModes } from "@/helpers/authentication.helper";
-import { useInstance } from "@/hooks/store/use-instance";
 
 const authContentMap = {
-  [EAuthModes.SIGN_IN]: {
-    pageTitle: "Sign up",
-    text: "auth.common.new_to_plane",
-    linkText: "Sign up",
-    linkHref: "/sign-up",
-  },
-  [EAuthModes.SIGN_UP]: {
-    pageTitle: "Sign in",
-    text: "auth.common.already_have_an_account",
-    linkText: "Sign in",
-    linkHref: "/sign-in",
-  },
+  [EAuthModes.SIGN_IN]: { pageTitle: "Sign up" },
+  [EAuthModes.SIGN_UP]: { pageTitle: "Sign in" },
 };
 
 type AuthHeaderProps = {
@@ -35,52 +21,18 @@ type AuthHeaderProps = {
 
 export const AuthHeader = observer(function AuthHeader({ type }: AuthHeaderProps) {
   const { t } = useTranslation();
-  // store
-  const { config } = useInstance();
-  // derived values
-  const enableSignUpConfig = config?.enable_signup ?? false;
-
-  return (
-    <AuthHeaderBase
-      pageTitle={t(authContentMap[type].pageTitle)}
-      additionalAction={
-        enableSignUpConfig && (
-          <div className="flex flex-col items-end text-center text-13 font-medium text-tertiary sm:flex-row sm:items-center sm:gap-2">
-            <span className="text-body-sm-regular text-tertiary">{t(authContentMap[type].text)}</span>
-            <Link
-              data-ph-element={AUTH_TRACKER_ELEMENTS.NAVIGATE_TO_SIGN_UP}
-              href={authContentMap[type].linkHref}
-              className="text-body-sm-semibold text-accent-primary hover:underline"
-            >
-              {t(authContentMap[type].linkText)}
-            </Link>
-          </div>
-        )
-      }
-    />
-  );
+  return <AuthHeaderBase pageTitle={t(authContentMap[type].pageTitle)} />;
 });
 
 type TAuthHeaderBase = {
   pageTitle: string;
-  additionalAction?: React.ReactNode;
 };
 
 export function AuthHeaderBase(props: TAuthHeaderBase) {
-  const { pageTitle, additionalAction } = props;
   return (
     <>
-      <PageHead title={pageTitle} />
-      <div className="sticky top-0 flex w-full flex-shrink-0 items-center justify-between gap-6">
-        <Link href="/">
-          <img
-            src={hotoneLogo}
-            alt="Logo"
-            className="h-5 w-auto max-w-[95px] object-contain dark:invert"
-          />
-        </Link>
-        {additionalAction}
-      </div>
+      <PageHead title={props.pageTitle} />
+      <div className="sticky top-0 flex w-full flex-shrink-0" />
     </>
   );
 }
