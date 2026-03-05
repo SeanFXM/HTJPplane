@@ -8,8 +8,7 @@ cmds = [
 
 [phases.build]
 cmds = [
-  "pnpm -r --filter './packages/**' build",
-  "pnpm -C apps/web run build"
+  "pnpm build"
 ]
 
 [start]
