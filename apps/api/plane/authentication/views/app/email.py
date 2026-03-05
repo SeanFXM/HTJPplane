@@ -28,7 +28,7 @@ class SignInAuthEndpoint(View):
         next_path = request.POST.get("next_path")
         # Check instance configuration
         instance = Instance.objects.first()
-        if instance is None or not instance.is_setup_done:
+        if instance is None:
             # Redirection params
             exc = AuthenticationException(
                 error_code=AUTHENTICATION_ERROR_CODES["INSTANCE_NOT_CONFIGURED"],
@@ -137,7 +137,7 @@ class SignUpAuthEndpoint(View):
         next_path = request.POST.get("next_path")
         # Check instance configuration
         instance = Instance.objects.first()
-        if instance is None or not instance.is_setup_done:
+        if instance is None:
             # Redirection params
             exc = AuthenticationException(
                 error_code=AUTHENTICATION_ERROR_CODES["INSTANCE_NOT_CONFIGURED"],

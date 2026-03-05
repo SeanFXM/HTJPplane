@@ -52,7 +52,7 @@ class ForgotPasswordEndpoint(APIView):
 
         # Check instance configuration
         instance = Instance.objects.first()
-        if instance is None or not instance.is_setup_done:
+        if instance is None:
             exc = AuthenticationException(
                 error_code=AUTHENTICATION_ERROR_CODES["INSTANCE_NOT_CONFIGURED"],
                 error_message="INSTANCE_NOT_CONFIGURED",

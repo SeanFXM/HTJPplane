@@ -23,6 +23,7 @@ from plane.bgtasks.user_activation_email_task import user_activation_email
 
 # Module imports
 from plane.db.models import FileAsset, Profile, User, WorkspaceMemberInvite
+from plane.license.models import Instance, InstanceAdmin
 from plane.license.utils.instance_value import get_configuration_value
 from plane.settings.storage import S3Storage
 from plane.utils.exception_logger import log_exception
@@ -340,6 +341,14 @@ class Adapter:
 
             # Create profile
             Profile.objects.create(user=user)
+
+            # First sign-up user becomes instance admin when no admin exists
+            if not InstanceAdmin.objects.exists():
+                instance = Instance.objects.first()
+                if instance:
+                    InstanceAdmin.objects.create(user=user, instance=instance, role=20)
+                    instance.is_setup_done = True
+                    instance.save()
 
         # Check if IDP sync is enabled and user is not signing up
         if self.check_sync_enabled() and not is_signup:
