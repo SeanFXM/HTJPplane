@@ -6,10 +6,12 @@
 
 import Script from "next/script";
 
-// styles
+// styles (side-effect import)
+// eslint-disable-next-line import/no-unassigned-import -- global CSS
 import "@/styles/globals.css";
 
 import { SITE_DESCRIPTION, SITE_NAME } from "@plane/constants";
+import { DEFAULT_LANGUAGE } from "@plane/i18n";
 
 // helpers
 import { cn } from "@plane/utils";
@@ -59,7 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const isSessionRecorderEnabled = parseInt(process.env.VITE_ENABLE_SESSION_RECORDER || "0");
 
   return (
-    <html lang="en">
+    <html lang={DEFAULT_LANGUAGE}>
       <head>
         <meta name="theme-color" content="#fff" />
         <link rel="icon" type="image/png" sizes="32x32" href={favicon32} />

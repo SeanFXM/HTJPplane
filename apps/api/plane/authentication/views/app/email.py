@@ -5,7 +5,7 @@
 # Django imports
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.views import View
 
 # Module imports
@@ -23,48 +23,58 @@ from plane.authentication.adapter.error import (
 from plane.utils.path_validator import get_safe_redirect_url
 
 
+def _request_wants_json(request):
+    accept = (request.headers.get("Accept") or "").lower()
+    return (
+        request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        or "application/json" in accept
+    )
+
+
+def _auth_response(request, redirect_url, error_dict=None, status=400):
+    """Return redirect for form POST, or JSON for XHR (fetch) requests."""
+    if _request_wants_json(request):
+        if error_dict is not None:
+            return JsonResponse(error_dict, status=status)
+        return JsonResponse({"redirect_url": redirect_url})
+    return HttpResponseRedirect(redirect_url)
+
+
 class SignInAuthEndpoint(View):
     def post(self, request):
         next_path = request.POST.get("next_path")
         # Check instance configuration
         instance = Instance.objects.first()
         if instance is None:
-            # Redirection params
             exc = AuthenticationException(
                 error_code=AUTHENTICATION_ERROR_CODES["INSTANCE_NOT_CONFIGURED"],
                 error_message="INSTANCE_NOT_CONFIGURED",
             )
             params = exc.get_error_dict()
-            # Base URL join
             url = get_safe_redirect_url(
                 base_url=base_host(request=request, is_app=True),
                 next_path=next_path,
                 params=params,
             )
-            return HttpResponseRedirect(url)
+            return _auth_response(request, url, params)
 
-        # set the referer as session to redirect after login
         email = request.POST.get("email", False)
         password = request.POST.get("password", False)
 
-        ## Raise exception if any of the above are missing
         if not email or not password:
-            # Redirection params
             exc = AuthenticationException(
                 error_code=AUTHENTICATION_ERROR_CODES["REQUIRED_EMAIL_PASSWORD_SIGN_IN"],
                 error_message="REQUIRED_EMAIL_PASSWORD_SIGN_IN",
                 payload={"email": str(email)},
             )
             params = exc.get_error_dict()
-            # Next path
             url = get_safe_redirect_url(
                 base_url=base_host(request=request, is_app=True),
                 next_path=next_path,
                 params=params,
             )
-            return HttpResponseRedirect(url)
+            return _auth_response(request, url, params)
 
-        # Validate email
         email = email.strip().lower()
         try:
             validate_email(email)
@@ -80,10 +90,9 @@ class SignInAuthEndpoint(View):
                 next_path=next_path,
                 params=params,
             )
-            return HttpResponseRedirect(url)
+            return _auth_response(request, url, params)
 
         existing_user = User.objects.filter(email=email).first()
-
         if not existing_user:
             exc = AuthenticationException(
                 error_code=AUTHENTICATION_ERROR_CODES["USER_DOES_NOT_EXIST"],
@@ -96,7 +105,7 @@ class SignInAuthEndpoint(View):
                 next_path=next_path,
                 params=params,
             )
-            return HttpResponseRedirect(url)
+            return _auth_response(request, url, params)
 
         try:
             provider = EmailProvider(
@@ -107,21 +116,14 @@ class SignInAuthEndpoint(View):
                 callback=post_user_auth_workflow,
             )
             user = provider.authenticate()
-            # Login the user and record his device info
             user_login(request=request, user=user, is_app=True)
-            # Get the redirection path
-            if next_path:
-                path = next_path
-            else:
-                path = get_redirection_path(user=user)
-
-            # Get the safe redirect URL
+            path = next_path if next_path else get_redirection_path(user=user)
             url = get_safe_redirect_url(
                 base_url=base_host(request=request, is_app=True),
                 next_path=path,
                 params={},
             )
-            return HttpResponseRedirect(url)
+            return _auth_response(request, url)
         except AuthenticationException as e:
             params = e.get_error_dict()
             url = get_safe_redirect_url(
@@ -129,7 +131,7 @@ class SignInAuthEndpoint(View):
                 next_path=next_path,
                 params=params,
             )
-            return HttpResponseRedirect(url)
+            return _auth_response(request, url, params)
 
 
 class SignUpAuthEndpoint(View):
@@ -138,7 +140,6 @@ class SignUpAuthEndpoint(View):
         # Check instance configuration
         instance = Instance.objects.first()
         if instance is None:
-            # Redirection params
             exc = AuthenticationException(
                 error_code=AUTHENTICATION_ERROR_CODES["INSTANCE_NOT_CONFIGURED"],
                 error_message="INSTANCE_NOT_CONFIGURED",
@@ -149,11 +150,10 @@ class SignUpAuthEndpoint(View):
                 next_path=next_path,
                 params=params,
             )
-            return HttpResponseRedirect(url)
+            return _auth_response(request, url, params)
 
         email = request.POST.get("email", False)
         password = request.POST.get("password", False)
-        ## Raise exception if any of the above are missing
         if not email or not password:
             # Redirection params
             exc = AuthenticationException(
@@ -167,13 +167,11 @@ class SignUpAuthEndpoint(View):
                 next_path=next_path,
                 params=params,
             )
-            return HttpResponseRedirect(url)
-        # Validate the email
+            return _auth_response(request, url, params)
         email = email.strip().lower()
         try:
             validate_email(email)
         except ValidationError:
-            # Redirection params
             exc = AuthenticationException(
                 error_code=AUTHENTICATION_ERROR_CODES["INVALID_EMAIL_SIGN_UP"],
                 error_message="INVALID_EMAIL_SIGN_UP",
@@ -185,13 +183,10 @@ class SignUpAuthEndpoint(View):
                 next_path=next_path,
                 params=params,
             )
-            return HttpResponseRedirect(url)
+            return _auth_response(request, url, params)
 
-        # Existing user
         existing_user = User.objects.filter(email=email).first()
-
         if existing_user:
-            # Existing User
             exc = AuthenticationException(
                 error_code=AUTHENTICATION_ERROR_CODES["USER_ALREADY_EXIST"],
                 error_message="USER_ALREADY_EXIST",
@@ -203,7 +198,7 @@ class SignUpAuthEndpoint(View):
                 next_path=next_path,
                 params=params,
             )
-            return HttpResponseRedirect(url)
+            return _auth_response(request, url, params)
 
         try:
             provider = EmailProvider(
@@ -214,20 +209,14 @@ class SignUpAuthEndpoint(View):
                 callback=post_user_auth_workflow,
             )
             user = provider.authenticate()
-            # Login the user and record his device info
             user_login(request=request, user=user, is_app=True)
-            # Get the redirection path
-            if next_path:
-                path = next_path
-            else:
-                path = get_redirection_path(user=user)
-
+            path = next_path if next_path else get_redirection_path(user=user)
             url = get_safe_redirect_url(
                 base_url=base_host(request=request, is_app=True),
                 next_path=path,
                 params={},
             )
-            return HttpResponseRedirect(url)
+            return _auth_response(request, url)
         except AuthenticationException as e:
             params = e.get_error_dict()
             url = get_safe_redirect_url(
@@ -235,4 +224,4 @@ class SignUpAuthEndpoint(View):
                 next_path=next_path,
                 params=params,
             )
-            return HttpResponseRedirect(url)
+            return _auth_response(request, url, params)

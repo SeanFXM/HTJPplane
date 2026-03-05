@@ -10,7 +10,7 @@ import Link from "next/link";
 // icons
 import { Eye, EyeOff, Info, XCircle } from "lucide-react";
 // plane imports
-import { API_BASE_URL, E_PASSWORD_STRENGTH, AUTH_TRACKER_EVENTS, AUTH_TRACKER_ELEMENTS } from "@plane/constants";
+import { API_BASE_URL, E_PASSWORD_STRENGTH, AUTH_TRACKER_ELEMENTS } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import { CloseIcon } from "@plane/propel/icons";
@@ -20,7 +20,8 @@ import { getPasswordStrength } from "@plane/utils";
 import { ForgotPasswordPopover } from "@/components/account/auth-forms/forgot-password-popover";
 // constants
 // helpers
-import { EAuthModes, EAuthSteps } from "@/helpers/authentication.helper";
+import type { TAuthErrorInfo } from "@/helpers/authentication.helper";
+import { EAuthenticationErrorCodes, EAuthModes, EAuthSteps, authErrorHandler } from "@/helpers/authentication.helper";
 // services
 import { AuthService } from "@/services/auth.service";
 
@@ -31,6 +32,7 @@ type Props = {
   handleEmailClear: () => void;
   handleAuthStep: (step: EAuthSteps) => void;
   nextPath: string | undefined;
+  setErrorInfo?: (errorInfo: TAuthErrorInfo | undefined) => void;
 };
 
 type TPasswordFormValues = {
@@ -47,7 +49,7 @@ const defaultValues: TPasswordFormValues = {
 const authService = new AuthService();
 
 export const AuthPasswordForm = observer(function AuthPasswordForm(props: Props) {
-  const { email, isSMTPConfigured, handleAuthStep, handleEmailClear, mode, nextPath } = props;
+  const { email, isSMTPConfigured, handleAuthStep, handleEmailClear, mode, nextPath, setErrorInfo } = props;
   // plane imports
   const { t } = useTranslation();
   // ref
@@ -105,11 +107,11 @@ export const AuthPasswordForm = observer(function AuthPasswordForm(props: Props)
 
   const isButtonDisabled = useMemo(
     () =>
-      !isSubmitting &&
-      !!passwordFormData.password &&
-      (mode === EAuthModes.SIGN_UP ? passwordFormData.password === passwordFormData.confirm_password : true)
-        ? false
-        : true,
+      !(
+        !isSubmitting &&
+        !!passwordFormData.password &&
+        (mode !== EAuthModes.SIGN_UP || passwordFormData.password === passwordFormData.confirm_password)
+      ),
     [isSubmitting, mode, passwordFormData.confirm_password, passwordFormData.password]
   );
 
@@ -150,17 +152,52 @@ export const AuthPasswordForm = observer(function AuthPasswordForm(props: Props)
         method="POST"
         action={`${API_BASE_URL}/auth/${mode === EAuthModes.SIGN_IN ? "sign-in" : "sign-up"}/`}
         onSubmit={async (event) => {
-          event.preventDefault(); // Prevent form from submitting by default
+          event.preventDefault();
           await handleCSRFToken();
           const isPasswordValid =
             mode === EAuthModes.SIGN_UP
               ? getPasswordStrength(passwordFormData.password) === E_PASSWORD_STRENGTH.STRENGTH_VALID
               : true;
-          if (isPasswordValid) {
-            setIsSubmitting(true);
-            if (formRef.current) formRef.current.submit(); // Manually submit the form if the condition is met
-          } else {
+          if (!isPasswordValid) {
             setBannerMessage(true);
+            return;
+          }
+          setIsSubmitting(true);
+          setErrorInfo?.(undefined);
+          const token = await csrfPromise;
+          const body = new URLSearchParams({
+            csrfmiddlewaretoken: token?.csrf_token ?? "",
+            email: passwordFormData.email,
+            password: passwordFormData.password,
+            ...(nextPath ? { next_path: nextPath } : {}),
+          });
+          try {
+            const res = await fetch(`${API_BASE_URL}/auth/${mode === EAuthModes.SIGN_IN ? "sign-in" : "sign-up"}/`, {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "X-Requested-With": "XMLHttpRequest",
+                Accept: "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              body: body.toString(),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && typeof data?.redirect_url === "string") {
+              window.location.href = data.redirect_url;
+              return;
+            }
+            const code = data?.error_code?.toString();
+            const errInfo = authErrorHandler(
+              (code as EAuthenticationErrorCodes) ?? EAuthenticationErrorCodes.AUTHENTICATION_FAILED_SIGN_IN,
+              email
+            );
+            if (errInfo) setErrorInfo?.(errInfo);
+          } catch {
+            const errInfo = authErrorHandler(EAuthenticationErrorCodes.AUTHENTICATION_FAILED_SIGN_IN, email);
+            if (errInfo) setErrorInfo?.(errInfo);
+          } finally {
+            setIsSubmitting(false);
           }
         }}
         onError={() => {
@@ -214,7 +251,6 @@ export const AuthPasswordForm = observer(function AuthPasswordForm(props: Props)
               onFocus={() => setIsPasswordInputFocused(true)}
               onBlur={() => setIsPasswordInputFocused(false)}
               autoComplete="off"
-              autoFocus
             />
             <button
               type="button"
