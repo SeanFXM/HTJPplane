@@ -1,0 +1,16 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "pnpm-9_x"]
+
+[phases.install]
+cmds = [
+  "pnpm -v",
+  "pnpm install --frozen-lockfile"
+]
+
+[phases.build]
+cmds = [
+  "pnpm -C apps/web run build"
+]
+
+[start]
+cmd = "pnpm -C apps/web start"
