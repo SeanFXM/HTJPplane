@@ -21,8 +21,22 @@ COPY . .
 # 5) 确保 web 的 .env 存在（你已经建了就不会影响）
 RUN test -f /app/apps/web/.env || (mkdir -p /app/apps/web && echo "# generated for CI" > /app/apps/web/.env)
 
-# 6) 构建（按官方 monorepo 的 build）
-RUN pnpm build
+# 只构建 web（不要全仓库 pnpm build，否则会拉起 admin/live/space）
+RUN pnpm -C packages/i18n build \
+ && pnpm -C packages/constants build \
+ && pnpm -C packages/logger build \
+ && pnpm -C packages/types build \
+ && pnpm -C packages/hooks build \
+ && pnpm -C packages/utils build \
+ && pnpm -C packages/services build \
+ && pnpm -C packages/shared-state build \
+ && pnpm -C packages/propel build \
+ && pnpm -C packages/ui build \
+ && pnpm -C packages/editor build \
+ && pnpm -C packages/tailwind-config build || true
+
+# web 自己 build（关键）
+RUN pnpm -C apps/web run build
 
 # 7) 启动 web
 WORKDIR /app/apps/web
