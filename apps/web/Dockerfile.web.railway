@@ -18,6 +18,10 @@ RUN pnpm install --frozen-lockfile
 # 4) 拷贝剩余代码
 COPY . .
 
+# 4.5) 构建时注入 API 等 URL（Railway Variables 需映射为 Build Args）
+ARG VITE_API_BASE_URL=""
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 # 5) 确保 web 的 .env 存在（你已经建了就不会影响）
 RUN test -f /app/apps/web/.env || (mkdir -p /app/apps/web && echo "# generated for CI" > /app/apps/web/.env)
 
