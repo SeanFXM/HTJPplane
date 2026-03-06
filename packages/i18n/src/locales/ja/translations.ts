@@ -571,7 +571,7 @@ export default {
       not_right_now: "今はしない",
       create_project: {
         title: "プロジェクトを作成",
-        description: "Planeのほとんどはプロジェクトから始まります。",
+        description: "ツールの多くの作業はプロジェクトから始まります。",
         cta: "始める",
       },
       invite_team: {
@@ -585,7 +585,7 @@ export default {
         cta: "このワークスペースを設定",
       },
       personalize_account: {
-        title: "Planeをあなた好みにカスタマイズ。",
+        title: "ツールをあなた好みにカスタマイズ。",
         description: "プロフィール画像、カラー、その他の設定を選択してください。",
         cta: "今すぐパーソナライズ",
       },
@@ -619,7 +619,7 @@ export default {
       },
     },
     new_at_plane: {
-      title: "Planeの新機能",
+      title: "ツールの新機能",
     },
     quick_tutorial: {
       title: "クイックチュートリアル",
@@ -656,6 +656,7 @@ export default {
     priorities: "優先度",
     priority: "優先度",
     team_project: "チームプロジェクト",
+    tool_name: "ツール",
     project: "プロジェクト",
     cycle: "サイクル",
     cycles: "サイクル",
@@ -1327,11 +1328,11 @@ export default {
       general: {
         title: "プロジェクト、アクティビティ、メトリクスの概要",
         description:
-          "Planeへようこそ。ご利用いただき嬉しく思います。最初のプロジェクトを作成して作業項目を追跡すると、このページは進捗を把握するのに役立つスペースに変わります。管理者はチームの進捗に役立つ項目も表示されます。",
+          "ツールへようこそ。ご利用いただき嬉しく思います。最初のプロジェクトを作成して作業項目を追跡すると、このページは進捗を把握するのに役立つスペースに変わります。管理者はチームの進捗に役立つ項目も表示されます。",
         primary_button: {
           text: "最初のプロジェクトを作成",
           comic: {
-            title: "Planeではすべてがプロジェクトから始まります",
+            title: "ツールではすべてがプロジェクトから始まります",
             description: "プロジェクトは製品のロードマップ、マーケティングキャンペーン、新車の発売などになります。",
           },
         },

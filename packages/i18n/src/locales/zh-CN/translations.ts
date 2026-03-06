@@ -560,7 +560,7 @@ export default {
       not_right_now: "暂时不要",
       create_project: {
         title: "创建项目",
-        description: "在Plane中，大多数事情都从项目开始。",
+        description: "在工具中，大多数事情都从项目开始。",
         cta: "开始使用",
       },
       invite_team: {
@@ -574,7 +574,7 @@ export default {
         cta: "配置此工作区",
       },
       personalize_account: {
-        title: "让Plane更适合您",
+        title: "让工具更适合您",
         description: "选择您的头像、颜色等。",
         cta: "立即个性化",
       },
@@ -608,7 +608,7 @@ export default {
       },
     },
     new_at_plane: {
-      title: "Plane新功能",
+      title: "工具新功能",
     },
     quick_tutorial: {
       title: "快速教程",
@@ -645,6 +645,7 @@ export default {
     priorities: "优先级",
     priority: "优先级",
     team_project: "团队项目",
+    tool_name: "工具",
     project: "项目",
     cycle: "周期",
     cycles: "周期",
@@ -1314,11 +1315,11 @@ export default {
       general: {
         title: "项目、活动和指标概览",
         description:
-          "欢迎使用 Plane，我们很高兴您能来到这里。创建您的第一个项目并跟踪您的工作项，这个页面将转变为帮助您进展的空间。管理员还将看到帮助团队进展的项目。",
+          "欢迎使用工具，我们很高兴您能来到这里。创建您的第一个项目并跟踪您的工作项，这个页面将转变为帮助您进展的空间。管理员还将看到帮助团队进展的项目。",
         primary_button: {
           text: "构建您的第一个项目",
           comic: {
-            title: "在 Plane 中一切都从项目开始",
+            title: "在工具中一切都从项目开始",
             description: "项目可以是产品路线图、营销活动或新车发布。",
           },
         },

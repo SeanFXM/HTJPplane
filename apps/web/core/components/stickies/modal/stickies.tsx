@@ -8,7 +8,7 @@ import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 
 // plane ui
-import { PlusIcon, CloseIcon } from "@plane/propel/icons";
+import { RecentStickyIcon, PlusIcon, CloseIcon } from "@plane/propel/icons";
 // hooks
 import { useSticky } from "@/hooks/use-stickies";
 // components
@@ -19,16 +19,6 @@ import { StickySearch } from "./search";
 type TProps = {
   handleClose?: () => void;
 };
-
-const HotoneLogoIcon = () => (
-  <span className="grid size-5 place-items-center overflow-hidden rounded-[4px] bg-white">
-    <svg viewBox="0 0 64 64" className="size-4 text-black" aria-hidden="true">
-      <rect x="6" y="6" width="16" height="52" rx="6" fill="currentColor" />
-      <rect x="42" y="6" width="16" height="52" rx="6" fill="currentColor" />
-      <rect x="18" y="26" width="28" height="12" rx="4" fill="currentColor" />
-    </svg>
-  </span>
-);
 
 export const Stickies = observer(function Stickies(props: TProps) {
   const { handleClose } = props;
@@ -45,7 +35,7 @@ export const Stickies = observer(function Stickies(props: TProps) {
       <div className="mb-6 flex items-center justify-between">
         {/* Title */}
         <div className="flex items-center gap-2 text-secondary">
-          <HotoneLogoIcon />
+          <RecentStickyIcon className="size-5 flex-shrink-0 rotate-90" />
           <p className="text-18 font-medium">Your stickies</p>
         </div>
         {/* actions */}

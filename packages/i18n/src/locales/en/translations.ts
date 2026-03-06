@@ -493,6 +493,7 @@ export default {
     priorities: "Priorities",
     priority: "Priority",
     team_project: "Team project",
+    tool_name: "Tool",
     project: "Project",
     cycle: "Cycle",
     cycles: "Cycles",
