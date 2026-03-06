@@ -3,7 +3,6 @@ import * as dotenv from "@dotenvx/dotenvx";
 import { reactRouter } from "@react-router/dev/vite";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
-import { joinUrlPath } from "@plane/utils";
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 
@@ -15,7 +14,19 @@ const viteEnv = Object.keys(process.env)
     return a;
   }, {});
 
-const basePath = joinUrlPath(process.env.VITE_ADMIN_BASE_PATH ?? "", "/") ?? "/";
+// Inline joinUrlPath to avoid resolving @plane/utils during config load (avoids race with utils:dev watch)
+function joinUrlPath(...segments: string[]): string {
+  const valid = segments.filter((s) => s !== "");
+  if (valid.length === 0) return "";
+  const parts = valid.flatMap((s) =>
+    s
+      .replace(/^\/+|\/+$/g, "")
+      .split("/")
+      .filter(Boolean)
+  );
+  return parts.length > 0 ? `/${parts.join("/")}` : "";
+}
+const basePath = joinUrlPath(process.env.VITE_ADMIN_BASE_PATH ?? "", "/") || "/";
 
 export default defineConfig(() => ({
   base: basePath,

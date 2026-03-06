@@ -4,19 +4,14 @@
  * See the LICENSE file for details.
  */
 
-import { useTheme } from "next-themes";
-// assets
-import LogoSpinnerDark from "@/app/assets/images/logo-spinner-dark.gif?url";
-import LogoSpinnerLight from "@/app/assets/images/logo-spinner-light.gif?url";
+import { HotoneLogoIcon } from "@/components/stickies/hotone-logo-icon";
 
 export function LogoSpinner() {
-  const { resolvedTheme } = useTheme();
-
-  const logoSrc = resolvedTheme === "dark" ? LogoSpinnerDark : LogoSpinnerLight;
-
   return (
     <div className="flex items-center justify-center">
-      <img src={logoSrc} alt="logo" className="h-6 w-auto object-contain sm:h-11" />
+      <span className="inline-block h-11 w-11 animate-spin sm:h-14 sm:w-14">
+        <HotoneLogoIcon className="h-full w-full" />
+      </span>
     </div>
   );
 }
