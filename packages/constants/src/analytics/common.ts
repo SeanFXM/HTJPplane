@@ -29,27 +29,6 @@ export const ANALYTICS_INSIGHTS_FIELDS: Record<TAnalyticsTabsBase, IInsightField
       },
     },
     {
-      key: "total_admins",
-      i18nKey: "workspace_analytics.total",
-      i18nProps: {
-        entity: "common.admins",
-      },
-    },
-    {
-      key: "total_members",
-      i18nKey: "workspace_analytics.total",
-      i18nProps: {
-        entity: "common.members",
-      },
-    },
-    {
-      key: "total_guests",
-      i18nKey: "workspace_analytics.total",
-      i18nProps: {
-        entity: "common.guests",
-      },
-    },
-    {
       key: "total_projects",
       i18nKey: "workspace_analytics.total",
       i18nProps: {
