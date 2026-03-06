@@ -8,10 +8,10 @@ import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane imports
 import { Button } from "@plane/propel/button";
-import { RecentStickyIcon } from "@plane/propel/icons";
 import { Breadcrumbs, Header } from "@plane/ui";
 // components
 import { BreadcrumbLink } from "@/components/common/breadcrumb-link";
+import { HotoneLogoIcon } from "@/components/stickies/hotone-logo-icon";
 import { StickySearch } from "@/components/stickies/modal/search";
 import { useStickyOperations } from "@/components/stickies/sticky/use-operations";
 // hooks
@@ -30,12 +30,7 @@ export const WorkspaceStickyHeader = observer(function WorkspaceStickyHeader() {
           <div className="flex items-center gap-2.5">
             <Breadcrumbs>
               <Breadcrumbs.Item
-                component={
-                  <BreadcrumbLink
-                    label={`Stickies`}
-                    icon={<RecentStickyIcon className="size-5 rotate-90 text-secondary" />}
-                  />
-                }
+                component={<BreadcrumbLink label={`Stickies`} icon={<HotoneLogoIcon className="size-5" />} />}
               />
             </Breadcrumbs>
           </div>

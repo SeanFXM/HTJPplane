@@ -12,7 +12,7 @@ import { StickyNote as StickyIcon } from "lucide-react";
 // plane hooks
 import { useOutsideClickDetector } from "@plane/hooks";
 // plane ui
-import { RecentStickyIcon, StickyNoteIcon, PlusIcon, CloseIcon } from "@plane/propel/icons";
+import { StickyNoteIcon, PlusIcon, CloseIcon } from "@plane/propel/icons";
 import { Tooltip } from "@plane/propel/tooltip";
 // plane utils
 import { cn } from "@plane/utils";
@@ -20,6 +20,7 @@ import { cn } from "@plane/utils";
 import { useCommandPalette } from "@/hooks/store/use-command-palette";
 import { useSticky } from "@/hooks/use-stickies";
 // components
+import { HotoneLogoIcon } from "./hotone-logo-icon";
 import { STICKY_COLORS_LIST } from "../editor/sticky-editor/color-palette";
 import { AllStickiesModal } from "./modal";
 import { StickyNote } from "./sticky";
@@ -66,7 +67,7 @@ export const StickyActionBar = observer(function StickyActionBar() {
             className="btn btn--icon shadow-sm flex h-10 w-10 items-center justify-center rounded-full bg-surface-1"
             onClick={() => toggleAllStickiesModal(true)}
           >
-            <RecentStickyIcon className="size-5 rotate-90 text-tertiary" />
+            <HotoneLogoIcon className="size-5" />
           </button>
         </Tooltip>
         {recentStickyId && (

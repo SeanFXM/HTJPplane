@@ -8,10 +8,11 @@ import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 
 // plane ui
-import { RecentStickyIcon, PlusIcon, CloseIcon } from "@plane/propel/icons";
+import { PlusIcon, CloseIcon } from "@plane/propel/icons";
 // hooks
 import { useSticky } from "@/hooks/use-stickies";
 // components
+import { HotoneLogoIcon } from "../hotone-logo-icon";
 import { StickiesTruncated } from "../layout/stickies-truncated";
 import { useStickyOperations } from "../sticky/use-operations";
 import { StickySearch } from "./search";
@@ -35,7 +36,7 @@ export const Stickies = observer(function Stickies(props: TProps) {
       <div className="mb-6 flex items-center justify-between">
         {/* Title */}
         <div className="flex items-center gap-2 text-secondary">
-          <RecentStickyIcon className="size-5 flex-shrink-0 rotate-90" />
+          <HotoneLogoIcon />
           <p className="text-18 font-medium">Your stickies</p>
         </div>
         {/* actions */}
