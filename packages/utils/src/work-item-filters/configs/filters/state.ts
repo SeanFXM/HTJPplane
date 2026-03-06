@@ -25,14 +25,15 @@ export type TCreateStateGroupFilterParams = TCreateFilterConfigParams & IFilterI
  * @returns The state group multi select config
  */
 export const getStateGroupMultiSelectConfig = (
-  params: TCreateStateGroupFilterParams,
+  params: TCreateStateGroupFilterParams & { getStateGroupLabel?: (key: TStateGroups) => string },
   singleValueOperator: TSupportedOperators
 ) =>
   getMultiSelectConfig<{ key: TStateGroups; label: string }, TStateGroups, TStateGroups>(
     {
       items: Object.values(STATE_GROUPS),
       getId: (state) => state.key,
-      getLabel: (state) => state.label,
+      getLabel: (state) =>
+        params.getStateGroupLabel ? params.getStateGroupLabel(state.key) : state.label,
       getValue: (state) => state.key,
       getIconData: (state) => state.key,
     },

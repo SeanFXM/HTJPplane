@@ -157,6 +157,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         filterIcon: StatePropertyIcon,
         getOptionIcon: (stateGroupKey) => <StateGroupIcon stateGroup={stateGroupKey} />,
         label: t("issue_filters.state_group"),
+        getStateGroupLabel: (key) => t(`workspace_projects.state.${key}`),
         ...operatorConfigs,
       }),
     [isFilterEnabled, operatorConfigs, t]

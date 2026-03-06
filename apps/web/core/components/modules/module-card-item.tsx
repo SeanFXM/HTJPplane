@@ -19,6 +19,7 @@ import {
   IS_FAVORITE_MENU_OPEN,
 } from "@plane/constants";
 import { useLocalStorage } from "@plane/hooks";
+import { useTranslation } from "@plane/i18n";
 import { WorkItemsIcon } from "@plane/propel/icons";
 import { TOAST_TYPE, setPromiseToast, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
@@ -41,8 +42,16 @@ type Props = {
   moduleId: string;
 };
 
+const STATE_GROUP_KEY_MAP: Record<string, string> = {
+  completed_issues: "completed",
+  started_issues: "started",
+  unstarted_issues: "unstarted",
+  backlog_issues: "backlog",
+};
+
 export const ModuleCardItem = observer(function ModuleCardItem(props: Props) {
   const { moduleId } = props;
+  const { t } = useTranslation();
   // refs
   const parentRef = useRef(null);
   // router
@@ -178,7 +187,7 @@ export const ModuleCardItem = observer(function ModuleCardItem(props: Props) {
 
   const progressIndicatorData = PROGRESS_STATE_GROUPS_DETAILS.map((group, index) => ({
     id: index,
-    name: group.title,
+    name: t(`workspace_projects.state.${STATE_GROUP_KEY_MAP[group.key] ?? group.key}`),
     value: moduleTotalIssues > 0 ? (moduleDetails[group.key as keyof IModule] as number) : 0,
     color: group.color,
   }));

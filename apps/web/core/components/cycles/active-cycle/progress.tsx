@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { observer } from "mobx-react";
 import { useTheme } from "next-themes";
 // plane imports
@@ -32,10 +31,17 @@ export const ActiveCycleProgress = observer(function ActiveCycleProgress(props: 
   const { resolvedTheme } = useTheme();
   // plane hooks
   const { t } = useTranslation();
+  // Map PROGRESS_STATE_GROUPS_DETAILS keys to state_group keys for i18n
+  const stateGroupKeyMap: Record<string, string> = {
+    completed_issues: "completed",
+    started_issues: "started",
+    unstarted_issues: "unstarted",
+    backlog_issues: "backlog",
+  };
   // derived values
   const progressIndicatorData = PROGRESS_STATE_GROUPS_DETAILS.map((group, index) => ({
     id: index,
-    name: group.title,
+    name: t(`workspace_projects.state.${stateGroupKeyMap[group.key] ?? group.key}`),
     value: cycle && cycle.total_issues > 0 ? (cycle[group.key as keyof ICycle] as number) : 0,
     color: group.color,
   }));
@@ -70,7 +76,7 @@ export const ActiveCycleProgress = observer(function ActiveCycleProgress(props: 
           {Object.keys(groupedIssues).map((group, index) => (
             <>
               {groupedIssues[group] > 0 && (
-                <div key={index}>
+                <div key={group}>
                   <div
                     className="flex cursor-pointer items-center justify-between gap-2 text-13"
                     onClick={() => {
@@ -84,7 +90,9 @@ export const ActiveCycleProgress = observer(function ActiveCycleProgress(props: 
                           backgroundColor: PROGRESS_STATE_GROUPS_DETAILS[index].color,
                         }}
                       />
-                      <span className="w-16 font-medium text-tertiary capitalize">{group}</span>
+                      <span className="w-16 font-medium text-tertiary">
+                        {t(`workspace_projects.state.${group}`)}
+                      </span>
                     </div>
                     <span className="text-tertiary">{`${groupedIssues[group]} ${
                       groupedIssues[group] > 1 ? "Work items" : "Work item"

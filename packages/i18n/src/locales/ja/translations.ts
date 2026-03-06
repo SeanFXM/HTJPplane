@@ -1537,8 +1537,8 @@ export default {
     },
     state: {
       backlog: "バックログ",
-      unstarted: "未開始",
-      started: "開始済み",
+      unstarted: "未着手",
+      started: "進行中",
       completed: "完了",
       cancelled: "キャンセル",
     },

@@ -115,6 +115,7 @@ export const SubIssuesListRoot = observer(function SubIssuesListRoot(props: Prop
             projectId={projectId}
             workspaceSlug={workspaceSlug}
             group={group}
+            group_by={group_by}
             serviceType={issueServiceType}
             canEdit={canEdit}
             parentIssueId={parentIssueId}

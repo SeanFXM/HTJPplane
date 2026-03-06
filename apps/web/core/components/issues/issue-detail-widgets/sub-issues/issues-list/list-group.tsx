@@ -4,11 +4,11 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { useState } from "react";
 import { observer } from "mobx-react";
 import { CircleDashed } from "lucide-react";
-import { ALL_ISSUES } from "@plane/constants";
+import { ALL_ISSUES, STATE_GROUPS } from "@plane/constants";
+import { useTranslation } from "@plane/i18n";
 import { ChevronRightIcon } from "@plane/propel/icons";
 import type { IGroupByColumn, TIssue, TIssueServiceType, TSubIssueOperations } from "@plane/types";
 import { EIssuesStoreType } from "@plane/types";
@@ -21,6 +21,7 @@ interface TSubIssuesListGroupProps {
   projectId: string;
   workspaceSlug: string;
   group: IGroupByColumn;
+  group_by?: string | null;
   serviceType: TIssueServiceType;
   canEdit: boolean;
   parentIssueId: string;
@@ -38,6 +39,7 @@ interface TSubIssuesListGroupProps {
 export const SubIssuesListGroup = observer(function SubIssuesListGroup(props: TSubIssuesListGroupProps) {
   const {
     group,
+    group_by,
     serviceType,
     canEdit,
     parentIssueId,
@@ -50,8 +52,13 @@ export const SubIssuesListGroup = observer(function SubIssuesListGroup(props: TS
     storeType = EIssuesStoreType.PROJECT,
     spacingLeft = 0,
   } = props;
+  const { t } = useTranslation();
 
   const isAllIssues = group.id === ALL_ISSUES;
+  const displayName =
+    group_by === "state_detail.group" && group.id in STATE_GROUPS
+      ? t(`workspace_projects.state.${group.id}`)
+      : group.name;
 
   // states
   const [isCollapsibleOpen, setIsCollapsibleOpen] = useState(true);
@@ -75,7 +82,7 @@ export const SubIssuesListGroup = observer(function SubIssuesListGroup(props: TS
               <div className="grid flex-shrink-0 place-items-center overflow-hidden">
                 {group.icon ?? <CircleDashed className="size-3.5" strokeWidth={2} />}
               </div>
-              <span className="text-13 font-medium text-primary">{group.name}</span>
+              <span className="text-13 font-medium text-primary">{displayName}</span>
               <span className="text-13 text-placeholder">{workItemIds.length}</span>
             </div>
           )

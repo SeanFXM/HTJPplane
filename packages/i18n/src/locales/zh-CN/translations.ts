@@ -1521,7 +1521,7 @@ export default {
     },
     state: {
       backlog: "待办",
-      unstarted: "未开始",
+      unstarted: "待办",
       started: "进行中",
       completed: "已完成",
       cancelled: "已取消",

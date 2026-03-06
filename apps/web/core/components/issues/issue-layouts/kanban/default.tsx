@@ -21,6 +21,7 @@ import type {
   TIssueOrderByOptions,
 } from "@plane/types";
 // constants
+import { STATE_GROUPS } from "@plane/constants";
 import { ContentWrapper } from "@plane/ui";
 // components
 import RenderIfVisible from "@/components/core/render-if-visible-HOC";
@@ -175,7 +176,11 @@ export const KanBan = observer(function KanBan(props: IKanBan) {
                     group_by={group_by}
                     column_id={subList.id}
                     icon={subList.icon}
-                    title={subList.name}
+                    title={
+                      group_by === "state_detail.group" && subList.id in STATE_GROUPS
+                        ? t(`workspace_projects.state.${subList.id}`)
+                        : subList.name
+                    }
                     count={getGroupIssueCount(subList.id, undefined, false) ?? 0}
                     issuePayload={subList.payload}
                     disableIssueCreation={

@@ -533,7 +533,7 @@ export default {
       },
     },
     new_at_plane: {
-      title: "New at Plane",
+      title: "New here",
     },
     quick_tutorial: {
       title: "Quick tutorial",
@@ -1369,9 +1369,9 @@ export default {
     },
     state: {
       backlog: "Backlog",
-      unstarted: "Unstarted",
-      started: "Started",
-      completed: "Completed",
+      unstarted: "Todo",
+      started: "In Progress",
+      completed: "Done",
       cancelled: "Cancelled",
     },
     sort: {
@@ -2790,7 +2790,7 @@ export default {
     },
     help_actions: {
       open_keyboard_shortcuts: "Open keyboard shortcuts",
-      open_plane_documentation: "Open Plane documentation",
+      open_plane_documentation: "Open documentation",
       join_forum: "Join our Forum",
       report_bug: "Report a bug",
       chat_with_us: "Chat with us",

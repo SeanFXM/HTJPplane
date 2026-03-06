@@ -7,6 +7,8 @@
 import type { MutableRefObject } from "react";
 import { observer } from "mobx-react";
 // plane imports
+import { STATE_GROUPS } from "@plane/constants";
+import { useTranslation } from "@plane/i18n";
 import type {
   GroupByColumnTypes,
   IGroupByColumn,
@@ -69,6 +71,7 @@ const SubGroupSwimlaneHeader = observer(function SubGroupSwimlaneHeader({
   showEmptyGroup,
   sub_group_by,
 }: ISubGroupSwimlaneHeader) {
+  const { t } = useTranslation();
   const { getIsWorkflowWorkItemCreationDisabled } = useWorkFlowFDragNDrop(group_by, sub_group_by);
 
   return (
@@ -82,6 +85,10 @@ const SubGroupSwimlaneHeader = observer(function SubGroupSwimlaneHeader({
 
           if (subGroupByVisibilityToggle === false) return <></>;
 
+          const isStateGroup =
+            group_by === "state_detail.group" && _list.id in STATE_GROUPS;
+          const title = isStateGroup ? t(`workspace_projects.state.${_list.id}`) : _list.name;
+
           return (
             <div key={`${sub_group_by}_${_list.id}`} className="flex w-[350px] flex-shrink-0 flex-col">
               <HeaderGroupByCard
@@ -89,7 +96,7 @@ const SubGroupSwimlaneHeader = observer(function SubGroupSwimlaneHeader({
                 group_by={group_by}
                 column_id={_list.id}
                 icon={_list.icon}
-                title={_list.name}
+                title={title}
                 count={groupCount}
                 collapsedGroups={collapsedGroups}
                 handleCollapsedGroups={handleCollapsedGroups}
@@ -155,6 +162,7 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
     sub_group_by,
     updateIssue,
   } = props;
+  const { t } = useTranslation();
 
   const visibilitySubGroupBy = (
     _list: IGroupByColumn,
@@ -188,7 +196,11 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
                   <HeaderSubGroupByCard
                     column_id={_list.id}
                     icon={_list.icon}
-                    title={_list.name}
+                    title={
+                      sub_group_by === "state_detail.group" && _list.id in STATE_GROUPS
+                        ? t(`workspace_projects.state.${_list.id}`)
+                        : _list.name
+                    }
                     count={issueCount}
                     collapsedGroups={collapsedGroups}
                     handleCollapsedGroups={handleCollapsedGroups}

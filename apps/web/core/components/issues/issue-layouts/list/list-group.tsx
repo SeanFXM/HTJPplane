@@ -10,7 +10,7 @@ import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { observer } from "mobx-react";
 // plane imports
-import { DRAG_ALLOWED_GROUPS } from "@plane/constants";
+import { DRAG_ALLOWED_GROUPS, STATE_GROUPS } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type {
@@ -270,7 +270,11 @@ export const ListGroup = observer(function ListGroup(props: Props) {
           groupID={group.id}
           groupBy={group_by}
           icon={group.icon}
-          title={group.name}
+          title={
+            group_by === "state_detail.group" && group.id in STATE_GROUPS
+              ? t(`workspace_projects.state.${group.id}`)
+              : group.name
+          }
           count={groupIssueCount}
           issuePayload={group.payload}
           canEditProperties={canEditProperties}
