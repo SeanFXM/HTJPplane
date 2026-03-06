@@ -145,7 +145,7 @@ export default {
       email_sent: "リセットリンクをメールアドレスに送信しました",
       send_reset_link: "リセットリンクを送信",
       errors: {
-        smtp_not_enabled: "管理者がSMTPを有効にしていないため、パスワードリセットリンクを送信できません",
+        smtp_not_enabled: "変更については管理者までご連絡ください。",
       },
       toast: {
         success: {
@@ -2767,4 +2767,19 @@ export default {
     close_button: "ナビゲーションパネルを閉じる",
     outline_floating_button: "アウトラインを開く",
   },
+  // Navigation customization
+  customize_navigation: "ナビゲーションのカスタマイズ",
+  customize_navigation_description:
+    "選択した項目は常にサイドバーに表示されます。その他の項目はいつでも「その他」メニューからアクセスできます。これらの変更は個人設定であり、ワークスペースの他のメンバーには影響しません。",
+  personal: "個人",
+  accordion_navigation_control: "アコーディオンサイドバーナビゲーション",
+  accordion_navigation_description:
+    "機能タブはプロジェクトの下にネストされた項目として表示され、アコーディオン形式で展開・折りたたみできます。",
+  horizontal_navigation_bar: "タブナビゲーション",
+  tabbed_navigation_description: "機能タブはプロジェクト内で水平タブとして表示されます。",
+  show_limited_projects_on_sidebar: "サイドバーに表示するプロジェクト数を制限",
+  enter_number_of_projects: "プロジェクト数を入力",
+  minimum_value_is_1: "最小値は1です",
+  pin: "ピン留め",
+  unpin: "ピン留めを解除",
 } as const;

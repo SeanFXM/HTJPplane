@@ -279,8 +279,7 @@ export default {
   no_authentication_methods_available: "无可用认证方式",
   create_account_button: "创建账号",
   not_authorized: "未授权！",
-  not_workspace_member_message:
-    "您不是此工作区的成员。请联系工作区管理员获取邀请，或查看您的待处理邀请。",
+  not_workspace_member_message: "您不是此工作区的成员。请联系工作区管理员获取邀请，或查看您的待处理邀请。",
   check_pending_invites: "查看待处理邀请",
   create_new_workspace: "创建新工作区",
   workspace_creation_disabled_no_invites:
@@ -2708,4 +2707,18 @@ export default {
     close_button: "关闭导航面板",
     outline_floating_button: "打开大纲",
   },
+  // Navigation customization
+  customize_navigation: "定制导航",
+  customize_navigation_description:
+    "选中的项目将始终在侧边栏中显示。您仍可随时从「更多」菜单中找到其他项目。这些更改仅对您个人有效，不会影响工作区中的其他成员。",
+  personal: "个人",
+  accordion_navigation_control: "手风琴侧边栏导航",
+  accordion_navigation_description: "功能标签将作为项目的嵌套项显示，并以手风琴形式展开或收起。",
+  horizontal_navigation_bar: "标签页导航",
+  tabbed_navigation_description: "功能标签将在项目内以水平标签页形式显示。",
+  show_limited_projects_on_sidebar: "在侧边栏显示有限数量的项目",
+  enter_number_of_projects: "输入项目数量",
+  minimum_value_is_1: "最小值为 1",
+  pin: "固定",
+  unpin: "取消固定",
 } as const;

@@ -2821,11 +2821,16 @@ export default {
   },
   // Navigation customization
   customize_navigation: "Customize navigation",
+  customize_navigation_description:
+    "Selected items will always stay visible in your sidebar. You can still find the others anytime from the More menu. These changes are personal to you and won't affect anyone else on your workspace.",
   personal: "Personal",
   accordion_navigation_control: "Accordion sidebar navigation",
+  accordion_navigation_description: "Feature tabs will appear as nested items under project and acts as accordion.",
   horizontal_navigation_bar: "Tabbed Navigation",
+  tabbed_navigation_description: "Feature tabs will appear as horizontal tabs inside a project.",
   show_limited_projects_on_sidebar: "Show limited projects on sidebar",
   enter_number_of_projects: "Enter number of projects",
+  minimum_value_is_1: "Minimum value is 1",
   pin: "Pin",
   unpin: "Unpin",
 } as const;
