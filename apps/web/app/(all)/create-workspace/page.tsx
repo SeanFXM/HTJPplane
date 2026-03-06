@@ -70,7 +70,7 @@ const CreateWorkspacePage = observer(function CreateWorkspacePage() {
               <img
                 src={WorkspaceCreationDisabled}
                 className="mb-4 h-full w-full object-contain"
-                alt="Workspace creation disabled"
+                alt={t("workspace_creation_disabled_alt")}
               />
               <div className="text-center text-16 font-medium">
                 {t("workspace_creation.errors.creation_disabled.title")}

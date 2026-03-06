@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { observer } from "mobx-react";
 import { OctagonAlert } from "lucide-react";
 // plane imports
+import { useTranslation } from "@plane/i18n";
 import type { IWorkspaceMemberInvitation, TOnboardingSteps } from "@plane/types";
 // components
 import { LogoSpinner } from "@/components/common/logo-spinner";
@@ -33,6 +34,7 @@ type Props = {
 
 export const CreateOrJoinWorkspaces = observer(function CreateOrJoinWorkspaces(props: Props) {
   const { invitations, stepChange, finishOnboarding } = props;
+  const { t } = useTranslation();
   // states
   const [currentView, setCurrentView] = useState<ECreateOrJoinWorkspaceViews | null>(null);
   // store hooks
@@ -77,10 +79,7 @@ export const CreateOrJoinWorkspaces = observer(function CreateOrJoinWorkspaces(p
               <div className="flex h-96 w-full items-center justify-center">
                 <div className="mt-4 flex w-full items-start justify-center gap-2.5 rounded-sm border border-accent-strong/20 bg-accent-primary/10 px-6 py-4 text-13 leading-5 text-accent-secondary">
                   <OctagonAlert className="mt-1 size-5 flex-shrink-0" />
-                  <span>
-                    ワークスペースへの招待はまだありません。インスタンス管理者により新規ワークスペースの作成は制限されています。
-                    先にワークスペース管理者または管理者から招待を受けてから、この画面に戻って参加してください。
-                  </span>
+                  <span>{t("workspace_creation_disabled_no_invites")}</span>
                 </div>
               </div>
             )

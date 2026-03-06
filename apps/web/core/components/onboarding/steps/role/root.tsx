@@ -8,6 +8,7 @@ import { observer } from "mobx-react";
 import { Controller, useForm } from "react-hook-form";
 import { Box, PenTool, Rocket, Monitor, RefreshCw } from "lucide-react";
 // plane imports
+import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import { CheckIcon, ViewsIcon } from "@plane/propel/icons";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
@@ -24,13 +25,13 @@ type Props = {
 };
 
 const ROLES = [
-  { id: "product-manager", label: "Product Manager", icon: Box },
-  { id: "engineering-manager", label: "Engineering Manager", icon: ViewsIcon },
-  { id: "designer", label: "Designer", icon: PenTool },
-  { id: "developer", label: "Developer", icon: Monitor },
-  { id: "founder-executive", label: "Founder/Executive", icon: Rocket },
-  { id: "operations-manager", label: "Operations Manager", icon: RefreshCw },
-  { id: "others", label: "Others", icon: Box },
+  { id: "product-manager", labelKey: "onboarding_roles.product_manager", icon: Box },
+  { id: "engineering-manager", labelKey: "onboarding_roles.engineering_manager", icon: ViewsIcon },
+  { id: "designer", labelKey: "onboarding_roles.designer", icon: PenTool },
+  { id: "developer", labelKey: "onboarding_roles.developer", icon: Monitor },
+  { id: "founder-executive", labelKey: "onboarding_roles.founder_executive", icon: Rocket },
+  { id: "operations-manager", labelKey: "onboarding_roles.operations_manager", icon: RefreshCw },
+  { id: "others", labelKey: "onboarding_roles.others", icon: Box },
 ];
 
 const defaultValues = {
@@ -38,6 +39,7 @@ const defaultValues = {
 };
 
 export const RoleSetupStep = observer(function RoleSetupStep({ handleStepChange }: Props) {
+  const { t } = useTranslation();
   // store hooks
   const { data: profile, updateUserProfile } = useUserProfile();
   // form info
@@ -62,14 +64,14 @@ export const RoleSetupStep = observer(function RoleSetupStep({ handleStepChange 
       await updateUserProfile(profileUpdatePayload);
       setToast({
         type: TOAST_TYPE.SUCCESS,
-        title: "Success",
-        message: "Profile setup completed!",
+        title: t("success_exclamation"),
+        message: t("profile_setup_completed"),
       });
     } catch {
       setToast({
         type: TOAST_TYPE.ERROR,
-        title: "Error",
-        message: "Profile setup failed. Please try again!",
+        title: t("error_exclamation"),
+        message: t("profile_setup_failed"),
       });
     }
   };
@@ -97,7 +99,7 @@ export const RoleSetupStep = observer(function RoleSetupStep({ handleStepChange 
           control={control}
           name="role"
           rules={{
-            required: "This field is required",
+            required: t("this_field_is_required"),
           }}
           render={({ field: { value, onChange } }) => (
             <div className="flex flex-col gap-3">
@@ -121,7 +123,7 @@ export const RoleSetupStep = observer(function RoleSetupStep({ handleStepChange 
                   >
                     <div className="flex items-center space-x-3">
                       <Icon className="size-3.5" />
-                      <span className="text-body-sm-semibold">{role.label}</span>
+                      <span className="text-body-sm-semibold">{t(role.labelKey)}</span>
                     </div>
                     {isSelected && (
                       <>

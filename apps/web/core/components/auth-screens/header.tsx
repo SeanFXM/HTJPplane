@@ -11,8 +11,8 @@ import { PageHead } from "@/components/core/page-title";
 import { EAuthModes } from "@/helpers/authentication.helper";
 
 const authContentMap = {
-  [EAuthModes.SIGN_IN]: { pageTitle: "Sign up" },
-  [EAuthModes.SIGN_UP]: { pageTitle: "Sign in" },
+  [EAuthModes.SIGN_IN]: { pageTitle: "sign_in" },
+  [EAuthModes.SIGN_UP]: { pageTitle: "sign_up" },
 };
 
 type AuthHeaderProps = {

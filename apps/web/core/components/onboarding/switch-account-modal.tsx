@@ -9,6 +9,8 @@ import React, { useState } from "react";
 import { useTheme } from "next-themes";
 import { ArrowRightLeft } from "lucide-react";
 import { Dialog, Transition } from "@headlessui/react";
+// plane imports
+import { useTranslation } from "@plane/i18n";
 // ui
 import { Button } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
@@ -23,6 +25,7 @@ type Props = {
 
 export function SwitchAccountModal(props: Props) {
   const { isOpen, onClose } = props;
+  const { t } = useTranslation();
   // states
   const [switchingAccount, setSwitchingAccount] = useState(false);
   // router
@@ -48,8 +51,8 @@ export function SwitchAccountModal(props: Props) {
     } catch {
       setToast({
         type: TOAST_TYPE.ERROR,
-        title: "Error!",
-        message: "Failed to sign out. Please try again.",
+        title: t("error_exclamation"),
+        message: t("failed_to_sign_out"),
       });
     } finally {
       setSwitchingAccount(false);
@@ -105,7 +108,7 @@ export function SwitchAccountModal(props: Props) {
                 </div>
                 <div className="mb-2 flex items-center justify-end gap-3 p-4 sm:px-6">
                   <Button variant="secondary" size="lg" onClick={handleSwitchAccount} disabled={switchingAccount}>
-                    {switchingAccount ? "Switching..." : "Switch account"}
+                    {switchingAccount ? t("switching") : t("switch_account")}
                   </Button>
                 </div>
               </Dialog.Panel>
