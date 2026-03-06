@@ -159,6 +159,7 @@ services:
       - api
       - plane-db
       - plane-redis
+      - plane-mq
 
   beat-worker:
     build:
@@ -178,6 +179,7 @@ services:
       - api
       - plane-db
       - plane-redis
+      - plane-mq
 
   migrator:
     build:
@@ -196,6 +198,7 @@ services:
     depends_on:
       - plane-db
       - plane-redis
+      - plane-mq
 
   # proxy:
   #   build:

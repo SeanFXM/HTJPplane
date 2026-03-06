@@ -277,14 +277,18 @@ def notifications(
             """
 
             # ---------------------------------------------------------------------------------------------------------
+            issue_assignees = IssueAssignee.objects.filter(
+                issue_id=issue_id,
+                project_id=project_id,
+                assignee__in=Subquery(project_members),
+            ).values_list("assignee", flat=True)
+
             issue_subscribers = list(
                 IssueSubscriber.objects.filter(
                     project_id=project_id,
                     issue_id=issue_id,
                     subscriber__in=Subquery(project_members),
-                )
-                .exclude(subscriber_id__in=list(new_mentions + comment_mentions + [actor_id]))
-                .values_list("subscriber", flat=True)
+                ).values_list("subscriber", flat=True)
             )
 
             issue = Issue.objects.filter(pk=issue_id).first()
@@ -300,13 +304,9 @@ def notifications(
 
             project = Project.objects.get(pk=project_id)
 
-            issue_assignees = IssueAssignee.objects.filter(
-                issue_id=issue_id,
-                project_id=project_id,
-                assignee__in=Subquery(project_members),
-            ).values_list("assignee", flat=True)
-
-            issue_subscribers = list(set(issue_subscribers) - {uuid.UUID(actor_id)})
+            excluded_receivers = {uuid.UUID(actor_id)}
+            excluded_receivers.update(uuid.UUID(member_id) for member_id in new_mentions + comment_mentions)
+            issue_subscribers = list((set(issue_subscribers) | set(issue_assignees)) - excluded_receivers)
 
             for subscriber in issue_subscribers:
                 if issue.created_by_id and issue.created_by_id == subscriber:

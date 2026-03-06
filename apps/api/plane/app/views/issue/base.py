@@ -1091,21 +1091,24 @@ class IssueDetailEndpoint(BaseAPIView):
 
 
 class IssueBulkUpdateDateEndpoint(BaseAPIView):
-    def validate_dates(self, current_start, current_target, new_start, new_target):
+    def parse_date_value(self, value):
         """
-        Validate that start date is before target date.
+        Normalize date values coming from the request.
         """
         from datetime import datetime
 
-        start = new_start or current_start
-        target = new_target or current_target
+        if value in ("", None):
+            return None
 
-        # Convert string dates to datetime objects if they're strings
-        if isinstance(start, str):
-            start = datetime.strptime(start, "%Y-%m-%d").date()
-        if isinstance(target, str):
-            target = datetime.strptime(target, "%Y-%m-%d").date()
+        if isinstance(value, str):
+            return datetime.strptime(value, "%Y-%m-%d").date()
 
+        return value
+
+    def validate_dates(self, start, target):
+        """
+        Validate that start date is before target date.
+        """
         if start and target and start > target:
             return False
         return True
@@ -1117,8 +1120,8 @@ class IssueBulkUpdateDateEndpoint(BaseAPIView):
         issue_ids = [update["id"] for update in updates]
         epoch = int(timezone.now().timestamp())
 
-        # Fetch all relevant issues in a single query
-        issues = list(Issue.objects.filter(id__in=issue_ids))
+        # Only update issues that belong to the current workspace/project scope.
+        issues = list(Issue.issue_objects.filter(workspace__slug=slug, project_id=project_id, id__in=issue_ids))
         issues_dict = {str(issue.id): issue for issue in issues}
         issues_to_update = []
 
@@ -1129,20 +1132,24 @@ class IssueBulkUpdateDateEndpoint(BaseAPIView):
             if not issue:
                 continue
 
-            start_date = update.get("start_date")
-            target_date = update.get("target_date")
-            validate_dates = self.validate_dates(issue.start_date, issue.target_date, start_date, target_date)
+            has_start_date = "start_date" in update
+            has_target_date = "target_date" in update
+            start_date = self.parse_date_value(update.get("start_date")) if has_start_date else issue.start_date
+            target_date = self.parse_date_value(update.get("target_date")) if has_target_date else issue.target_date
+            validate_dates = self.validate_dates(start_date, target_date)
             if not validate_dates:
                 return Response(
                     {"message": "Start date cannot exceed target date"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            if start_date:
+            issue_changed = False
+
+            if has_start_date and issue.start_date != start_date:
                 issue_activity.delay(
                     type="issue.activity.updated",
-                    requested_data=json.dumps({"start_date": update.get("start_date")}),
-                    current_instance=json.dumps({"start_date": str(issue.start_date)}),
+                    requested_data=json.dumps({"start_date": str(start_date) if start_date else None}),
+                    current_instance=json.dumps({"start_date": str(issue.start_date) if issue.start_date else None}),
                     issue_id=str(issue_id),
                     actor_id=str(request.user.id),
                     project_id=str(project_id),
@@ -1151,13 +1158,13 @@ class IssueBulkUpdateDateEndpoint(BaseAPIView):
                     origin=base_host(request=request, is_app=True),
                 )
                 issue.start_date = start_date
-                issues_to_update.append(issue)
+                issue_changed = True
 
-            if target_date:
+            if has_target_date and issue.target_date != target_date:
                 issue_activity.delay(
                     type="issue.activity.updated",
-                    requested_data=json.dumps({"target_date": update.get("target_date")}),
-                    current_instance=json.dumps({"target_date": str(issue.target_date)}),
+                    requested_data=json.dumps({"target_date": str(target_date) if target_date else None}),
+                    current_instance=json.dumps({"target_date": str(issue.target_date) if issue.target_date else None}),
                     issue_id=str(issue_id),
                     actor_id=str(request.user.id),
                     project_id=str(project_id),
@@ -1166,6 +1173,9 @@ class IssueBulkUpdateDateEndpoint(BaseAPIView):
                     origin=base_host(request=request, is_app=True),
                 )
                 issue.target_date = target_date
+                issue_changed = True
+
+            if issue_changed:
                 issues_to_update.append(issue)
 
         # Bulk update issues
