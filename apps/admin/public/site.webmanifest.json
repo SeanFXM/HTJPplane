@@ -1,7 +1,7 @@
 {
-  "name": "Plane God Mode",
-  "short_name": "Plane God Mode",
-  "description": "Plane helps you plan your issues, cycles, and product modules.",
+  "name": "Admin Workspace",
+  "short_name": "Admin Workspace",
+  "description": "Manage instance settings and workspace administration.",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f9fafb",

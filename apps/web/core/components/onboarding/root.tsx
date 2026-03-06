@@ -68,10 +68,14 @@ export const OnboardingRoot = observer(function OnboardingRoot({ invitations = [
     (step: EOnboardingSteps, skipInvites?: boolean) => {
       switch (step) {
         case EOnboardingSteps.PROFILE_SETUP:
-          setCurrentStep(EOnboardingSteps.ROLE_SETUP);
+          stepChange({ profile_complete: true });
+          if (workspacesList.length > 0) finishOnboarding();
+          else setCurrentStep(EOnboardingSteps.WORKSPACE_CREATE_OR_JOIN);
           break;
         case EOnboardingSteps.ROLE_SETUP:
-          setCurrentStep(EOnboardingSteps.USE_CASE_SETUP);
+          stepChange({ profile_complete: true });
+          if (workspacesList.length > 0) finishOnboarding();
+          else setCurrentStep(EOnboardingSteps.WORKSPACE_CREATE_OR_JOIN);
           break;
         case EOnboardingSteps.USE_CASE_SETUP:
           stepChange({ profile_complete: true });

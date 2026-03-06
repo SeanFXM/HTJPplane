@@ -4,10 +4,9 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { observer } from "mobx-react";
 // plane imports
-import { PlaneLockup, ChevronLeftIcon } from "@plane/propel/icons";
+import { ChevronLeftIcon } from "@plane/propel/icons";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { TOnboardingStep } from "@plane/types";
 import { EOnboardingSteps } from "@plane/types";
@@ -31,14 +30,8 @@ export const OnboardingHeader = observer(function OnboardingHeader(props: Onboar
   // handle step back
   const handleStepBack = () => {
     switch (currentStep) {
-      case EOnboardingSteps.ROLE_SETUP:
-        updateCurrentStep(EOnboardingSteps.PROFILE_SETUP);
-        break;
-      case EOnboardingSteps.USE_CASE_SETUP:
-        updateCurrentStep(EOnboardingSteps.ROLE_SETUP);
-        break;
       case EOnboardingSteps.WORKSPACE_CREATE_OR_JOIN:
-        updateCurrentStep(EOnboardingSteps.USE_CASE_SETUP);
+        updateCurrentStep(EOnboardingSteps.PROFILE_SETUP);
         break;
     }
   };
@@ -50,8 +43,6 @@ export const OnboardingHeader = observer(function OnboardingHeader(props: Onboar
   const getCurrentStepNumber = (): number => {
     const stepOrder: TOnboardingStep[] = [
       EOnboardingSteps.PROFILE_SETUP,
-      EOnboardingSteps.ROLE_SETUP,
-      EOnboardingSteps.USE_CASE_SETUP,
       ...(hasInvitations
         ? [EOnboardingSteps.WORKSPACE_CREATE_OR_JOIN]
         : [EOnboardingSteps.WORKSPACE_CREATE_OR_JOIN, EOnboardingSteps.INVITE_MEMBERS]),
@@ -61,7 +52,7 @@ export const OnboardingHeader = observer(function OnboardingHeader(props: Onboar
 
   // derived values
   const currentStepNumber = getCurrentStepNumber();
-  const totalSteps = hasInvitations ? 4 : 5; // 4 if invites available, 5 if not
+  const totalSteps = hasInvitations ? 2 : 3;
   const userName = user?.display_name
     ? user?.display_name
     : user?.first_name
@@ -85,7 +76,6 @@ export const OnboardingHeader = observer(function OnboardingHeader(props: Onboar
               <ChevronLeftIcon className="size-6 text-placeholder" />
             </button>
           )}
-          <PlaneLockup height={20} width={95} className="text-primary" />
         </div>
         <SwitchAccountDropdown fullName={userName} />
       </div>

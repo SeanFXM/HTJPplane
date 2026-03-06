@@ -10,7 +10,8 @@ import { Links, Meta, Outlet, Scripts } from "react-router";
 import type { LinksFunction } from "react-router";
 import { ThemeProvider, useTheme } from "next-themes";
 // plane imports
-import { SITE_DESCRIPTION, SITE_NAME } from "@plane/constants";
+import { SITE_DESCRIPTION } from "@plane/constants";
+import { DEFAULT_LANGUAGE } from "@plane/i18n";
 import { cn } from "@plane/utils";
 // types
 // assets
@@ -28,12 +29,15 @@ import { LogoSpinner } from "@/components/common/logo-spinner";
 import { CustomErrorComponent } from "./error";
 import { AppProvider } from "./provider";
 // fonts
+// eslint-disable-next-line import/no-unassigned-import -- font side effects
 import "@fontsource-variable/inter";
 import interVariableWoff2 from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
+// eslint-disable-next-line import/no-unassigned-import -- font side effects
 import "@fontsource/material-symbols-rounded";
+// eslint-disable-next-line import/no-unassigned-import -- font side effects
 import "@fontsource/ibm-plex-mono";
 
-const APP_TITLE = "Plane | Simple, extensible, open-source project management tool.";
+const APP_TITLE = "Workspace Management";
 
 export const links: LinksFunction = () => [
   { rel: "icon", type: "image/png", sizes: "32x32", href: favicon32 },
@@ -58,16 +62,16 @@ export function Layout({ children }: { children: ReactNode }) {
   const isSessionRecorderEnabled = parseInt(process.env.VITE_ENABLE_SESSION_RECORDER || "0");
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={DEFAULT_LANGUAGE} suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#fff" />
         {/* Meta info for PWA */}
-        <meta name="application-name" content="Plane" />
+        <meta name="application-name" content="Workspace Management" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content={SITE_NAME} />
+        <meta name="apple-mobile-web-app-title" content="Workspace Management" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <Meta />
@@ -100,24 +104,24 @@ export const meta: Route.MetaFunction = () => [
   { property: "og:title", content: APP_TITLE },
   {
     property: "og:description",
-    content: "Open-source project management tool to manage work items, cycles, and product roadmaps easily",
+    content: "Manage projects, schedules, and collaboration in one workspace.",
   },
-  { property: "og:url", content: "https://app.plane.so/" },
+  { property: "og:url", content: "" },
   { property: "og:image", content: ogImage },
   { property: "og:image:width", content: "1200" },
   { property: "og:image:height", content: "630" },
-  { property: "og:image:alt", content: "Plane - Modern project management" },
+  { property: "og:image:alt", content: "Workspace management" },
   {
     name: "keywords",
     content:
       "software development, plan, ship, software, accelerate, code management, release management, project management, work item tracking, agile, scrum, kanban, collaboration",
   },
-  { name: "twitter:site", content: "@planepowers" },
+  { name: "twitter:site", content: "" },
   { name: "twitter:card", content: "summary_large_image" },
   { name: "twitter:image", content: ogImage },
   { name: "twitter:image:width", content: "1200" },
   { name: "twitter:image:height", content: "630" },
-  { name: "twitter:image:alt", content: "Plane - Modern project management" },
+  { name: "twitter:image:alt", content: "Workspace management" },
 ];
 
 export default function Root() {
@@ -135,11 +139,10 @@ export default function Root() {
 export function HydrateFallback() {
   const { resolvedTheme } = useTheme();
 
-  // if we are on the server or the theme is not resolved, return an empty div
-  if (typeof window === "undefined" || resolvedTheme === undefined) return <div />;
-
+  // Show loading spinner during hydration; use neutral bg when theme not yet resolved
+  const bgClass = resolvedTheme === undefined ? "bg-white dark:bg-[#0a0a0a]" : "bg-canvas";
   return (
-    <div className="relative flex h-screen w-full items-center justify-center bg-canvas">
+    <div className={cn("relative flex h-screen w-full items-center justify-center", bgClass)}>
       <LogoSpinner />
     </div>
   );

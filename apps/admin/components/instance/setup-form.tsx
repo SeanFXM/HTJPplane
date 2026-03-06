@@ -64,7 +64,7 @@ export function InstanceSetupForm() {
   const lastNameParam = searchParams?.get("last_name") || undefined;
   const companyParam = searchParams?.get("company") || undefined;
   const emailParam = searchParams?.get("email") || undefined;
-  const isTelemetryEnabledParam = (searchParams?.get("is_telemetry_enabled") === "True" ? true : false) || true;
+  const isTelemetryEnabledParam = searchParams?.get("is_telemetry_enabled") !== "False";
   const errorCode = searchParams?.get("error_code") || undefined;
   const errorMessage = searchParams?.get("error_message") || undefined;
   // state
@@ -94,7 +94,7 @@ export function InstanceSetupForm() {
     if (lastNameParam) setFormData((prev) => ({ ...prev, last_name: lastNameParam }));
     if (companyParam) setFormData((prev) => ({ ...prev, company_name: companyParam }));
     if (emailParam) setFormData((prev) => ({ ...prev, email: emailParam }));
-    if (isTelemetryEnabledParam) setFormData((prev) => ({ ...prev, is_telemetry_enabled: isTelemetryEnabledParam }));
+    setFormData((prev) => ({ ...prev, is_telemetry_enabled: isTelemetryEnabledParam }));
   }, [firstNameParam, lastNameParam, companyParam, emailParam, isTelemetryEnabledParam]);
 
   // derived values
@@ -121,14 +121,14 @@ export function InstanceSetupForm() {
 
   const isButtonDisabled = useMemo(
     () =>
-      !isSubmitting &&
-      formData.first_name &&
-      formData.email &&
-      formData.password &&
-      getPasswordStrength(formData.password) === E_PASSWORD_STRENGTH.STRENGTH_VALID &&
-      formData.password === formData.confirm_password
-        ? false
-        : true,
+      !(
+        !isSubmitting &&
+        formData.first_name &&
+        formData.email &&
+        formData.password &&
+        getPasswordStrength(formData.password) === E_PASSWORD_STRENGTH.STRENGTH_VALID &&
+        formData.password === formData.confirm_password
+      ),
     [formData.confirm_password, formData.email, formData.first_name, formData.password, isSubmitting]
   );
 
@@ -142,8 +142,8 @@ export function InstanceSetupForm() {
       <div className="mt-10 flex w-full flex-grow flex-col items-center justify-center py-6">
         <div className="relative flex w-full max-w-[22.5rem] flex-col gap-6">
           <FormHeader
-            heading="Setup your Plane Instance"
-            subHeading="Post setup you will be able to manage this Plane instance."
+            heading="Setup your workspace instance"
+            subHeading="After setup, you will be able to manage this workspace instance."
           />
           {errorData.type &&
             errorData?.message &&
@@ -180,7 +180,6 @@ export function InstanceSetupForm() {
                     }
                   }}
                   autoComplete="off"
-                  autoFocus
                   maxLength={50}
                 />
               </div>
@@ -221,7 +220,7 @@ export function InstanceSetupForm() {
                 placeholder="name@company.com"
                 value={formData.email}
                 onChange={(e) => handleFormChange("email", e.target.value)}
-                hasError={errorData.type && errorData.type === EErrorCodes.INVALID_EMAIL ? true : false}
+                hasError={errorData.type === EErrorCodes.INVALID_EMAIL}
                 autoComplete="off"
               />
               {errorData.type && errorData.type === EErrorCodes.INVALID_EMAIL && errorData.message && (
@@ -265,7 +264,7 @@ export function InstanceSetupForm() {
                   placeholder="New password"
                   value={formData.password}
                   onChange={(e) => handleFormChange("password", e.target.value)}
-                  hasError={errorData.type && errorData.type === EErrorCodes.INVALID_PASSWORD ? true : false}
+                  hasError={errorData.type === EErrorCodes.INVALID_PASSWORD}
                   onFocus={() => setIsPasswordInputFocused(true)}
                   onBlur={() => setIsPasswordInputFocused(false)}
                   autoComplete="new-password"
@@ -352,7 +351,7 @@ export function InstanceSetupForm() {
                 />
               </div>
               <label className="cursor-pointer text-13 font-medium text-tertiary" htmlFor="is_telemetry_enabled">
-                Allow Plane to anonymously collect usage events.{" "}
+                Allow anonymous usage event collection.{" "}
                 <a
                   tabIndex={-1}
                   href="https://developers.plane.so/self-hosting/telemetry"
