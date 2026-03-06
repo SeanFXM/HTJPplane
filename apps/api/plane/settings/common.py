@@ -310,6 +310,9 @@ SKIP_ENV_VAR = os.environ.get("SKIP_ENV_VAR", "1") == "1"
 DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.environ.get("FILE_SIZE_LIMIT", 5242880))
 
 # Cookie Settings
+# When frontend and API are on different origins (CORS_ALLOWED_ORIGINS set), use SameSite=None
+# so the browser sends session cookie on cross-origin requests (e.g. /api/users/me after login redirect).
+SESSION_COOKIE_SAMESITE = "None" if (cors_allowed_origins and secure_origins) else "Lax"
 SESSION_COOKIE_SECURE = secure_origins
 SESSION_COOKIE_HTTPONLY = True
 SESSION_ENGINE = "plane.db.models.session"
@@ -322,7 +325,8 @@ SESSION_SAVE_EVERY_REQUEST = os.environ.get("SESSION_SAVE_EVERY_REQUEST", "0") =
 ADMIN_SESSION_COOKIE_NAME = "admin-session-id"
 ADMIN_SESSION_COOKIE_AGE = int(os.environ.get("ADMIN_SESSION_COOKIE_AGE", 3600))
 
-# CSRF cookies
+# CSRF cookies (SameSite must match session for cross-origin form/fetch)
+CSRF_COOKIE_SAMESITE = "None" if (cors_allowed_origins and secure_origins) else "Lax"
 CSRF_COOKIE_SECURE = secure_origins
 CSRF_COOKIE_HTTPONLY = True
 CSRF_TRUSTED_ORIGINS = cors_allowed_origins
