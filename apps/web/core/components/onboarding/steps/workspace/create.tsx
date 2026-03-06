@@ -118,8 +118,8 @@ export const WorkspaceCreateStep = observer(function WorkspaceCreateStep({
     return (
       <div className="flex flex-col gap-10">
         <span className="text-center text-14 text-tertiary">
-          ワークスペースへの招待はまだありません。インスタンス管理者により新規ワークスペースの作成は制限されています。
-          先にワークスペース管理者または管理者から招待を受けてから、この画面に戻って参加してください。
+          ワークスペースへの招待はまだありません。
+          先にワークスペース管理者から招待を受けてから、この画面に戻って参加してください。
         </span>
       </div>
     );

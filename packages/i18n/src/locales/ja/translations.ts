@@ -287,7 +287,7 @@ export default {
   check_pending_invites: "保留中の招待を確認",
   create_new_workspace: "新しいワークスペースを作成",
   workspace_creation_disabled_no_invites:
-    "ワークスペースへの招待はまだありません。インスタンス管理者により新規ワークスペースの作成は制限されています。先にワークスペース管理者または管理者から招待を受けてから、この画面に戻って参加してください。",
+    "ワークスペースへの招待はまだありません。 先にワークスペース管理者から招待を受けてから、この画面に戻って参加してください。",
   you_are_invited: "招待されました！",
   accept_invites_to_collaborate: "招待を受け入れてチームと協力しましょう。",
   continue_to_workspace: "ワークスペースに進む",
