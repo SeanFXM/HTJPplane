@@ -106,13 +106,24 @@ export const IssueGanttBlock = observer(function IssueGanttBlock(props: Props) {
                     const label = labelMap?.[labelId];
                     if (!label) return null;
                     return (
-                      <Tooltip key={labelId} tooltipContent={label.name} isMobile={isMobile} position="top">
+                      <span
+                        key={labelId}
+                        className="flex max-w-[60px] flex-shrink-0 items-center gap-1 truncate rounded-sm px-1.5 py-0.5 text-11 text-secondary"
+                        style={{
+                          backgroundColor: `${label.color ?? "#666"}20`,
+                          borderColor: label.color ?? "#666",
+                          borderWidth: "0.5px",
+                          borderStyle: "solid",
+                        }}
+                        title={label.name}
+                      >
                         <span
-                          className="h-2 w-2 flex-shrink-0 rounded-full"
+                          className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
                           style={{ backgroundColor: label.color ?? "#666" }}
                           aria-hidden
                         />
-                      </Tooltip>
+                        <span className="truncate">{label.name}</span>
+                      </span>
                     );
                   })}
                 </div>
