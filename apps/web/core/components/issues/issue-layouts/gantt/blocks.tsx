@@ -9,13 +9,16 @@ import { useParams } from "next/navigation";
 // plane imports
 import { Popover } from "@plane/propel/popover";
 import { Tooltip } from "@plane/propel/tooltip";
+import type { IIssueDisplayProperties } from "@plane/types";
 import { ControlLink } from "@plane/ui";
 import { findTotalDaysInRange, generateWorkItemLink } from "@plane/utils";
 // components
+import { ButtonAvatars } from "@/components/dropdowns/member/avatar";
 import { SIDEBAR_WIDTH } from "@/components/gantt-chart/constants";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useIssues } from "@/hooks/store/use-issues";
+import { useLabel } from "@/hooks/store/use-label";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
@@ -29,13 +32,18 @@ import { WorkItemPreviewCard } from "../../preview-card";
 import { getBlockViewDetails } from "../utils";
 import type { GanttStoreType } from "./base-gantt-root";
 
+const BLOCK_WIDTH_SHOW_ASSIGNEE = 80;
+const BLOCK_WIDTH_SHOW_LABELS = 120;
+
 type Props = {
   issueId: string;
   isEpic?: boolean;
+  blockWidth?: number;
+  displayProperties?: IIssueDisplayProperties | null;
 };
 
 export const IssueGanttBlock = observer(function IssueGanttBlock(props: Props) {
-  const { issueId, isEpic } = props;
+  const { issueId, isEpic, blockWidth = 0, displayProperties } = props;
   // router
   const { workspaceSlug: routerWorkspaceSlug } = useParams();
   const workspaceSlug = routerWorkspaceSlug?.toString();
@@ -44,6 +52,7 @@ export const IssueGanttBlock = observer(function IssueGanttBlock(props: Props) {
   const {
     issue: { getIssueById },
   } = useIssueDetail();
+  const { labelMap } = useLabel();
   // hooks
   const { isMobile } = usePlatformOS();
   const { handleRedirection } = useIssuePeekOverviewRedirection(isEpic);
@@ -59,6 +68,16 @@ export const IssueGanttBlock = observer(function IssueGanttBlock(props: Props) {
 
   const duration = findTotalDaysInRange(issueDetails?.start_date, issueDetails?.target_date) || 0;
 
+  // Width-based display: >= 120px show assignee + labels, >= 80px show assignee only, < 80px show name only
+  const showAssignee = blockWidth >= BLOCK_WIDTH_SHOW_ASSIGNEE && (displayProperties?.assignee ?? true);
+  const showLabels = blockWidth >= BLOCK_WIDTH_SHOW_LABELS && (displayProperties?.labels ?? true);
+
+  const assigneeIds = issueDetails?.assignee_ids ?? [];
+  const assigneesToShow = showAssignee ? assigneeIds.slice(0, 2) : [];
+
+  const labelIds = issueDetails?.label_ids ?? [];
+  const labelsToShow = showLabels ? labelIds.slice(0, 2) : [];
+
   return (
     <Popover delay={100} openOnHover>
       <Popover.Button
@@ -66,16 +85,38 @@ export const IssueGanttBlock = observer(function IssueGanttBlock(props: Props) {
         render={
           <div
             id={`issue-${issueId}`}
-            className="space-between relative flex h-full w-full cursor-pointer items-center rounded-sm"
+            className="space-between relative flex h-full w-full cursor-pointer items-center gap-2 rounded-sm"
             style={blockStyle}
             onClick={handleIssuePeekOverview}
           >
             <div className="absolute top-0 left-0 h-full w-full bg-surface-1/50" />
             <div
-              className="sticky w-auto flex-1 truncate overflow-hidden px-2.5 py-1 text-13 text-primary"
+              className="sticky flex min-w-0 flex-1 items-center gap-2 overflow-hidden px-2.5 py-1"
               style={{ left: `${SIDEBAR_WIDTH}px` }}
             >
-              {issueDetails?.name}
+              <span className="truncate text-13 text-primary">{issueDetails?.name}</span>
+              {assigneesToShow.length > 0 && (
+                <div className="flex flex-shrink-0 items-center">
+                  <ButtonAvatars userIds={assigneesToShow} showTooltip size={16} />
+                </div>
+              )}
+              {labelsToShow.length > 0 && (
+                <div className="flex flex-shrink-0 items-center gap-1">
+                  {labelsToShow.map((labelId) => {
+                    const label = labelMap?.[labelId];
+                    if (!label) return null;
+                    return (
+                      <Tooltip key={labelId} tooltipContent={label.name} isMobile={isMobile} position="top">
+                        <span
+                          className="h-2 w-2 flex-shrink-0 rounded-full"
+                          style={{ backgroundColor: label.color ?? "#666" }}
+                          aria-hidden
+                        />
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             {isEpic && (
               <IssueStats

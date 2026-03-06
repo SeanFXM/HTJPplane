@@ -60,7 +60,7 @@ export const ChartDraggable = observer(function ChartDraggable(props: Props) {
         })}
         onMouseDown={(e) => enableBlockMove && handleBlockDrag(e, "move")}
       >
-        {blockToRender({ ...block.data, meta: block.meta })}
+        {blockToRender({ ...block.data, meta: { ...block.meta, position: block.position } })}
       </div>
       {/* right resize drag handle */}
       <RightResizable

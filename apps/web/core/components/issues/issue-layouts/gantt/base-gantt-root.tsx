@@ -134,8 +134,17 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
             loaderTitle={isEpic ? t("epic.label", { count: 2 }) : t("issue.label", { count: 2 })}
             blockIds={issuesIds}
             blockUpdateHandler={updateIssueBlockStructure}
-            blockToRender={(data: TIssue) => <IssueGanttBlock issueId={data.id} isEpic={isEpic} />}
-            sidebarToRender={(props) => <IssueGanttSidebar {...props} showAllBlocks isEpic={isEpic} />}
+            blockToRender={(data: TIssue & { meta?: { position?: { width?: number } } }) => (
+              <IssueGanttBlock
+                issueId={data.id}
+                isEpic={isEpic}
+                blockWidth={data.meta?.position?.width}
+                displayProperties={issuesFilter?.issueFilters?.displayProperties}
+              />
+            )}
+            sidebarToRender={(sidebarProps) => (
+              <IssueGanttSidebar {...sidebarProps} showAllBlocks isEpic={isEpic} />
+            )}
             enableBlockLeftResize={isAllowed}
             enableBlockRightResize={isAllowed}
             enableBlockMove={isAllowed}
