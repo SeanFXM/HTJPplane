@@ -9,7 +9,6 @@ import React from "react";
 import { observer } from "mobx-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Hotel } from "lucide-react";
 // plane ui
 import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { useLocalStorage } from "@plane/hooks";
@@ -36,7 +35,6 @@ export const NoProjectsEmptyState = observer(function NoProjectsEmptyState() {
   const { storedValue, setValue } = useLocalStorage(`quickstart-guide-${workspaceSlug}`, {
     hide: false,
     visited_members: false,
-    visited_workspace: false,
     visited_profile: false,
   });
   const { t } = useTranslation();
@@ -78,18 +76,6 @@ export const NoProjectsEmptyState = observer(function NoProjectsEmptyState() {
       },
     },
     {
-      id: "configure-workspace",
-      title: "home.empty.configure_workspace.title",
-      description: "home.empty.configure_workspace.description",
-      icon: <Hotel className="size-4" />,
-      flag: "visited_workspace",
-      cta: {
-        text: "home.empty.configure_workspace.cta",
-        link: "settings",
-        disabled: !isWorkspaceAdmin,
-      },
-    },
-    {
       id: "personalize-account",
       title: "home.empty.personalize_account.title",
       description: "home.empty.personalize_account.description",
@@ -125,8 +111,6 @@ export const NoProjectsEmptyState = observer(function NoProjectsEmptyState() {
         return joinedProjectIds?.length > 0;
       case "visited_members":
         return (activeWorkspace?.total_members || 0) >= 2;
-      case "visited_workspace":
-        return storedValue?.visited_workspace;
       case "visited_profile":
         return storedValue?.visited_profile;
     }
