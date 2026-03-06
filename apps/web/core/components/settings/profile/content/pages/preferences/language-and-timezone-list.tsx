@@ -73,15 +73,15 @@ export const ProfileSettingsLanguageAndTimezonePreferencesList = observer(
         <SettingsControlItem
           title={t("timezone")}
           description={t("timezone_setting")}
-          control={<TimezoneSelect value={user?.user_timezone || "Asia/Kolkata"} onChange={handleTimezoneChange} />}
+          control={<TimezoneSelect value={user?.user_timezone || "Asia/Tokyo"} onChange={handleTimezoneChange} />}
         />
         <SettingsControlItem
           title={t("language")}
           description={t("language_setting")}
           control={
             <CustomSelect
-              value={profile?.language}
-              label={profile?.language ? getLanguageLabel(profile?.language) : "Select a language"}
+              value={profile?.language || "ja"}
+              label={getLanguageLabel(profile?.language || "ja")}
               onChange={handleLanguageChange}
               buttonClassName="border border-subtle-1"
               className="rounded-md"

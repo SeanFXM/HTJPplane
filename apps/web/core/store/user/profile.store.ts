@@ -41,7 +41,7 @@ export class ProfileStore implements IUserProfileStore {
     role: undefined,
     last_workspace_id: undefined,
     theme: {
-      theme: undefined,
+      theme: "light",
       primary: undefined,
       background: undefined,
       darkPalette: false,
@@ -61,8 +61,8 @@ export class ProfileStore implements IUserProfileStore {
     has_marketing_email_consent: false,
     created_at: "",
     updated_at: "",
-    language: "",
-    start_of_the_week: EStartOfTheWeek.SUNDAY,
+    language: "ja",
+    start_of_the_week: EStartOfTheWeek.MONDAY,
   };
 
   // services

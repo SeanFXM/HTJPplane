@@ -135,8 +135,8 @@ export class CoreRootStore {
   }
 
   resetOnSignOut() {
-    // handling the system theme when user logged out from the app
-    localStorage.setItem("theme", "system");
+    // Reset to the company default so the next login starts from a known preference baseline.
+    localStorage.setItem("theme", "light");
     localStorage.setItem(LANGUAGE_STORAGE_KEY, DEFAULT_LANGUAGE);
     this.router = new RouterStore();
     this.commandPalette = new CommandPaletteStore();
