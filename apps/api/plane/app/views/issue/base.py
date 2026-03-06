@@ -1147,6 +1147,8 @@ class IssueBulkUpdateDateEndpoint(BaseAPIView):
                     actor_id=str(request.user.id),
                     project_id=str(project_id),
                     epoch=epoch,
+                    notification=True,
+                    origin=base_host(request=request, is_app=True),
                 )
                 issue.start_date = start_date
                 issues_to_update.append(issue)
@@ -1160,6 +1162,8 @@ class IssueBulkUpdateDateEndpoint(BaseAPIView):
                     actor_id=str(request.user.id),
                     project_id=str(project_id),
                     epoch=epoch,
+                    notification=True,
+                    origin=base_host(request=request, is_app=True),
                 )
                 issue.target_date = target_date
                 issues_to_update.append(issue)

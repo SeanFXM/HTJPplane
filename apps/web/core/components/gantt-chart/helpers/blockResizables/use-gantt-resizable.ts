@@ -28,7 +28,13 @@ export const useGanttResizable = (
   const ganttContainerDimensions = useRef<DOMRect | undefined>();
   const currMouseEvent = useRef<MouseEvent | undefined>();
   // states
-  const { currentViewData, updateBlockPosition, setIsDragging, getUpdatedPositionAfterDrag } = useTimeLineChartStore();
+  const {
+    currentViewData,
+    updateBlockPosition,
+    revertBlockPosition,
+    setIsDragging,
+    getUpdatedPositionAfterDrag,
+  } = useTimeLineChartStore();
   const [isMoving, setIsMoving] = useState<"left" | "right" | "move" | undefined>();
 
   // handle block resize from the left end
@@ -113,7 +119,7 @@ export const useGanttResizable = (
     };
 
     // remove event listeners and call updateBlockDates
-    const handleMouseUp = () => {
+    const handleMouseUp = async () => {
       setIsMoving(undefined);
 
       document.removeEventListener("mousemove", handleMouseMove);
@@ -126,13 +132,18 @@ export const useGanttResizable = (
 
       try {
         const blockUpdates = getUpdatedPositionAfterDrag(block.id, shouldUpdateHalfBlock);
-        if (updateBlockDates) updateBlockDates(blockUpdates);
-      } catch {
-        setToast({
-          type: TOAST_TYPE.ERROR,
-          title: "Error",
-          message: "Something went wrong while updating block dates",
-        });
+        if (updateBlockDates) await updateBlockDates(blockUpdates);
+      } catch (err) {
+        const isCancelled = err && typeof err === "object" && "cancelled" in err && (err as { cancelled: boolean }).cancelled;
+        if (isCancelled) {
+          revertBlockPosition(block.id, initialPositionRef.current.marginLeft, initialPositionRef.current.width);
+        } else {
+          setToast({
+            type: TOAST_TYPE.ERROR,
+            title: "Error",
+            message: "Something went wrong while updating block dates",
+          });
+        }
       }
 
       setIsDragging(false);

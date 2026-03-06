@@ -1127,6 +1127,12 @@ export default {
       calendar: "日历",
       spreadsheet: "表格",
       gantt: "时间线",
+      gantt_date_change_confirm: {
+        title: "确定修改日期？",
+        message: "会通知相关成员与订阅成员。",
+        confirm: "保存并通知",
+        cancel: "取消",
+      },
       title: {
         list: "列表布局",
         kanban: "看板布局",

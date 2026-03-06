@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane imports
@@ -15,6 +15,7 @@ import type { EIssuesStoreType, IBlockUpdateData, TIssue } from "@plane/types";
 import { EIssueLayoutTypes, GANTT_TIMELINE_TYPE } from "@plane/types";
 import { renderFormattedPayloadDate } from "@plane/utils";
 // components
+import { AlertModalCore } from "@plane/ui";
 import { TimeLineTypeContext } from "@/components/gantt-chart/contexts";
 import { GanttChartRoot } from "@/components/gantt-chart/root";
 import { IssueGanttSidebar } from "@/components/gantt-chart/sidebar/issues/sidebar";
@@ -53,7 +54,11 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
   const storeType = useIssueStoreType() as GanttStoreType;
   const { issues, issuesFilter } = useIssues(storeType);
   const { fetchIssues, fetchNextIssues, updateIssue, quickAddIssue } = useIssuesActions(storeType);
-  const { initGantt } = useTimeLineChart(GANTT_TIMELINE_TYPE.ISSUE);
+  const timelineStore = useTimeLineChart(GANTT_TIMELINE_TYPE.ISSUE);
+  const { initGantt, getBlockById } = timelineStore;
+  const [dateChangeConfirmState, setDateChangeConfirmState] = useState<{
+    resolve: (confirmed: boolean) => void;
+  } | null>(null);
   // store hooks
   const { allowPermissions } = useUserPermissions();
 
@@ -92,21 +97,56 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
 
   const isAllowed = allowPermissions([EUserPermissions.ADMIN, EUserPermissions.MEMBER], EUserPermissionsLevel.PROJECT);
   const updateBlockDates = useCallback(
-    (
+    async (
       updates: {
         id: string;
         start_date?: string;
         target_date?: string;
       }[]
-    ) =>
-      issues.updateIssueDates(workspaceSlug.toString(), updates, projectId.toString()).catch(() => {
+    ) => {
+      const update = updates[0];
+      if (!update || !workspaceSlug || !projectId) return;
+
+      const block = getBlockById(update.id);
+      if (!block) return;
+
+      const startChanged =
+        update.start_date !== undefined &&
+        (update.start_date ?? null) !== (block.start_date ?? null);
+      const targetChanged =
+        update.target_date !== undefined &&
+        (update.target_date ?? null) !== (block.target_date ?? null);
+      const hasDateChange = startChanged || targetChanged;
+
+      if (!hasDateChange) {
+        await issues.updateIssueDates(workspaceSlug.toString(), updates, projectId.toString()).catch(() => {
+          setToast({
+            type: TOAST_TYPE.ERROR,
+            title: t("toast.error"),
+            message: "Error while updating work item dates, Please try again Later",
+          });
+        });
+        return;
+      }
+
+      const confirmed = await new Promise<boolean>((resolve) => {
+        setDateChangeConfirmState({ resolve });
+      });
+      setDateChangeConfirmState(null);
+
+      if (!confirmed) {
+        throw { cancelled: true };
+      }
+
+      await issues.updateIssueDates(workspaceSlug.toString(), updates, projectId.toString()).catch(() => {
         setToast({
           type: TOAST_TYPE.ERROR,
           title: t("toast.error"),
           message: "Error while updating work item dates, Please try again Later",
         });
-      }),
-    [issues, projectId, workspaceSlug]
+      });
+    },
+    [issues, getBlockById, projectId, workspaceSlug, t]
   );
 
   const quickAdd =
@@ -124,9 +164,31 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
       />
     ) : undefined;
 
+  const handleDateChangeConfirm = useCallback(() => {
+    dateChangeConfirmState?.resolve(true);
+  }, [dateChangeConfirmState]);
+
+  const handleDateChangeCancel = useCallback(() => {
+    dateChangeConfirmState?.resolve(false);
+  }, [dateChangeConfirmState]);
+
   return (
     <IssueLayoutHOC layout={EIssueLayoutTypes.GANTT}>
       <TimeLineTypeContext.Provider value={GANTT_TIMELINE_TYPE.ISSUE}>
+        <AlertModalCore
+          isOpen={!!dateChangeConfirmState}
+          handleClose={handleDateChangeCancel}
+          handleSubmit={handleDateChangeConfirm}
+          title={t("issue.layouts.gantt_date_change_confirm.title")}
+          content={t("issue.layouts.gantt_date_change_confirm.message")}
+          primaryButtonText={{
+            default: t("issue.layouts.gantt_date_change_confirm.confirm"),
+            loading: t("issue.layouts.gantt_date_change_confirm.confirm"),
+          }}
+          secondaryButtonText={t("issue.layouts.gantt_date_change_confirm.cancel")}
+          isSubmitting={false}
+          variant="primary"
+        />
         <div className="h-full w-full">
           <GanttChartRoot
             border={false}

@@ -1140,6 +1140,12 @@ export default {
       calendar: "カレンダー",
       spreadsheet: "テーブル",
       gantt: "タイムライン",
+      gantt_date_change_confirm: {
+        title: "日付の変更を確定しますか？",
+        message: "関連メンバーと購読者に通知されます。",
+        confirm: "保存して通知",
+        cancel: "キャンセル",
+      },
       title: {
         list: "リストレイアウト",
         kanban: "ボードレイアウト",

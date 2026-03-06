@@ -62,6 +62,7 @@ export interface IBaseTimelineStore {
     ignoreDependencies?: boolean
   ) => IBlockUpdateDependencyData[];
   updateBlockPosition: (id: string, deltaLeft: number, deltaWidth: number, ignoreDependencies?: boolean) => void;
+  revertBlockPosition: (id: string, marginLeft: number, width: number) => void;
   getNumberOfDaysFromPosition: (position: number | undefined) => number | undefined;
   setIsDragging: (isDragging: boolean) => void;
   initGantt: () => void;
@@ -316,6 +317,23 @@ export class BaseTimeLineStore implements IBaseTimelineStore {
     }
 
     return [updatePayload];
+  });
+
+  /**
+   * Reverts block position to given marginLeft and width (e.g. when user cancels date change)
+   * @param id
+   * @param marginLeft
+   * @param width
+   */
+  revertBlockPosition = action((id: string, marginLeft: number, width: number) => {
+    const currBlock = this.blocksMap[id];
+    if (!currBlock?.position) return;
+    runInAction(() => {
+      set(this.blocksMap, [id, "position"], {
+        marginLeft,
+        width,
+      });
+    });
   });
 
   /**

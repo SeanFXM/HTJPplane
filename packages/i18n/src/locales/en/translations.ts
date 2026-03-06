@@ -977,6 +977,12 @@ export default {
       calendar: "Calendar",
       spreadsheet: "Table",
       gantt: "Timeline",
+      gantt_date_change_confirm: {
+        title: "Confirm date change?",
+        message: "Relevant members and subscribers will be notified.",
+        confirm: "Save and notify",
+        cancel: "Cancel",
+      },
       title: {
         list: "List Layout",
         kanban: "Board Layout",
