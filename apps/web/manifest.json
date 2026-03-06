@@ -4,9 +4,9 @@
   "display": "standalone",
   "scope": "/",
   "start_url": "/",
-  "name": "Plane | Accelerate software development with peace.",
-  "short_name": "Plane",
-  "description": "Plane accelerated the software development by order of magnitude for agencies and product companies.",
+  "name": "Workspace Management",
+  "short_name": "Workspace",
+  "description": "Manage projects, schedules, and collaboration in one workspace.",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
