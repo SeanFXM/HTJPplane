@@ -7,6 +7,7 @@
 import { useCallback, useMemo } from "react";
 import { AtSign, Briefcase } from "lucide-react";
 // plane imports
+import { useTranslation } from "@plane/i18n";
 import { Logo } from "@plane/propel/emoji-icon-picker";
 import {
   CalendarLayoutIcon,
@@ -91,6 +92,7 @@ export type TWorkItemFiltersConfig = {
 export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps): TWorkItemFiltersConfig => {
   const { allowedFilters, cycleIds, labelIds, memberIds, moduleIds, projectId, projectIds, stateIds, workspaceSlug } =
     props;
+  const { t } = useTranslation();
   // store hooks
   const { loader: projectLoader, getProjectById } = useProject();
   const { getCycleById } = useCycle();
@@ -133,7 +135,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
   const projects = useMemo(
     () =>
       projectIds
-        ? (projectIds.map((projectId) => getProjectById(projectId)).filter((project) => project) as IProject[])
+        ? (projectIds.map((id) => getProjectById(id)).filter((p) => p) as IProject[])
         : [],
     [projectIds, getProjectById]
   );
@@ -154,9 +156,10 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         isEnabled: isFilterEnabled("state_group"),
         filterIcon: StatePropertyIcon,
         getOptionIcon: (stateGroupKey) => <StateGroupIcon stateGroup={stateGroupKey} />,
+        label: t("issue_filters.state_group"),
         ...operatorConfigs,
       }),
-    [isFilterEnabled, operatorConfigs]
+    [isFilterEnabled, operatorConfigs, t]
   );
 
   // state filter config
@@ -167,9 +170,10 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         filterIcon: StatePropertyIcon,
         getOptionIcon: (state) => <StateGroupIcon stateGroup={state.group} color={state.color} />,
         states: workItemStates ?? [],
+        label: t("issue_filters.state"),
         ...operatorConfigs,
       }),
-    [isFilterEnabled, workItemStates, operatorConfigs]
+    [isFilterEnabled, workItemStates, operatorConfigs, t]
   );
 
   // label filter config
@@ -182,9 +186,10 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         getOptionIcon: (color) => (
           <span className="flex size-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
         ),
+        label: t("issue_filters.label"),
         ...operatorConfigs,
       }),
-    [isFilterEnabled, workItemLabels, operatorConfigs]
+    [isFilterEnabled, workItemLabels, operatorConfigs, t]
   );
 
   // cycle filter config
@@ -195,9 +200,10 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         filterIcon: CycleIcon,
         getOptionIcon: (cycleGroup) => <CycleGroupIcon cycleGroup={cycleGroup} className="h-3.5 w-3.5 flex-shrink-0" />,
         cycles: cycles ?? [],
+        label: t("issue_filters.cycle"),
         ...operatorConfigs,
       }),
-    [isFilterEnabled, project?.cycle_view, cycles, operatorConfigs]
+    [isFilterEnabled, project?.cycle_view, cycles, operatorConfigs, t]
   );
 
   // module filter config
@@ -208,9 +214,10 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         filterIcon: ModuleIcon,
         getOptionIcon: () => <ModuleIcon className="h-3 w-3 flex-shrink-0" />,
         modules: modules ?? [],
+        label: t("issue_filters.module"),
         ...operatorConfigs,
       }),
-    [isFilterEnabled, project?.module_view, modules, operatorConfigs]
+    [isFilterEnabled, project?.module_view, modules, operatorConfigs, t]
   );
 
   // assignee filter config
@@ -228,9 +235,10 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
             size="sm"
           />
         ),
+        label: t("issue_filters.assignees"),
         ...operatorConfigs,
       }),
-    [isFilterEnabled, members, operatorConfigs]
+    [isFilterEnabled, members, operatorConfigs, t]
   );
 
   // mention filter config
@@ -248,9 +256,10 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
             size="sm"
           />
         ),
+        label: t("issue_filters.mentions"),
         ...operatorConfigs,
       }),
-    [isFilterEnabled, members, operatorConfigs]
+    [isFilterEnabled, members, operatorConfigs, t]
   );
 
   // created by filter config
@@ -268,9 +277,10 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
             size="sm"
           />
         ),
+        label: t("issue_filters.created_by"),
         ...operatorConfigs,
       }),
-    [isFilterEnabled, members, operatorConfigs]
+    [isFilterEnabled, members, operatorConfigs, t]
   );
 
   // subscriber filter config
@@ -288,9 +298,10 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
             size="sm"
           />
         ),
+        label: t("issue_filters.subscriber"),
         ...operatorConfigs,
       }),
-    [isFilterEnabled, members, operatorConfigs]
+    [isFilterEnabled, members, operatorConfigs, t]
   );
 
   // priority filter config
@@ -300,9 +311,10 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         isEnabled: isFilterEnabled("priority"),
         filterIcon: PriorityPropertyIcon,
         getOptionIcon: (priority) => <PriorityIcon priority={priority} />,
+        label: t("issue_filters.priority"),
         ...operatorConfigs,
       }),
-    [isFilterEnabled, operatorConfigs]
+    [isFilterEnabled, operatorConfigs, t]
   );
 
   // start date filter config
@@ -311,9 +323,10 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
       getStartDateFilterConfig<TWorkItemFilterProperty>("start_date")({
         isEnabled: true,
         filterIcon: StartDatePropertyIcon,
+        label: t("issue_filters.start_date"),
         ...operatorConfigs,
       }),
-    [operatorConfigs]
+    [operatorConfigs, t]
   );
 
   // target date filter config
@@ -322,9 +335,10 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
       getTargetDateFilterConfig<TWorkItemFilterProperty>("target_date")({
         isEnabled: true,
         filterIcon: DueDatePropertyIcon,
+        label: t("issue_filters.target_date"),
         ...operatorConfigs,
       }),
-    [operatorConfigs]
+    [operatorConfigs, t]
   );
 
   // created at filter config
@@ -333,9 +347,10 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
       getCreatedAtFilterConfig<TWorkItemFilterProperty>("created_at")({
         isEnabled: true,
         filterIcon: CalendarLayoutIcon,
+        label: t("issue_filters.created_at"),
         ...operatorConfigs,
       }),
-    [operatorConfigs]
+    [operatorConfigs, t]
   );
 
   // updated at filter config
@@ -344,9 +359,10 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
       getUpdatedAtFilterConfig<TWorkItemFilterProperty>("updated_at")({
         isEnabled: true,
         filterIcon: CalendarLayoutIcon,
+        label: t("issue_filters.updated_at"),
         ...operatorConfigs,
       }),
-    [operatorConfigs]
+    [operatorConfigs, t]
   );
 
   // project filter config
@@ -356,10 +372,11 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
         isEnabled: isFilterEnabled("project_id") && projects !== undefined,
         filterIcon: Briefcase,
         projects: projects,
-        getOptionIcon: (project) => <Logo logo={project.logo_props} size={12} />,
+        getOptionIcon: (p) => <Logo logo={p.logo_props} size={12} />,
+        label: t("issue_filters.project"),
         ...operatorConfigs,
       }),
-    [isFilterEnabled, projects, operatorConfigs]
+    [isFilterEnabled, projects, operatorConfigs, t]
   );
 
   return {
