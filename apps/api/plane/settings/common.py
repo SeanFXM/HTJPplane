@@ -118,11 +118,45 @@ TEMPLATES = [
 # CORS Settings
 CORS_ALLOW_CREDENTIALS = True
 cors_origins_raw = os.environ.get("CORS_ALLOWED_ORIGINS", "")
-# filter out empty strings
-cors_allowed_origins = [origin.strip() for origin in cors_origins_raw.split(",") if origin.strip()]
+
+
+def _normalize_origin(url):
+    if not url or not is_valid_url(url):
+        return None
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        return None
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def _dedupe_origins(origins):
+    seen = set()
+    normalized_origins = []
+    for origin in origins:
+        if not origin or origin in seen:
+            continue
+        seen.add(origin)
+        normalized_origins.append(origin)
+    return normalized_origins
+
+
+# Prefer explicit CORS origins, but fall back to configured frontend base URLs so
+# a missing CORS_ALLOWED_ORIGINS does not silently break cross-origin session auth.
+explicit_cors_allowed_origins = [origin.strip() for origin in cors_origins_raw.split(",") if origin.strip()]
+inferred_cors_allowed_origins = _dedupe_origins(
+    [
+        _normalize_origin(os.environ.get("APP_BASE_URL")),
+        _normalize_origin(os.environ.get("ADMIN_BASE_URL")),
+        _normalize_origin(os.environ.get("SPACE_BASE_URL")),
+        _normalize_origin(os.environ.get("LIVE_BASE_URL")),
+    ]
+)
+cors_allowed_origins = (
+    explicit_cors_allowed_origins if explicit_cors_allowed_origins else inferred_cors_allowed_origins
+)
 if cors_allowed_origins:
     CORS_ALLOWED_ORIGINS = cors_allowed_origins
-    secure_origins = False if [origin for origin in cors_allowed_origins if "http:" in origin] else True
+    secure_origins = not any(origin.startswith("http://") for origin in cors_allowed_origins)
 else:
     CORS_ALLOW_ALL_ORIGINS = True
     secure_origins = False
