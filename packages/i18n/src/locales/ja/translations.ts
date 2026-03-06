@@ -1536,7 +1536,7 @@ export default {
       issue_delete: "作業項目の削除に失敗しました",
     },
     state: {
-      backlog: "バックログ",
+      backlog: "未処理",
       unstarted: "未着手",
       started: "進行中",
       completed: "完了",
