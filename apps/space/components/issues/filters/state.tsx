@@ -8,10 +8,12 @@ import React, { useState } from "react";
 import { observer } from "mobx-react";
 // ui
 import { EIconSize } from "@plane/constants";
+import { useTranslation } from "@plane/i18n";
 import { StateGroupIcon } from "@plane/propel/icons";
 import { Loader } from "@plane/ui";
 // hooks
 import { useStates } from "@/hooks/store/use-state";
+import { getStateDisplayName } from "@/lib/state-display";
 // local imports
 import { FilterHeader } from "./helpers/filter-header";
 import { FilterOption } from "./helpers/filter-option";
@@ -24,6 +26,7 @@ type Props = {
 
 export const FilterState = observer(function FilterState(props: Props) {
   const { appliedFilters, handleUpdate, searchQuery } = props;
+  const { t } = useTranslation();
 
   const { sortedStates: states } = useStates();
 
@@ -59,7 +62,7 @@ export const FilterState = observer(function FilterState(props: Props) {
                     isChecked={appliedFilters?.includes(state.id) ? true : false}
                     onClick={() => handleUpdate(state.id)}
                     icon={<StateGroupIcon stateGroup={state.group} color={state.color} size={EIconSize.MD} />}
-                    title={state.name}
+                    title={getStateDisplayName(state, t)}
                   />
                 ))}
                 {filteredOptions.length > 5 && (

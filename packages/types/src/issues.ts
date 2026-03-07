@@ -140,6 +140,8 @@ export interface IGroupByColumn {
   payload: Partial<TIssue>;
   isDropDisabled?: boolean;
   dropErrorMessage?: string;
+  /** State group key for i18n when grouping by state (e.g. backlog, started) */
+  stateGroupKey?: TStateGroups;
 }
 
 export interface IIssueMap {

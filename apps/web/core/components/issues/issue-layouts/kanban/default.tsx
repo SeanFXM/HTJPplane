@@ -179,7 +179,9 @@ export const KanBan = observer(function KanBan(props: IKanBan) {
                     title={
                       group_by === "state_detail.group" && subList.id in STATE_GROUPS
                         ? t(`workspace_projects.state.${subList.id}`)
-                        : subList.name
+                        : group_by === "state" && subList.stateGroupKey && subList.stateGroupKey in STATE_GROUPS
+                          ? t(`workspace_projects.state.${subList.stateGroupKey}`)
+                          : subList.name
                     }
                     count={getGroupIssueCount(subList.id, undefined, false) ?? 0}
                     issuePayload={subList.payload}

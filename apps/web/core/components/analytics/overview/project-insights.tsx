@@ -28,6 +28,16 @@ const RadarChart = lazy(function RadarChart() {
 
 const analyticsService = new AnalyticsService();
 
+const RADAR_CHART_KEY_TO_I18N: Record<string, string> = {
+  work_items: "common.work_items",
+  cycles: "common.cycles",
+  modules: "common.modules",
+  intake: "sidebar.intake",
+  members: "common.members",
+  pages: "common.pages",
+  views: "common.views",
+};
+
 const ProjectInsights = observer(function ProjectInsights() {
   const params = useParams();
   const { t } = useTranslation();
@@ -72,7 +82,14 @@ const ProjectInsights = observer(function ProjectInsights() {
             <Suspense fallback={<ProjectInsightsLoader />}>
               <RadarChart
                 className="h-[350px] w-full text-accent-primary lg:w-3/5"
-                data={projectInsightsData}
+                data={
+                  projectInsightsData?.map((item) => ({
+                    ...item,
+                    name: RADAR_CHART_KEY_TO_I18N[item.key]
+                      ? t(RADAR_CHART_KEY_TO_I18N[item.key])
+                      : item.name,
+                  })) ?? []
+                }
                 dataKey="key"
                 radars={[
                   {
@@ -105,7 +122,9 @@ const ProjectInsights = observer(function ProjectInsights() {
               </div>
               {projectInsightsData?.map((item) => (
                 <div key={item.key} className="flex items-center justify-between text-13 text-primary">
-                  <div>{item.name}</div>
+                  <div>
+                    {RADAR_CHART_KEY_TO_I18N[item.key] ? t(RADAR_CHART_KEY_TO_I18N[item.key]) : item.name}
+                  </div>
                   <div className="flex items-center gap-1">
                     {/* <TrendPiece key={item.key} size='xs' /> */}
                     <div className="text-secondary">{item.count}</div>

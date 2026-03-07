@@ -8,10 +8,12 @@ import { Command } from "cmdk";
 import { observer } from "mobx-react";
 import { EIconSize } from "@plane/constants";
 // plane imports
+import { useTranslation } from "@plane/i18n";
 import { CheckIcon, StateGroupIcon } from "@plane/propel/icons";
 import { Spinner } from "@plane/ui";
 // store hooks
 import { useProjectState } from "@/hooks/store/use-project-state";
+import { getStateDisplayName } from "@/lib/state-display";
 
 export type TChangeWorkItemStateListProps = {
   projectId: string | null;
@@ -21,6 +23,7 @@ export type TChangeWorkItemStateListProps = {
 
 export const ChangeWorkItemStateList = observer(function ChangeWorkItemStateList(props: TChangeWorkItemStateListProps) {
   const { projectId, currentStateId, handleStateChange } = props;
+  const { t } = useTranslation();
   // store hooks
   const { getProjectStates } = useProjectState();
   // derived values
@@ -39,7 +42,7 @@ export const ChangeWorkItemStateList = observer(function ChangeWorkItemStateList
                   size={EIconSize.LG}
                   percentage={state?.order}
                 />
-                <p>{state.name}</p>
+                <p>{getStateDisplayName(state, t)}</p>
               </div>
               <div>{state.id === currentStateId && <CheckIcon className="h-3 w-3" />}</div>
             </Command.Item>

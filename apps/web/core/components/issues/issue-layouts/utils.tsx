@@ -216,6 +216,7 @@ const getStateColumns = ({ projectId }: TGetColumns): IGroupByColumn[] | undefin
   return _states.map((state) => ({
     id: state.id,
     name: state.name,
+    stateGroupKey: state.group,
     icon: (
       <div className="size-4 rounded-full">
         <StateGroupIcon stateGroup={state.group} color={state.color} size={EIconSize.LG} percentage={state.order} />

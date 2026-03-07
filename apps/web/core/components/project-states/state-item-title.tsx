@@ -14,6 +14,7 @@ import { EditIcon, StateGroupIcon } from "@plane/propel/icons";
 import type { IState, TStateOperationsCallbacks } from "@plane/types";
 // local imports
 import { useProjectState } from "@/hooks/store/use-project-state";
+import { getStateDisplayName } from "@/lib/state-display";
 import { StateDelete, StateMarksAsDefault } from "./options";
 
 type TBaseStateItemTitleProps = {
@@ -35,15 +36,6 @@ type TDisabledStateItemTitleProps = TBaseStateItemTitleProps & {
 
 export type TStateItemTitleProps = TEnabledStateItemTitleProps | TDisabledStateItemTitleProps;
 
-const DEFAULT_STATE_NAME_TO_I18N: Record<string, string> = {
-  Backlog: "workspace_projects.state.backlog",
-  Todo: "workspace_projects.state.unstarted",
-  "In Progress": "workspace_projects.state.started",
-  Done: "workspace_projects.state.completed",
-  Cancelled: "workspace_projects.state.cancelled",
-  Canceled: "workspace_projects.state.cancelled",
-};
-
 export const StateItemTitle = observer(function StateItemTitle(props: TStateItemTitleProps) {
   const { stateCount, setUpdateStateModal, disabled, state, shouldShowDescription = true } = props;
   // store hooks
@@ -52,8 +44,7 @@ export const StateItemTitle = observer(function StateItemTitle(props: TStateItem
   // derived values
   const statePercentage = getStatePercentageInGroup(state.id);
   const percentage = statePercentage ? statePercentage / 100 : undefined;
-  const displayName =
-    DEFAULT_STATE_NAME_TO_I18N[state.name] != null ? t(DEFAULT_STATE_NAME_TO_I18N[state.name]) : state.name;
+  const displayName = getStateDisplayName(state, t);
 
   return (
     <div className="flex w-full items-center justify-between gap-2">

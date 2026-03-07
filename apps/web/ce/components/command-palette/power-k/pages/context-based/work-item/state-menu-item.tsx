@@ -6,10 +6,12 @@
 
 import { observer } from "mobx-react";
 // plane types
+import { useTranslation } from "@plane/i18n";
 import { StateGroupIcon } from "@plane/propel/icons";
 import type { IState } from "@plane/types";
 // components
 import { PowerKModalCommandItem } from "@/components/power-k/ui/modal/command-item";
+import { getStateDisplayName } from "@/lib/state-display";
 
 export type TPowerKProjectStatesMenuItemsProps = {
   handleSelect: (stateId: string) => void;
@@ -23,6 +25,7 @@ export const PowerKProjectStatesMenuItems = observer(function PowerKProjectState
   props: TPowerKProjectStatesMenuItemsProps
 ) {
   const { handleSelect, selectedStateId, states } = props;
+  const { t } = useTranslation();
 
   return (
     <>
@@ -30,7 +33,7 @@ export const PowerKProjectStatesMenuItems = observer(function PowerKProjectState
         <PowerKModalCommandItem
           key={state.id}
           iconNode={<StateGroupIcon stateGroup={state.group} color={state.color} className="size-3.5 shrink-0" />}
-          label={state.name}
+          label={getStateDisplayName(state, t)}
           isSelected={state.id === selectedStateId}
           onSelect={() => handleSelect(state.id)}
         />

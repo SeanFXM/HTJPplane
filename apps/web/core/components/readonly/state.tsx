@@ -13,6 +13,7 @@ import { Loader } from "@plane/ui";
 import { cn } from "@plane/utils";
 // hooks
 import { useProjectState } from "@/hooks/store/use-project-state";
+import { getStateDisplayName } from "@/lib/state-display";
 
 export type TReadonlyStateProps = {
   className?: string;
@@ -68,7 +69,9 @@ export const ReadonlyState = observer(function ReadonlyState(props: TReadonlySta
           color={state?.color}
         />
       )}
-      <span className="flex-grow truncate">{state?.name ?? placeholder ?? t("common.none")}</span>
+      <span className="flex-grow truncate">
+        {state ? getStateDisplayName(state, t) : placeholder ?? t("common.none")}
+      </span>
     </div>
   );
 });

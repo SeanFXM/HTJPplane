@@ -237,14 +237,13 @@ export const ListGroup = observer(function ListGroup(props: Props) {
       })
     );
   }, [
-    groupRef?.current,
-    group,
-    orderBy,
-    getGroupIndex,
-    setDragColumnOrientation,
-    setIsDraggingOverColumn,
-    isWorkflowDropDisabled,
-  ]);
+	group,
+	orderBy,
+	getGroupIndex,
+	setDragColumnOrientation,
+	setIsDraggingOverColumn,
+	isWorkflowDropDisabled
+]);
 
   const isDragAllowed = group_by ? DRAG_ALLOWED_GROUPS.includes(group_by) : true;
   const canOverlayBeVisible = isWorkflowDropDisabled || orderBy !== "sort_order" || !!group.isDropDisabled;
@@ -273,7 +272,9 @@ export const ListGroup = observer(function ListGroup(props: Props) {
           title={
             group_by === "state_detail.group" && group.id in STATE_GROUPS
               ? t(`workspace_projects.state.${group.id}`)
-              : group.name
+              : group_by === "state" && group.stateGroupKey && group.stateGroupKey in STATE_GROUPS
+                ? t(`workspace_projects.state.${group.stateGroupKey}`)
+                : group.name
           }
           count={groupIssueCount}
           issuePayload={group.payload}

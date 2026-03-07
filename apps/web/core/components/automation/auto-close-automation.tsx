@@ -17,6 +17,7 @@ import { CustomSelect, CustomSearchSelect, ToggleSwitch, Loader } from "@plane/u
 import { SelectMonthModal } from "@/components/automation";
 import { SettingsControlItem } from "@/components/settings/control-item";
 // hooks
+import { getStateDisplayName } from "@/lib/state-display";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { useUserPermissions } from "@/hooks/store/user";
@@ -41,16 +42,19 @@ export const AutoCloseAutomation = observer(function AutoCloseAutomation(props: 
 
   const options = projectStates
     ?.filter((state) => state.group === "cancelled")
-    .map((state) => ({
-      value: state.id,
-      query: state.name,
-      content: (
-        <div className="flex items-center gap-2">
-          <StateGroupIcon stateGroup={state.group} color={state.color} size={EIconSize.LG} />
-          {state.name}
-        </div>
-      ),
-    }));
+    .map((state) => {
+      const displayName = getStateDisplayName(state, t);
+      return {
+        value: state.id,
+        query: `${state.name} ${displayName}`,
+        content: (
+          <div className="flex items-center gap-2">
+            <StateGroupIcon stateGroup={state.group} color={state.color} size={EIconSize.LG} />
+            {displayName}
+          </div>
+        ),
+      };
+    });
 
   const multipleOptions = (options ?? []).length > 1;
 
@@ -170,9 +174,11 @@ export const AutoCloseAutomation = observer(function AutoCloseAutomation(props: 
                           ) : (
                             <StatePropertyIcon className="h-3.5 w-3.5 text-secondary" />
                           )}
-                          {selectedOption?.name
-                            ? selectedOption.name
-                            : (currentDefaultState?.name ?? <span className="text-secondary">{t("state")}</span>)}
+                          {selectedOption
+                            ? getStateDisplayName(selectedOption, t)
+                            : (currentDefaultState
+                                ? getStateDisplayName(currentDefaultState, t)
+                                : <span className="text-secondary">{t("state")}</span>)}
                         </div>
                       }
                       onChange={(val: string) => void handleChange({ default_state: val })}

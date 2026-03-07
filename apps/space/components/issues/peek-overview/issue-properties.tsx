@@ -22,6 +22,7 @@ import { cn, getIssuePriorityFilters } from "@plane/utils";
 import { renderFormattedDate } from "@/helpers/date-time.helper";
 import { shouldHighlightIssueDueDate } from "@/helpers/issue.helper";
 import { copyTextToClipboard, addSpaceIfCamelCase } from "@/helpers/string.helper";
+import { getStateDisplayName } from "@/lib/state-display";
 // hooks
 import { usePublish } from "@/hooks/store/publish";
 import { useStates } from "@/hooks/store/use-state";
@@ -82,7 +83,7 @@ export const PeekOverviewIssueProperties = observer(function PeekOverviewIssuePr
           </div>
           <div className="flex w-3/4 items-center gap-1.5 py-0.5 text-13">
             <StateGroupIcon stateGroup={state?.group ?? "backlog"} color={state?.color} />
-            {addSpaceIfCamelCase(state?.name ?? "")}
+            {state ? addSpaceIfCamelCase(getStateDisplayName(state, t)) : ""}
           </div>
         </div>
 

@@ -16,6 +16,7 @@ import { calculateTimeAgo, generateWorkItemLink } from "@plane/utils";
 // components
 import { ListItem } from "@/components/core/list";
 import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
+import { getStateDisplayName } from "@/lib/state-display";
 // helpers
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
@@ -102,7 +103,10 @@ export const RecentIssue = observer(function RecentIssue(props: BlockProps) {
       }
       quickActionElement={
         <div className="flex gap-4">
-          <Tooltip tooltipHeading="State" tooltipContent={state?.name ?? "State"}>
+          <Tooltip
+            tooltipHeading={t("state")}
+            tooltipContent={state ? getStateDisplayName(state, t) : t("state")}
+          >
             <div>
               <StateGroupIcon
                 stateGroup={state?.group ?? "backlog"}

@@ -23,6 +23,7 @@ import type { TDropdownProps } from "@/components/dropdowns/types";
 import { useDropdown } from "@/hooks/use-dropdown";
 // plane web imports
 import { StateOption } from "@/plane-web/components/workflow";
+import { getStateDisplayName } from "@/lib/state-display";
 
 export type TWorkItemStateDropdownBaseProps = TDropdownProps & {
   alwaysAllowStateChange?: boolean;
@@ -110,20 +111,23 @@ export const WorkItemStateDropdownBase = observer(function WorkItemStateDropdown
   });
 
   // derived values
-  const options = statesList?.map((state) => ({
-    value: state?.id,
-    query: `${state?.name}`,
-    content: (
-      <div className="flex items-center gap-2">
-        <IntakeStateGroupIcon
-          stateGroup={state?.group ?? "triage"}
-          color={state?.color}
-          className={cn("flex-shrink-0", iconSize)}
-        />
-        <span className="flex-grow truncate text-left">{state?.name}</span>
-      </div>
-    ),
-  }));
+  const options = statesList?.map((state) => {
+    const displayName = state ? getStateDisplayName(state, t) : "";
+    return {
+      value: state?.id,
+      query: state ? `${state.name} ${displayName}` : "",
+      content: (
+        <div className="flex items-center gap-2">
+          <IntakeStateGroupIcon
+            stateGroup={state?.group ?? "triage"}
+            color={state?.color}
+            className={cn("flex-shrink-0", iconSize)}
+          />
+          <span className="flex-grow truncate text-left">{displayName}</span>
+        </div>
+      ),
+    };
+  });
 
   const filteredOptions =
     query === "" ? options : options?.filter((o) => o.query.toLowerCase().includes(query.toLowerCase()));
@@ -168,7 +172,7 @@ export const WorkItemStateDropdownBase = observer(function WorkItemStateDropdown
             className={buttonClassName}
             isActive={isOpen}
             tooltipHeading={t("state")}
-            tooltipContent={selectedState?.name ?? t("state")}
+            tooltipContent={selectedState ? getStateDisplayName(selectedState, t) : t("state")}
             showTooltip={showTooltip}
             variant={buttonVariant}
             renderToolTipByDefault={renderByDefault}
@@ -185,7 +189,9 @@ export const WorkItemStateDropdownBase = observer(function WorkItemStateDropdown
                   />
                 )}
                 {BUTTON_VARIANTS_WITH_TEXT.includes(buttonVariant) && (
-                  <span className="flex-grow truncate text-left">{selectedState?.name ?? t("state")}</span>
+                  <span className="flex-grow truncate text-left">
+                    {selectedState ? getStateDisplayName(selectedState, t) : t("state")}
+                  </span>
                 )}
                 {dropdownArrow && (
                   <ChevronDownIcon

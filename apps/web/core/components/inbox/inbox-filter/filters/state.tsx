@@ -8,9 +8,11 @@ import type { FC } from "react";
 import { useState } from "react";
 import { observer } from "mobx-react";
 import { EIconSize } from "@plane/constants";
+import { useTranslation } from "@plane/i18n";
 import { StateGroupIcon } from "@plane/propel/icons";
 import type { IState } from "@plane/types";
 import { Loader } from "@plane/ui";
+import { getStateDisplayName } from "@/lib/state-display";
 // components
 import { FilterHeader, FilterOption } from "@/components/issues/issue-layouts/filters";
 // hooks
@@ -23,6 +25,7 @@ type Props = {
 
 export const FilterState = observer(function FilterState(props: Props) {
   const { states, searchQuery } = props;
+  const { t } = useTranslation();
 
   const [itemsToRender, setItemsToRender] = useState(5);
   const [previewEnabled, setPreviewEnabled] = useState(true);
@@ -70,7 +73,7 @@ export const FilterState = observer(function FilterState(props: Props) {
                         percentage={state?.order}
                       />
                     }
-                    title={state.name}
+                    title={getStateDisplayName(state, t)}
                   />
                 ))}
                 {filteredOptions.length > 5 && (

@@ -58,7 +58,9 @@ export const SubIssuesListGroup = observer(function SubIssuesListGroup(props: TS
   const displayName =
     group_by === "state_detail.group" && group.id in STATE_GROUPS
       ? t(`workspace_projects.state.${group.id}`)
-      : group.name;
+      : group_by === "state" && group.stateGroupKey && group.stateGroupKey in STATE_GROUPS
+        ? t(`workspace_projects.state.${group.stateGroupKey}`)
+        : group.name;
 
   // states
   const [isCollapsibleOpen, setIsCollapsibleOpen] = useState(true);
