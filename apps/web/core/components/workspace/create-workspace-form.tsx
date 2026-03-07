@@ -54,6 +54,7 @@ export const CreateWorkspaceForm = observer(function CreateWorkspaceForm(props: 
   // states
   const [slugError, setSlugError] = useState(false);
   const [invalidSlug, setInvalidSlug] = useState(false);
+  const [workspaceHost, setWorkspaceHost] = useState("");
   // router
   const router = useAppRouter();
   // store hooks
@@ -66,6 +67,10 @@ export const CreateWorkspaceForm = observer(function CreateWorkspaceForm(props: 
     getValues,
     formState: { errors, isSubmitting, isValid },
   } = useForm<IWorkspace>({ defaultValues, mode: "onChange" });
+
+  useEffect(() => {
+    setWorkspaceHost(window.location.host);
+  }, []);
 
   const handleCreateWorkspace = async (formData: IWorkspace) => {
     try {
@@ -161,7 +166,7 @@ export const CreateWorkspaceForm = observer(function CreateWorkspaceForm(props: 
             <span className="ml-0.5 text-danger-primary">*</span>
           </label>
           <div className="flex w-full items-center rounded-md border border-subtle bg-layer-2 px-3">
-            <span className="text-12 whitespace-nowrap text-secondary">{window && window.location.host}/</span>
+            <span className="text-12 whitespace-nowrap text-secondary">{workspaceHost}/</span>
             <Controller
               control={control}
               name="slug"

@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { observer } from "mobx-react";
 import { Controller, useForm } from "react-hook-form";
 // constants
@@ -38,6 +38,7 @@ export const CreateWorkspace = observer(function CreateWorkspace(props: Props) {
   // states
   const [slugError, setSlugError] = useState(false);
   const [invalidSlug, setInvalidSlug] = useState(false);
+  const [workspaceHost, setWorkspaceHost] = useState("");
   // plane hooks
   const { t } = useTranslation();
   // store hooks
@@ -58,6 +59,10 @@ export const CreateWorkspace = observer(function CreateWorkspace(props: Props) {
     },
     mode: "onChange",
   });
+
+  useEffect(() => {
+    setWorkspaceHost(window.location.host);
+  }, []);
 
   const handleCreateWorkspace = async (formData: IWorkspace) => {
     if (isSubmitting) return;
@@ -163,6 +168,7 @@ export const CreateWorkspace = observer(function CreateWorkspace(props: Props) {
                   ref={ref}
                   hasError={Boolean(errors.name)}
                   className="w-full border-strong placeholder:text-placeholder"
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                 />
               </div>
@@ -193,7 +199,7 @@ export const CreateWorkspace = observer(function CreateWorkspace(props: Props) {
                   invalidSlug ? "border-danger-strong" : "border-strong"
                 }`}
               >
-                <span className="text-13 whitespace-nowrap">{window && window.location.host}/</span>
+                <span className="text-13 whitespace-nowrap">{workspaceHost}/</span>
                 <Input
                   id="slug"
                   name="slug"

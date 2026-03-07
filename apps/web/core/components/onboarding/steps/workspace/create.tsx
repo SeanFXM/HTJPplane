@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { observer } from "mobx-react";
 import { Controller, useForm } from "react-hook-form";
 import { CircleCheck } from "lucide-react";
@@ -43,6 +43,7 @@ export const WorkspaceCreateStep = observer(function WorkspaceCreateStep({
   // states
   const [slugError, setSlugError] = useState(false);
   const [invalidSlug, setInvalidSlug] = useState(false);
+  const [workspaceHost, setWorkspaceHost] = useState("");
   // plane hooks
   const { t } = useTranslation();
   // store hooks
@@ -67,6 +68,10 @@ export const WorkspaceCreateStep = observer(function WorkspaceCreateStep({
     },
     mode: "onChange",
   });
+
+  useEffect(() => {
+    setWorkspaceHost(window.location.host);
+  }, []);
 
   const handleCreateWorkspace = async (formData: IWorkspace) => {
     if (isSubmitting) return;
@@ -209,9 +214,7 @@ export const WorkspaceCreateStep = observer(function WorkspaceCreateStep({
                   }
                 )}
               >
-                <span className={cn("rounded-md pr-0 whitespace-nowrap text-secondary")}>
-                  {window && window.location.host}/
-                </span>
+                <span className={cn("rounded-md pr-0 whitespace-nowrap text-secondary")}>{workspaceHost}/</span>
                 <input
                   id="slug"
                   name="slug"
