@@ -9,6 +9,7 @@ import { sortBy } from "lodash-es";
 import { observer } from "mobx-react";
 // plane ui
 import { Avatar, Loader } from "@plane/ui";
+import { useTranslation } from "@plane/i18n";
 // components
 import { getFileURL } from "@plane/utils";
 import { FilterHeader, FilterOption } from "@/components/issues/issue-layouts/filters";
@@ -32,6 +33,7 @@ export const FilterLead = observer(function FilterLead(props: Props) {
   // store hooks
   const { getUserDetails } = useMember();
   const { data: currentUser } = useUser();
+  const { t } = useTranslation();
 
   const appliedFiltersCount = appliedFilters?.length ?? 0;
 
@@ -58,7 +60,7 @@ export const FilterLead = observer(function FilterLead(props: Props) {
   return (
     <>
       <FilterHeader
-        title={`Lead${appliedFiltersCount > 0 ? ` (${appliedFiltersCount})` : ""}`}
+        title={`${t("workspace_projects.filter_labels.lead")}${appliedFiltersCount > 0 ? ` (${appliedFiltersCount})` : ""}`}
         isPreviewEnabled={previewEnabled}
         handleIsPreviewEnabled={() => setPreviewEnabled(!previewEnabled)}
       />
@@ -84,7 +86,7 @@ export const FilterLead = observer(function FilterLead(props: Props) {
                           size="md"
                         />
                       }
-                      title={currentUser?.id === member.id ? "You" : member?.display_name}
+                      title={currentUser?.id === member.id ? t("common.you") : member?.display_name}
                     />
                   );
                 })}
@@ -94,12 +96,14 @@ export const FilterLead = observer(function FilterLead(props: Props) {
                     className="ml-8 text-11 font-medium text-accent-primary"
                     onClick={handleViewToggle}
                   >
-                    {itemsToRender === sortedOptions.length ? "View less" : "View all"}
+                    {itemsToRender === sortedOptions.length
+                      ? t("workspace_projects.filter_labels.view_less")
+                      : t("workspace_projects.filter_labels.view_all")}
                   </button>
                 )}
               </>
             ) : (
-              <p className="text-11 text-placeholder italic">No matches found</p>
+              <p className="text-11 text-placeholder italic">{t("common.search.no_matches_found")}</p>
             )
           ) : (
             <Loader className="space-y-2">

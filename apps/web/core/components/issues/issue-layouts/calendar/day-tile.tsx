@@ -11,6 +11,7 @@ import { differenceInCalendarDays } from "date-fns/differenceInCalendarDays";
 import { observer } from "mobx-react";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { TGroupedIssues, TIssue, TIssueMap, TPaginationData, ICalendarDate } from "@plane/types";
+import { useTranslation } from "@plane/i18n";
 // types
 // ui
 // components
@@ -77,6 +78,7 @@ export const CalendarDayTile = observer(function CalendarDayTile(props: Props) {
   } = props;
 
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const { t } = useTranslation();
 
   const calendarLayout = issuesFilterStore?.issueFilters?.displayFilters?.calendar?.layout ?? "month";
 
@@ -157,7 +159,7 @@ export const CalendarDayTile = observer(function CalendarDayTile(props: Props) {
               : "font-medium" // if week layout, highlight all days
           } ${isWeekend ? "bg-layer-1" : "bg-layer-transparent"} `}
         >
-          {date.date.getDate() === 1 && MONTHS_LIST[date.date.getMonth() + 1].shortTitle + " "}
+          {date.date.getDate() === 1 && t(MONTHS_LIST[date.date.getMonth() + 1].i18n_abbr) + " "}
           {isToday ? (
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-primary text-on-color">
               {date.date.getDate()}

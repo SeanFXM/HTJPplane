@@ -8,6 +8,7 @@ import type { SetStateAction } from "react";
 import { observer } from "mobx-react";
 import { GripVertical } from "lucide-react";
 import { EIconSize, STATE_TRACKER_ELEMENTS } from "@plane/constants";
+import { useTranslation } from "@plane/i18n";
 // plane imports
 import { EditIcon, StateGroupIcon } from "@plane/propel/icons";
 import type { IState, TStateOperationsCallbacks } from "@plane/types";
@@ -34,13 +35,25 @@ type TDisabledStateItemTitleProps = TBaseStateItemTitleProps & {
 
 export type TStateItemTitleProps = TEnabledStateItemTitleProps | TDisabledStateItemTitleProps;
 
+const DEFAULT_STATE_NAME_TO_I18N: Record<string, string> = {
+  Backlog: "workspace_projects.state.backlog",
+  Todo: "workspace_projects.state.unstarted",
+  "In Progress": "workspace_projects.state.started",
+  Done: "workspace_projects.state.completed",
+  Cancelled: "workspace_projects.state.cancelled",
+  Canceled: "workspace_projects.state.cancelled",
+};
+
 export const StateItemTitle = observer(function StateItemTitle(props: TStateItemTitleProps) {
   const { stateCount, setUpdateStateModal, disabled, state, shouldShowDescription = true } = props;
   // store hooks
   const { getStatePercentageInGroup } = useProjectState();
+  const { t } = useTranslation();
   // derived values
   const statePercentage = getStatePercentageInGroup(state.id);
   const percentage = statePercentage ? statePercentage / 100 : undefined;
+  const displayName =
+    DEFAULT_STATE_NAME_TO_I18N[state.name] != null ? t(DEFAULT_STATE_NAME_TO_I18N[state.name]) : state.name;
 
   return (
     <div className="flex w-full items-center justify-between gap-2">
@@ -57,7 +70,7 @@ export const StateItemTitle = observer(function StateItemTitle(props: TStateItem
         </div>
         {/* state title and description */}
         <div className="min-h-5 px-2 text-13">
-          <h6 className="text-13 font-medium">{state.name}</h6>
+          <h6 className="text-13 font-medium">{displayName}</h6>
           {shouldShowDescription && <p className="text-11 text-secondary">{state.description}</p>}
         </div>
       </div>

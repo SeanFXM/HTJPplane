@@ -14,29 +14,29 @@ export const generateWeeks = (startOfWeek: EStartOfTheWeek = EStartOfTheWeek.SUN
   ...weeks.slice(0, startOfWeek),
 ];
 
-export const weeks: WeekMonthDataType[] = [
-  { key: 0, shortTitle: "sun", title: "sunday", abbreviation: "Su" },
-  { key: 1, shortTitle: "mon", title: "monday", abbreviation: "M" },
-  { key: 2, shortTitle: "tue", title: "tuesday", abbreviation: "T" },
-  { key: 3, shortTitle: "wed", title: "wednesday", abbreviation: "W" },
-  { key: 4, shortTitle: "thurs", title: "thursday", abbreviation: "Th" },
-  { key: 5, shortTitle: "fri", title: "friday", abbreviation: "F" },
-  { key: 6, shortTitle: "sat", title: "saturday", abbreviation: "Sa" },
+export const weeks: (WeekMonthDataType & { i18n_abbr: string })[] = [
+  { key: 0, shortTitle: "sun", title: "sunday", abbreviation: "Su", i18n_abbr: "calendar.day_abbr.sun" },
+  { key: 1, shortTitle: "mon", title: "monday", abbreviation: "M", i18n_abbr: "calendar.day_abbr.mon" },
+  { key: 2, shortTitle: "tue", title: "tuesday", abbreviation: "T", i18n_abbr: "calendar.day_abbr.tue" },
+  { key: 3, shortTitle: "wed", title: "wednesday", abbreviation: "W", i18n_abbr: "calendar.day_abbr.wed" },
+  { key: 4, shortTitle: "thurs", title: "thursday", abbreviation: "Th", i18n_abbr: "calendar.day_abbr.thu" },
+  { key: 5, shortTitle: "fri", title: "friday", abbreviation: "F", i18n_abbr: "calendar.day_abbr.fri" },
+  { key: 6, shortTitle: "sat", title: "saturday", abbreviation: "Sa", i18n_abbr: "calendar.day_abbr.sat" },
 ];
 
-export const months: WeekMonthDataType[] = [
-  { key: 0, shortTitle: "jan", title: "january", abbreviation: "Jan" },
-  { key: 1, shortTitle: "feb", title: "february", abbreviation: "Feb" },
-  { key: 2, shortTitle: "mar", title: "march", abbreviation: "Mar" },
-  { key: 3, shortTitle: "apr", title: "april", abbreviation: "Apr" },
-  { key: 4, shortTitle: "may", title: "may", abbreviation: "May" },
-  { key: 5, shortTitle: "jun", title: "june", abbreviation: "Jun" },
-  { key: 6, shortTitle: "jul", title: "july", abbreviation: "Jul" },
-  { key: 7, shortTitle: "aug", title: "august", abbreviation: "Aug" },
-  { key: 8, shortTitle: "sept", title: "september", abbreviation: "Sept" },
-  { key: 9, shortTitle: "oct", title: "october", abbreviation: "Oct" },
-  { key: 10, shortTitle: "nov", title: "november", abbreviation: "Nov" },
-  { key: 11, shortTitle: "dec", title: "december", abbreviation: "Dec" },
+export const months: (WeekMonthDataType & { i18n_abbr: string; i18n_full: string })[] = [
+  { key: 0, shortTitle: "jan", title: "january", abbreviation: "Jan", i18n_abbr: "calendar.month_abbr.jan", i18n_full: "calendar.month_full.jan" },
+  { key: 1, shortTitle: "feb", title: "february", abbreviation: "Feb", i18n_abbr: "calendar.month_abbr.feb", i18n_full: "calendar.month_full.feb" },
+  { key: 2, shortTitle: "mar", title: "march", abbreviation: "Mar", i18n_abbr: "calendar.month_abbr.mar", i18n_full: "calendar.month_full.mar" },
+  { key: 3, shortTitle: "apr", title: "april", abbreviation: "Apr", i18n_abbr: "calendar.month_abbr.apr", i18n_full: "calendar.month_full.apr" },
+  { key: 4, shortTitle: "may", title: "may", abbreviation: "May", i18n_abbr: "calendar.month_abbr.may", i18n_full: "calendar.month_full.may" },
+  { key: 5, shortTitle: "jun", title: "june", abbreviation: "Jun", i18n_abbr: "calendar.month_abbr.jun", i18n_full: "calendar.month_full.jun" },
+  { key: 6, shortTitle: "jul", title: "july", abbreviation: "Jul", i18n_abbr: "calendar.month_abbr.jul", i18n_full: "calendar.month_full.jul" },
+  { key: 7, shortTitle: "aug", title: "august", abbreviation: "Aug", i18n_abbr: "calendar.month_abbr.aug", i18n_full: "calendar.month_full.aug" },
+  { key: 8, shortTitle: "sept", title: "september", abbreviation: "Sept", i18n_abbr: "calendar.month_abbr.sep", i18n_full: "calendar.month_full.sep" },
+  { key: 9, shortTitle: "oct", title: "october", abbreviation: "Oct", i18n_abbr: "calendar.month_abbr.oct", i18n_full: "calendar.month_full.oct" },
+  { key: 10, shortTitle: "nov", title: "november", abbreviation: "Nov", i18n_abbr: "calendar.month_abbr.nov", i18n_full: "calendar.month_full.nov" },
+  { key: 11, shortTitle: "dec", title: "december", abbreviation: "Dec", i18n_abbr: "calendar.month_abbr.dec", i18n_full: "calendar.month_full.dec" },
 ];
 
 export const quarters: WeekMonthDataType[] = [

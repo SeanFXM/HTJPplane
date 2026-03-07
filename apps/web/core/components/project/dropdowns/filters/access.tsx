@@ -27,12 +27,14 @@ export const FilterAccess = observer(function FilterAccess(props: Props) {
   const { t } = useTranslation();
 
   const appliedFiltersCount = appliedFilters?.length ?? 0;
-  const filteredOptions = NETWORK_CHOICES.filter((a) => a.i18n_label.includes(searchQuery.toLowerCase()));
+  const filteredOptions = NETWORK_CHOICES.filter((a) =>
+    t(a.i18n_label).toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <>
       <FilterHeader
-        title={`Access${appliedFiltersCount > 0 ? ` (${appliedFiltersCount})` : ""}`}
+        title={`${t("workspace_projects.filter_labels.access")}${appliedFiltersCount > 0 ? ` (${appliedFiltersCount})` : ""}`}
         isPreviewEnabled={previewEnabled}
         handleIsPreviewEnabled={() => setPreviewEnabled(!previewEnabled)}
       />
@@ -49,7 +51,7 @@ export const FilterAccess = observer(function FilterAccess(props: Props) {
               />
             ))
           ) : (
-            <p className="text-11 text-placeholder italic">No matches found</p>
+            <p className="text-11 text-placeholder italic">{t("common.search.no_matches_found")}</p>
           )}
         </div>
       )}

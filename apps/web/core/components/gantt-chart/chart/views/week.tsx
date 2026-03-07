@@ -9,13 +9,35 @@ import { observer } from "mobx-react";
 import { cn } from "@plane/utils";
 // hooks
 import { useTimeLineChartStore } from "@/hooks/use-timeline-chart";
+import { useTranslation } from "@plane/i18n";
 //
 import { HEADER_HEIGHT, SIDEBAR_WIDTH } from "../../constants";
 import type { IWeekBlock } from "../../views";
 
 export const WeekChartView = observer(function WeekChartView(_props: any) {
+  const { t } = useTranslation();
   const { currentViewData, renderView } = useTimeLineChartStore();
   const weekBlocks: IWeekBlock[] = renderView;
+
+  const renderBlockTitle = (block: IWeekBlock) => {
+    if (block.titleI18n?.type === "single" && block.titleI18n.monthKey != null && block.titleI18n.year != null) {
+      return `${t(block.titleI18n.monthKey)} ${block.titleI18n.year}`;
+    }
+    if (
+      block.titleI18n?.type === "range" &&
+      block.titleI18n.startMonthKey != null &&
+      block.titleI18n.startYear != null &&
+      block.titleI18n.endMonthKey != null &&
+      block.titleI18n.endYear != null
+    ) {
+      return `${t(block.titleI18n.startMonthKey)} ${block.titleI18n.startYear} - ${t(block.titleI18n.endMonthKey)} ${block.titleI18n.endYear}`;
+    }
+    return block.title;
+  };
+
+  const renderWeekTitle = (block: IWeekBlock) => {
+    return t("common.week_with_number", { number: block.weekData?.weekNumber ?? block.weekNumber });
+  };
 
   return (
     <div className={`absolute top-0 left-0 flex h-max min-h-full w-max`}>
@@ -40,10 +62,10 @@ export const WeekChartView = observer(function WeekChartView(_props: any) {
                     left: `${SIDEBAR_WIDTH}px`,
                   }}
                 >
-                  {block?.title}
+                  {renderBlockTitle(block)}
                 </div>
                 <div className="sticky px-3 py-2 text-11 whitespace-nowrap text-placeholder capitalize">
-                  {block?.weekData?.title}
+                  {renderWeekTitle(block)}
                 </div>
               </div>
               {/** Days Sub title */}
@@ -59,7 +81,11 @@ export const WeekChartView = observer(function WeekChartView(_props: any) {
                     )}
                     style={{ width: `${currentViewData?.data.dayWidth}px` }}
                   >
-                    <div className="space-x-1 text-11 font-medium text-placeholder">{weekDay.dayData.abbreviation}</div>
+                    <div className="space-x-1 text-11 font-medium text-placeholder">
+                      {"i18n_abbr" in weekDay.dayData && typeof weekDay.dayData.i18n_abbr === "string"
+                        ? t(weekDay.dayData.i18n_abbr as string)
+                        : weekDay.dayData.abbreviation}
+                    </div>
                     <div className="space-x-1 text-11 font-medium">
                       <span
                         className={cn({

@@ -16,6 +16,7 @@ export interface IQuarterMonthBlock {
   quarterNumber: number;
   shortTitle: string;
   title: string;
+  quarterI18nKey: string;
   year: number;
   today: boolean;
 }
@@ -139,6 +140,7 @@ export const groupMonthsToQuarters = (monthBlocks: IMonthBlock[]): IQuarterMonth
         quarterNumber,
         shortTitle: quarterData.shortTitle,
         title: `${quarterData.title} ${year}`,
+        quarterI18nKey: `calendar.quarter_range.q${quarterNumber + 1}`,
         year,
         today: todayQuarterNumber === quarterNumber && todayYear === year,
       };

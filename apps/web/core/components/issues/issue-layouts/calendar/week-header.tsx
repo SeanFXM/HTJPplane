@@ -6,6 +6,7 @@
 
 import { observer } from "mobx-react";
 import { EStartOfTheWeek } from "@plane/types";
+import { useTranslation } from "@plane/i18n";
 import { getOrderedDays } from "@plane/utils";
 import { DAYS_LIST } from "@/constants/calendar";
 // helpers
@@ -21,6 +22,7 @@ export const CalendarWeekHeader = observer(function CalendarWeekHeader(props: Pr
   const { isLoading, showWeekends } = props;
   // hooks
   const { data } = useUserProfile();
+  const { t } = useTranslation();
   const startOfWeek = data?.start_of_the_week;
 
   // derived
@@ -41,7 +43,7 @@ export const CalendarWeekHeader = observer(function CalendarWeekHeader(props: Pr
 
         return (
           <div key={day.shortTitle} className="flex h-11 items-center justify-center bg-layer-1 px-4 md:justify-end">
-            {day.shortTitle}
+            {t(day.i18n_abbr)}
           </div>
         );
       })}

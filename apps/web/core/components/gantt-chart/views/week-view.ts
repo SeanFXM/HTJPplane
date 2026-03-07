@@ -28,8 +28,18 @@ export interface IWeekBlock {
   weekData: {
     shortTitle: string;
     title: string;
+    weekNumber: number;
   };
   title: string;
+  titleI18n?: {
+    type: "single" | "range";
+    monthKey?: string;
+    year?: number;
+    startMonthKey?: string;
+    startYear?: number;
+    endMonthKey?: string;
+    endYear?: number;
+  };
   startDate: Date;
   endDate: Date;
   startMonth: number;
@@ -156,17 +166,31 @@ export const getWeeksBetweenTwoDates = (
 
     const weekNumber = getWeekNumberByDate(currentDate);
 
+    const startMonthKey = (months[monthAtStartOfTheWeek] as { i18n_abbr: string }).i18n_abbr;
+    const endMonthKey = (months[monthAtEndOfTheWeek] as { i18n_abbr: string }).i18n_abbr;
+    const isSingleMonth = monthAtStartOfTheWeek === monthAtEndOfTheWeek && yearAtStartOfTheWeek === yearAtEndOfTheWeek;
+
     weeks.push({
       children: shouldPopulateDaysForWeek ? populateDaysForWeek(weekStartDate, startOfWeek) : undefined,
       weekNumber,
       weekData: {
         shortTitle: `w${weekNumber}`,
         title: `Week ${weekNumber}`,
+        weekNumber,
       },
       title:
         monthAtStartOfTheWeek === monthAtEndOfTheWeek
           ? `${months[monthAtStartOfTheWeek].abbreviation} ${yearAtStartOfTheWeek}`
           : `${months[monthAtStartOfTheWeek].abbreviation} ${yearAtStartOfTheWeek} - ${months[monthAtEndOfTheWeek].abbreviation} ${yearAtEndOfTheWeek}`,
+      titleI18n: isSingleMonth
+        ? { type: "single", monthKey: startMonthKey, year: yearAtStartOfTheWeek }
+        : {
+            type: "range",
+            startMonthKey,
+            startYear: yearAtStartOfTheWeek,
+            endMonthKey,
+            endYear: yearAtEndOfTheWeek,
+          },
       startMonth: monthAtStartOfTheWeek,
       startYear: yearAtStartOfTheWeek,
       endMonth: monthAtEndOfTheWeek,

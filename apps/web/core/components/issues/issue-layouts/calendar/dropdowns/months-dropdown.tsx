@@ -9,6 +9,7 @@ import { observer } from "mobx-react";
 import { usePopper } from "react-popper";
 import { Popover, Transition } from "@headlessui/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@plane/propel/icons";
+import { useTranslation } from "@plane/i18n";
 //hooks
 // icons
 // constants
@@ -27,7 +28,7 @@ interface Props {
 }
 export const CalendarMonthsDropdown = observer(function CalendarMonthsDropdown(props: Props) {
   const { issuesFilterStore } = props;
-
+  const { t } = useTranslation();
   const issueCalendarView = useCalendarView();
 
   const calendarLayout = issuesFilterStore.issueFilters?.displayFilters?.calendar?.layout ?? "month";
@@ -62,15 +63,15 @@ export const CalendarMonthsDropdown = observer(function CalendarMonthsDropdown(p
     if (!firstDay || !lastDay) return "Week view";
 
     if (firstDay.getMonth() === lastDay.getMonth() && firstDay.getFullYear() === lastDay.getFullYear())
-      return `${MONTHS_LIST[firstDay.getMonth() + 1].title} ${firstDay.getFullYear()}`;
+      return `${t(MONTHS_LIST[firstDay.getMonth() + 1].i18n_full)} ${firstDay.getFullYear()}`;
 
     if (firstDay.getFullYear() !== lastDay.getFullYear()) {
-      return `${MONTHS_LIST[firstDay.getMonth() + 1].shortTitle} ${firstDay.getFullYear()} - ${
-        MONTHS_LIST[lastDay.getMonth() + 1].shortTitle
+      return `${t(MONTHS_LIST[firstDay.getMonth() + 1].i18n_abbr)} ${firstDay.getFullYear()} - ${
+        t(MONTHS_LIST[lastDay.getMonth() + 1].i18n_abbr)
       } ${lastDay.getFullYear()}`;
     } else
-      return `${MONTHS_LIST[firstDay.getMonth() + 1].shortTitle} - ${
-        MONTHS_LIST[lastDay.getMonth() + 1].shortTitle
+      return `${t(MONTHS_LIST[firstDay.getMonth() + 1].i18n_abbr)} - ${
+        t(MONTHS_LIST[lastDay.getMonth() + 1].i18n_abbr)
       } ${lastDay.getFullYear()}`;
   };
 
@@ -90,7 +91,7 @@ export const CalendarMonthsDropdown = observer(function CalendarMonthsDropdown(p
           disabled={calendarLayout === "week"}
         >
           {calendarLayout === "month"
-            ? `${MONTHS_LIST[activeMonthDate.getMonth() + 1].title} ${activeMonthDate.getFullYear()}`
+            ? `${t(MONTHS_LIST[activeMonthDate.getMonth() + 1].i18n_full)} ${activeMonthDate.getFullYear()}`
             : getWeekLayoutHeader()}
         </button>
       </Popover.Button>
@@ -144,7 +145,7 @@ export const CalendarMonthsDropdown = observer(function CalendarMonthsDropdown(p
                     handleDateChange(newDate);
                   }}
                 >
-                  {month.shortTitle}
+                  {t(month.i18n_abbr)}
                 </button>
               ))}
             </div>

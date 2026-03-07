@@ -21,8 +21,11 @@ export interface IMonthBlock {
     key: number;
     shortTitle: string;
     title: string;
+    i18n_abbr?: string;
+    i18n_full?: string;
   };
   title: string;
+  monthI18nFullKey: string;
   year: number;
 }
 
@@ -142,11 +145,13 @@ export const getMonthsBetweenTwoDates = (startDate: Date, endDate: Date): IMonth
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth();
 
+    const monthData = months[currentMonth];
     monthBlocks.push({
       year: currentYear,
       month: currentMonth,
-      monthData: months[currentMonth],
+      monthData: monthData,
       title: `${months[currentMonth].title} ${currentYear}`,
+      monthI18nFullKey: monthData.i18n_full,
       days: getNumberOfDaysInMonth(currentMonth, currentYear),
       today: todayMonth === currentMonth && todayYear === currentYear,
     });

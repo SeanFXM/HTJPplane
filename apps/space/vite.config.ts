@@ -1,18 +1,7 @@
 import path from "node:path";
-import * as dotenv from "@dotenvx/dotenvx";
 import { reactRouter } from "@react-router/dev/vite";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
-
-dotenv.config({ path: path.resolve(__dirname, ".env") });
-
-// Expose only vars starting with VITE_
-const viteEnv = Object.keys(process.env)
-  .filter((k) => k.startsWith("VITE_"))
-  .reduce<Record<string, string>>((a, k) => {
-    a[k] = process.env[k] ?? "";
-    return a;
-  }, {});
 
 // Inline joinUrlPath to avoid resolving @plane/utils during config load (avoids race with utils:dev watch)
 function joinUrlPath(...segments: string[]): string {
@@ -26,25 +15,36 @@ function joinUrlPath(...segments: string[]): string {
   );
   return parts.length > 0 ? `/${parts.join("/")}` : "";
 }
-const basePath = joinUrlPath(process.env.VITE_SPACE_BASE_PATH ?? "", "/") || "/";
 
-export default defineConfig(() => ({
-  base: basePath,
-  define: {
-    "process.env": JSON.stringify(viteEnv),
-  },
-  build: {
-    assetsInlineLimit: 0,
-  },
-  plugins: [reactRouter(), tsconfigPaths({ projects: [path.resolve(__dirname, "tsconfig.json")] })],
-  resolve: {
-    alias: {
-      // Next.js compatibility shims used within space
-      "next/navigation": path.resolve(__dirname, "app/compat/next/navigation.ts"),
+export default defineConfig(({ mode }) => {
+  const fileEnv = loadEnv(mode, __dirname, "VITE_");
+  const processEnv = Object.keys(process.env)
+    .filter((key) => key.startsWith("VITE_"))
+    .reduce<Record<string, string>>((acc, key) => {
+      acc[key] = process.env[key] ?? "";
+      return acc;
+    }, {});
+  const viteEnv = { ...fileEnv, ...processEnv };
+  const basePath = joinUrlPath(viteEnv.VITE_SPACE_BASE_PATH ?? "", "/") || "/";
+
+  return {
+    base: basePath,
+    define: {
+      "process.env": JSON.stringify(viteEnv),
     },
-    dedupe: ["react", "react-dom"],
-  },
-  server: {
-    host: "127.0.0.1",
-  },
-}));
+    build: {
+      assetsInlineLimit: 0,
+    },
+    plugins: [reactRouter(), tsconfigPaths({ projects: [path.resolve(__dirname, "tsconfig.json")] })],
+    resolve: {
+      alias: {
+        // Next.js compatibility shims used within space
+        "next/navigation": path.resolve(__dirname, "app/compat/next/navigation.ts"),
+      },
+      dedupe: ["react", "react-dom"],
+    },
+    server: {
+      host: "127.0.0.1",
+    },
+  };
+});

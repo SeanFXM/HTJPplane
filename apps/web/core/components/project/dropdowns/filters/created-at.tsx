@@ -8,6 +8,7 @@ import React, { useState } from "react";
 import { observer } from "mobx-react";
 // plane constants
 import { PROJECT_CREATED_AT_FILTER_OPTIONS } from "@plane/constants";
+import { useTranslation } from "@plane/i18n";
 // components
 import { isInDateFormat } from "@plane/utils";
 import { DateFilterModal } from "@/components/core/filters/date-filter-modal";
@@ -26,11 +27,13 @@ export const FilterCreatedDate = observer(function FilterCreatedDate(props: Prop
   // state
   const [previewEnabled, setPreviewEnabled] = useState(true);
   const [isDateFilterModalOpen, setIsDateFilterModalOpen] = useState(false);
+  const { t } = useTranslation();
   // derived values
   const appliedFiltersCount = appliedFilters?.length ?? 0;
-  const filteredOptions = PROJECT_CREATED_AT_FILTER_OPTIONS.filter((d) =>
-    d.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredOptions = PROJECT_CREATED_AT_FILTER_OPTIONS.filter((d) => {
+    const label = "i18n_label" in d && d.i18n_label ? t(d.i18n_label) : d.name;
+    return label.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   const isCustomDateSelected = () => {
     const isValidDateSelected = appliedFilters?.filter((f) => isInDateFormat(f.split(";")[0])) || [];
@@ -50,11 +53,11 @@ export const FilterCreatedDate = observer(function FilterCreatedDate(props: Prop
           handleClose={() => setIsDateFilterModalOpen(false)}
           isOpen={isDateFilterModalOpen}
           onSelect={(val) => handleUpdate(val)}
-          title="Created date"
+          title={t("workspace_projects.filter_labels.created_at")}
         />
       )}
       <FilterHeader
-        title={`Created date${appliedFiltersCount > 0 ? ` (${appliedFiltersCount})` : ""}`}
+        title={`${t("workspace_projects.filter_labels.created_at")}${appliedFiltersCount > 0 ? ` (${appliedFiltersCount})` : ""}`}
         isPreviewEnabled={previewEnabled}
         handleIsPreviewEnabled={() => setPreviewEnabled(!previewEnabled)}
       />
@@ -67,19 +70,19 @@ export const FilterCreatedDate = observer(function FilterCreatedDate(props: Prop
                   key={option.value}
                   isChecked={appliedFilters?.includes(option.value) ? true : false}
                   onClick={() => handleUpdate(option.value)}
-                  title={option.name}
+                  title={"i18n_label" in option && option.i18n_label ? t(option.i18n_label) : option.name}
                   multiple={false}
                 />
               ))}
               <FilterOption
                 isChecked={isCustomDateSelected()}
                 onClick={handleCustomDate}
-                title="Custom"
+                title={t("workspace_projects.filter_labels.custom")}
                 multiple={false}
               />
             </>
           ) : (
-            <p className="text-11 text-placeholder italic">No matches found</p>
+            <p className="text-11 text-placeholder italic">{t("common.search.no_matches_found")}</p>
           )}
         </div>
       )}

@@ -20,6 +20,7 @@ import type {
   TSupportedFilterForUpdate,
 } from "@plane/types";
 import { EIssuesStoreType, EIssueLayoutTypes } from "@plane/types";
+import { useTranslation } from "@plane/i18n";
 // ui
 import { Spinner } from "@plane/ui";
 import { renderFormattedPayloadDate, cn } from "@plane/utils";
@@ -95,6 +96,7 @@ export const CalendarChart = observer(function CalendarChart(props: Props) {
   } = props;
   // states
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const { t } = useTranslation();
   //refs
   const scrollableContainerRef = useRef<HTMLDivElement | null>(null);
   // store hooks
@@ -207,9 +209,7 @@ export const CalendarChart = observer(function CalendarChart(props: Props) {
             {/* mobile view */}
             <div className="md:hidden">
               <p className="p-4 text-18 font-semibold">
-                {`${selectedDate.getDate()} ${
-                  MONTHS_LIST[selectedDate.getMonth() + 1].title
-                }, ${selectedDate.getFullYear()}`}
+                {`${selectedDate.getDate()} ${t(MONTHS_LIST[selectedDate.getMonth() + 1].i18n_full)}, ${selectedDate.getFullYear()}`}
               </p>
               <CalendarIssueBlocks
                 date={selectedDate}
@@ -235,9 +235,7 @@ export const CalendarChart = observer(function CalendarChart(props: Props) {
         {/* mobile view */}
         <div className="md:hidden">
           <p className="p-4 text-18 font-semibold">
-            {`${selectedDate.getDate()} ${
-              MONTHS_LIST[selectedDate.getMonth() + 1].title
-            }, ${selectedDate.getFullYear()}`}
+            {`${selectedDate.getDate()} ${t(MONTHS_LIST[selectedDate.getMonth() + 1].i18n_full)}, ${selectedDate.getFullYear()}`}
           </p>
           <CalendarIssueBlocks
             date={selectedDate}
