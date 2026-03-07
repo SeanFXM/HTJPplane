@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
+ * Copyright (c) 2023-present the project authors
  * SPDX-License-Identifier: AGPL-3.0-only
  * See the LICENSE file for details.
  */
@@ -20,6 +20,10 @@ interface TranslationProviderProps {
  */
 export const TranslationProvider = observer(function TranslationProvider({ children }: TranslationProviderProps) {
   const [store] = React.useState(() => new TranslationStore());
+
+  React.useEffect(() => {
+    void store.hydrateLanguagePreference();
+  }, [store]);
 
   return <TranslationContext.Provider value={store}>{children}</TranslationContext.Provider>;
 });

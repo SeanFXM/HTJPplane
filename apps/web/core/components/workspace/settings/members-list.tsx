@@ -51,7 +51,9 @@ export const WorkspaceMembersList = observer(function WorkspaceMembersList(props
     workspaceSlug
       ? async () => {
           await fetchWorkspaceMemberInvitations(workspaceSlug.toString());
-          await fetchWorkspaceMembers(workspaceSlug.toString());
+          if (!workspaceMemberIds) {
+            await fetchWorkspaceMembers(workspaceSlug.toString());
+          }
         }
       : null
   );
@@ -64,7 +66,7 @@ export const WorkspaceMembersList = observer(function WorkspaceMembersList(props
   const searchedInvitationsIds = getSearchedWorkspaceInvitationIds(searchQuery);
   const memberDetails = searchedMemberIds
     ?.map((memberId) => getWorkspaceMemberDetails(memberId))
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       if (a?.is_active && !b?.is_active) return -1;
       if (!a?.is_active && b?.is_active) return 1;
       return 0;

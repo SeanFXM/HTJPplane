@@ -1,10 +1,10 @@
 /**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
+ * Copyright (c) 2023-present the project authors
  * SPDX-License-Identifier: AGPL-3.0-only
  * See the LICENSE file for details.
  */
 
-import IntlMessageFormat from "intl-messageformat";
+import MessageFormatter from "intl-messageformat";
 import { get, merge } from "lodash-es";
 import { makeAutoObservable, runInAction } from "mobx";
 // constants
@@ -34,9 +34,9 @@ export class TranslationStore {
   // List of translations for each language
   private translations: ITranslations = {};
   // Cache for IntlMessageFormat instances
-  private messageCache: Map<string, IntlMessageFormat> = new Map();
+  private messageCache: Map<string, MessageFormatter> = new Map();
   // Current language（初始为默认语言，新用户注册页即显示日语）
-  currentLocale: TLanguage = DEFAULT_LANGUAGE;
+  currentLocale: TLanguage;
   // Loading state
   isLoading: boolean = true;
   isInitialized: boolean = false;
@@ -46,28 +46,26 @@ export class TranslationStore {
   /**
    * Constructor for the TranslationStore class
    */
-  constructor() {
+  constructor(initialLocale: TLanguage = DEFAULT_LANGUAGE) {
     makeAutoObservable(this);
+    this.currentLocale = initialLocale;
     // Initialize with core translations immediately（含 en + ja）
     this.translations = { ...this.coreTranslations };
-    // Initialize language
-    this.initializeLanguage();
     // Load all the translations
     this.loadTranslations();
   }
 
-  /** Initializes the language based on the local storage or browser language */
-  private initializeLanguage() {
+  /** Syncs the client language preference after hydration */
+  async hydrateLanguagePreference(): Promise<void> {
     if (typeof window === "undefined") return;
 
     const savedLocale = localStorage.getItem(LANGUAGE_STORAGE_KEY) as TLanguage;
     if (this.isValidLanguage(savedLocale)) {
-      this.setLanguage(savedLocale);
+      await this.setLanguage(savedLocale);
       return;
     }
 
-    // 无保存偏好时使用默认语言
-    this.setLanguage(DEFAULT_LANGUAGE);
+    document.documentElement.lang = this.currentLocale;
   }
 
   /** Loads the translations for the current language */
@@ -169,7 +167,7 @@ export class TranslationStore {
       const merged = modules.reduce((acc: any, module: any) => merge(acc, module.default), {});
       return { default: merged };
     } catch (error) {
-      throw new Error(`Failed to import and merge files for ${language}: ${error}`);
+      throw new Error(`Failed to import and merge files for ${language}: ${error}`, { cause: error });
     }
   }
 
@@ -202,7 +200,7 @@ export class TranslationStore {
    * Gets the IntlMessageFormat instance for the given key and locale
    * Returns cached instance if available
    */
-  private getMessageInstance(key: string, locale: TLanguage): IntlMessageFormat | null {
+  private getMessageInstance(key: string, locale: TLanguage): MessageFormatter | null {
     const cacheKey = this.getCacheKey(key, locale);
 
     // Check if the cache already has the key
@@ -215,7 +213,7 @@ export class TranslationStore {
     if (typeof message !== "string") return null;
 
     try {
-      const formatter = new IntlMessageFormat(message, locale);
+      const formatter = new MessageFormatter(message, locale);
       this.messageCache.set(cacheKey, formatter);
       return formatter;
     } catch (error) {
