@@ -67,6 +67,7 @@ from plane.db.models import (
     CycleIssue,
 )
 from plane.bgtasks.issue_activities_task import issue_activity
+from plane.utils.host import base_host
 from plane.utils.issue_filters import issue_filters
 
 
@@ -279,6 +280,8 @@ class IssueCommentPublicViewSet(BaseViewSet):
                 project_id=str(project_deploy_board.project_id),
                 current_instance=None,
                 epoch=int(timezone.now().timestamp()),
+                notification=True,
+                origin=base_host(request=request, is_app=True),
             )
             if not ProjectMember.objects.filter(
                 project_id=project_deploy_board.project_id,
@@ -313,6 +316,8 @@ class IssueCommentPublicViewSet(BaseViewSet):
                 project_id=str(project_deploy_board.project_id),
                 current_instance=json.dumps(IssueCommentSerializer(comment).data, cls=DjangoJSONEncoder),
                 epoch=int(timezone.now().timestamp()),
+                notification=True,
+                origin=base_host(request=request, is_app=True),
             )
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -334,6 +339,8 @@ class IssueCommentPublicViewSet(BaseViewSet):
             project_id=str(project_deploy_board.project_id),
             current_instance=json.dumps(IssueCommentSerializer(comment).data, cls=DjangoJSONEncoder),
             epoch=int(timezone.now().timestamp()),
+            notification=True,
+            origin=base_host(request=request, is_app=True),
         )
         comment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

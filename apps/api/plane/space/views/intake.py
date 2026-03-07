@@ -23,6 +23,7 @@ from plane.app.serializers import (
     IssueCreateSerializer,
     IssueStateIntakeSerializer,
 )
+from plane.utils.host import base_host
 from plane.utils.issue_filters import issue_filters
 from plane.bgtasks.issue_activities_task import issue_activity
 from plane.db.models.intake import SourceType
@@ -160,6 +161,8 @@ class IntakeIssuePublicViewSet(BaseViewSet):
             project_id=str(project_deploy_board.project_id),
             current_instance=None,
             epoch=int(timezone.now().timestamp()),
+            notification=True,
+            origin=base_host(request=request, is_app=True),
         )
         # create an intake issue
         IntakeIssue.objects.create(
@@ -228,6 +231,8 @@ class IntakeIssuePublicViewSet(BaseViewSet):
                     project_id=str(project_deploy_board.project_id),
                     current_instance=json.dumps(IssueSerializer(current_instance).data, cls=DjangoJSONEncoder),
                     epoch=int(timezone.now().timestamp()),
+                    notification=True,
+                    origin=base_host(request=request, is_app=True),
                 )
             issue_serializer.save()
             return Response(issue_serializer.data, status=status.HTTP_200_OK)
