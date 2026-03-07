@@ -9,6 +9,7 @@ import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
+import { useCommandPalette } from "@/hooks/store/use-command-palette";
 import { usePowerK } from "@/hooks/store/use-power-k";
 import { useUser } from "@/hooks/store/user";
 import { useAppRouter } from "@/hooks/use-app-router";
@@ -65,6 +66,16 @@ export const ProjectsAppPowerKProvider = observer(function ProjectsAppPowerKProv
   const [shouldShowContextBasedActions, setShouldShowContextBasedActions] = useState(true);
   // store hooks
   const { activeContext, isPowerKModalOpen, togglePowerKModal, setActivePage } = usePowerK();
+  const {
+    isCreateProjectModalOpen,
+    isCreateCycleModalOpen,
+    isCreateModuleModalOpen,
+    isCreateViewModalOpen,
+    createPageModal,
+    isCreateIssueModalOpen,
+    isDeleteIssueModalOpen,
+    isBulkDeleteIssueModalOpen,
+  } = useCommandPalette();
   const { data: currentUser } = useUser();
   // derived values
   const {
@@ -75,7 +86,17 @@ export const ProjectsAppPowerKProvider = observer(function ProjectsAppPowerKProv
   const workItemDetails = workItemId ? getIssueById(workItemId) : undefined;
   const projectId: string | string[] | undefined | null = routerProjectId ?? workItemDetails?.project_id;
   const commands = useProjectsAppPowerKCommands();
-  const shouldRenderPowerKOverlays = isPowerKModalOpen || activeCommand !== null;
+  const shouldRenderPowerKOverlays =
+    isPowerKModalOpen ||
+    activeCommand !== null ||
+    isCreateProjectModalOpen ||
+    isCreateCycleModalOpen ||
+    isCreateModuleModalOpen ||
+    isCreateViewModalOpen ||
+    createPageModal.isOpen ||
+    isCreateIssueModalOpen ||
+    isDeleteIssueModalOpen ||
+    isBulkDeleteIssueModalOpen;
   // Build command context from props and store
   const context: TPowerKContext = useMemo(
     () => ({
