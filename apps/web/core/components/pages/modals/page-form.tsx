@@ -119,7 +119,7 @@ export function PageForm(props: Props) {
               type="text"
               value={formData.name}
               onChange={(e) => handleFormData("name", e.target.value)}
-              placeholder="Title"
+              placeholder={t("common.title")}
               className="w-full resize-none text-14"
               tabIndex={getIndex("name")}
               required

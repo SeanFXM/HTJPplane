@@ -5,6 +5,7 @@
  */
 
 import { observer } from "mobx-react";
+import { useTranslation } from "@plane/i18n";
 // plane types
 import { PriorityIcon, StateGroupIcon, WorkItemsIcon } from "@plane/propel/icons";
 import { Tooltip } from "@plane/propel/tooltip";
@@ -30,6 +31,7 @@ type BlockProps = {
 };
 export const RecentIssue = observer(function RecentIssue(props: BlockProps) {
   const { activity, ref, workspaceSlug } = props;
+  const { t } = useTranslation();
   // hooks
   const { getStateById } = useProjectState();
   const { setPeekIssue } = useIssueDetail();
@@ -126,7 +128,7 @@ export const RecentIssue = observer(function RecentIssue(props: BlockProps) {
                 buttonVariant={issueDetails?.assignees?.length > 0 ? "transparent-without-text" : "border-without-text"}
                 buttonClassName={issueDetails?.assignees?.length > 0 ? "hover:bg-transparent px-0" : ""}
                 showTooltip={issueDetails?.assignees?.length === 0}
-                placeholder="Assignees"
+                placeholder={t("common.assignees")}
                 optionsClassName="z-10"
                 tooltipContent=""
               />

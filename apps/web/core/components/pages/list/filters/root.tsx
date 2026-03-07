@@ -6,6 +6,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { observer } from "mobx-react";
+import { useTranslation } from "@plane/i18n";
 import { SearchIcon, CloseIcon } from "@plane/propel/icons";
 import type { TPageFilterProps, TPageFilters } from "@plane/types";
 // components
@@ -22,6 +23,7 @@ type Props = {
 
 export const PageFiltersSelection = observer(function PageFiltersSelection(props: Props) {
   const { filters, handleFiltersUpdate, memberIds } = props;
+  const { t } = useTranslation();
   // states
   const [filtersSearchQuery, setFiltersSearchQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -65,7 +67,7 @@ export const PageFiltersSelection = observer(function PageFiltersSelection(props
             ref={inputRef}
             type="text"
             className="w-full outline-none placeholder:text-placeholder"
-            placeholder="Search"
+            placeholder={t("common.search.label")}
             value={filtersSearchQuery}
             onChange={(e) => setFiltersSearchQuery(e.target.value)}
           />

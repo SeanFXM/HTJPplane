@@ -53,26 +53,26 @@ export const CalendarMonthsDropdown = observer(function CalendarMonthsDropdown(p
   const getWeekLayoutHeader = (): string => {
     const allDaysOfActiveWeek = issueCalendarView.allDaysOfActiveWeek;
 
-    if (!allDaysOfActiveWeek) return "Week view";
+    if (!allDaysOfActiveWeek) return t("calendar.week_view");
 
     const daysList = Object.keys(allDaysOfActiveWeek);
 
     const firstDay = getDate(daysList[0]);
     const lastDay = getDate(daysList[daysList.length - 1]);
 
-    if (!firstDay || !lastDay) return "Week view";
+    if (!firstDay || !lastDay) return t("calendar.week_view");
 
     if (firstDay.getMonth() === lastDay.getMonth() && firstDay.getFullYear() === lastDay.getFullYear())
       return `${t(MONTHS_LIST[firstDay.getMonth() + 1].i18n_full)} ${firstDay.getFullYear()}`;
 
     if (firstDay.getFullYear() !== lastDay.getFullYear()) {
-      return `${t(MONTHS_LIST[firstDay.getMonth() + 1].i18n_abbr)} ${firstDay.getFullYear()} - ${
-        t(MONTHS_LIST[lastDay.getMonth() + 1].i18n_abbr)
-      } ${lastDay.getFullYear()}`;
+      return `${t(MONTHS_LIST[firstDay.getMonth() + 1].i18n_abbr)} ${firstDay.getFullYear()} - ${t(
+        MONTHS_LIST[lastDay.getMonth() + 1].i18n_abbr
+      )} ${lastDay.getFullYear()}`;
     } else
-      return `${t(MONTHS_LIST[firstDay.getMonth() + 1].i18n_abbr)} - ${
-        t(MONTHS_LIST[lastDay.getMonth() + 1].i18n_abbr)
-      } ${lastDay.getFullYear()}`;
+      return `${t(MONTHS_LIST[firstDay.getMonth() + 1].i18n_abbr)} - ${t(
+        MONTHS_LIST[lastDay.getMonth() + 1].i18n_abbr
+      )} ${lastDay.getFullYear()}`;
   };
 
   const handleDateChange = (date: Date) => {

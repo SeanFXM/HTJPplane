@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import { observer } from "mobx-react";
+import { useTranslation } from "@plane/i18n";
 // editor
 import type { EditorRefApi } from "@plane/editor";
 // ui
@@ -24,6 +25,7 @@ type Props = {
 
 export const PageEditorTitle = observer(function PageEditorTitle(props: Props) {
   const { editorRef, readOnly, title, updateTitle } = props;
+  const { t } = useTranslation();
   // states
   const [isLengthVisible, setIsLengthVisible] = useState(false);
   // page filters
@@ -52,7 +54,7 @@ export const PageEditorTitle = observer(function PageEditorTitle(props: Props) {
         <div className="relative">
           <TextArea
             className={cn(titleFontClassName, "block w-full resize-none rounded-none border-none p-0 outline-none")}
-            placeholder="Untitled"
+            placeholder={t("common.untitled")}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();

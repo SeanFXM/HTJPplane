@@ -1734,7 +1734,8 @@ export default {
         generating: "Oluşturuluyor",
         delete: {
           title: "API Token'ını sil",
-          description: "Bu token'ı kullanan uygulamalar artık çalışma alanı verilerine erişemeyecek. Bu işlem geri alınamaz.",
+          description:
+            "Bu token'ı kullanan uygulamalar artık çalışma alanı verilerine erişemeyecek. Bu işlem geri alınamaz.",
           success: {
             title: "Başarılı!",
             message: "API token'ı başarıyla silindi",

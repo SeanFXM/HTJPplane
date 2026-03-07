@@ -5,6 +5,7 @@
  */
 
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@plane/i18n";
 // plane types
 import { Logo } from "@plane/propel/emoji-icon-picker";
 import type { TActivityEntityData, TProjectEntityData } from "@plane/types";
@@ -21,6 +22,7 @@ type BlockProps = {
 };
 export function RecentProject(props: BlockProps) {
   const { activity, ref, workspaceSlug } = props;
+  const { t } = useTranslation();
   // router
   const router = useRouter();
   // derived values
@@ -63,7 +65,7 @@ export function RecentProject(props: BlockProps) {
                 }
                 buttonClassName={projectDetails?.project_members?.length > 0 ? "hover:bg-transparent px-0" : ""}
                 showTooltip={projectDetails?.project_members?.length === 0}
-                placeholder="Assignees"
+                placeholder={t("common.assignees")}
                 optionsClassName="z-10"
                 tooltipContent=""
               />

@@ -7,6 +7,7 @@
 import { useParams } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { AlertTriangle } from "lucide-react";
+import { useTranslation } from "@plane/i18n";
 // Plane imports
 import { Button } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
@@ -29,6 +30,7 @@ const defaultValues = {
 
 export function DeleteProjectModal(props: DeleteProjectModal) {
   const { isOpen, project, onClose } = props;
+  const { t } = useTranslation();
   // store hooks
   const { deleteProject } = useProject();
   // router
@@ -108,7 +110,7 @@ export function DeleteProjectModal(props: DeleteProjectModal) {
                 onChange={onChange}
                 ref={ref}
                 hasError={Boolean(errors.projectName)}
-                placeholder="Project name"
+                placeholder={t("common.project_name")}
                 className="mt-2 w-full"
                 autoComplete="off"
               />
@@ -131,7 +133,7 @@ export function DeleteProjectModal(props: DeleteProjectModal) {
                 onChange={onChange}
                 ref={ref}
                 hasError={Boolean(errors.confirmDelete)}
-                placeholder="Enter 'delete my project'"
+                placeholder={t("common.enter_delete_my_project")}
                 className="mt-2 w-full"
                 autoComplete="off"
               />
@@ -143,7 +145,7 @@ export function DeleteProjectModal(props: DeleteProjectModal) {
             Cancel
           </Button>
           <Button variant="error-fill" size="lg" type="submit" disabled={!canDelete} loading={isSubmitting}>
-            {isSubmitting ? "Deleting" : "Delete project"}
+            {isSubmitting ? t("common.deleting") : t("project_settings.danger_zone.delete_project.title")}
           </Button>
         </div>
       </form>

@@ -6,6 +6,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react";
+import { useTranslation } from "@plane/i18n";
 // icons
 import { ListFilter } from "lucide-react";
 import { useOutsideClickDetector } from "@plane/hooks";
@@ -22,6 +23,7 @@ import { ViewOrderByDropdown } from "./filters/order-by";
 import { IconButton } from "@plane/propel/icon-button";
 
 export const ViewListHeader = observer(function ViewListHeader() {
+  const { t } = useTranslation();
   // states
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   // refs
@@ -80,7 +82,7 @@ export const ViewListHeader = observer(function ViewListHeader() {
           <input
             ref={inputRef}
             className="w-full max-w-[234px] border-none bg-transparent text-13 text-primary placeholder:text-placeholder focus:outline-none"
-            placeholder="Search"
+            placeholder={t("common.search.label")}
             value={filters?.searchQuery}
             onChange={(e) => updateFilters("searchQuery", e.target.value)}
             onKeyDown={handleInputKeyDown}

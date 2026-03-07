@@ -6,6 +6,7 @@
 
 import { useParams } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
+import { useTranslation } from "@plane/i18n";
 // plane imports
 import { allTimeIn30MinutesInterval12HoursFormat } from "@plane/constants";
 import { Button } from "@plane/propel/button";
@@ -37,7 +38,7 @@ const timeStamps = allTimeIn30MinutesInterval12HoursFormat;
 
 export function NotificationSnoozeModal(props: TNotificationSnoozeModal) {
   const { isOpen, onClose, onSubmit: handleSubmitSnooze } = props;
-
+  const { t } = useTranslation();
   const { workspaceSlug } = useParams();
 
   const {
@@ -135,7 +136,7 @@ export function NotificationSnoozeModal(props: TNotificationSnoozeModal) {
               render={({ field: { value, onChange } }) => (
                 <DateDropdown
                   value={value || null}
-                  placeholder="Select date"
+                  placeholder={t("common.select_date")}
                   onChange={(val) => {
                     setValue("time", undefined);
                     onChange(val);

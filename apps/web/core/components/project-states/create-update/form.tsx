@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from "react";
 import { TwitterPicker } from "react-color";
+import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import type { IState } from "@plane/types";
 import { Popover, Input, TextArea } from "@plane/ui";
@@ -31,6 +32,7 @@ function PopoverButton({ color }: { color?: string }) {
 
 export function StateForm(props: TStateForm) {
   const { data, onSubmit, onCancel, buttonDisabled, buttonTitle } = props;
+  const { t } = useTranslation();
   // states
   const [formData, setFromData] = useState<Partial<IState> | undefined>(undefined);
   const [errors, setErrors] = useState<Partial<Record<keyof IState, string>> | undefined>(undefined);
@@ -77,7 +79,7 @@ export function StateForm(props: TStateForm) {
           id="name"
           type="text"
           name="name"
-          placeholder="Name"
+          placeholder={t("common.name")}
           value={formData?.name}
           onChange={(e) => handleFormData("name", e.target.value)}
           hasError={(errors && Boolean(errors.name)) || false}
@@ -90,7 +92,7 @@ export function StateForm(props: TStateForm) {
         <TextArea
           id="description"
           name="description"
-          placeholder="Describe this state for your members."
+          placeholder={t("common.describe_state_for_members")}
           value={formData?.description}
           onChange={(e) => handleFormData("description", e.target.value)}
           hasError={(errors && Boolean(errors.description)) || false}

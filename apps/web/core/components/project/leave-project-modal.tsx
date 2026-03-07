@@ -8,6 +8,7 @@ import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { AlertTriangleIcon } from "lucide-react";
+import { useTranslation } from "@plane/i18n";
 // Plane imports
 import { Button } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
@@ -35,6 +36,7 @@ export interface ILeaveProjectModal {
 
 export const LeaveProjectModal = observer(function LeaveProjectModal(props: ILeaveProjectModal) {
   const { project, isOpen, onClose } = props;
+  const { t } = useTranslation();
   // router
   const router = useAppRouter();
   const { workspaceSlug } = useParams();
@@ -133,7 +135,7 @@ export const LeaveProjectModal = observer(function LeaveProjectModal(props: ILea
                 onChange={onChange}
                 ref={ref}
                 hasError={Boolean(errors.projectName)}
-                placeholder="Enter project name"
+                placeholder={t("common.enter_project_name")}
                 className="mt-2 w-full"
               />
             )}
@@ -156,7 +158,7 @@ export const LeaveProjectModal = observer(function LeaveProjectModal(props: ILea
                 onChange={onChange}
                 ref={ref}
                 hasError={Boolean(errors.confirmLeave)}
-                placeholder="Enter 'leave project'"
+                placeholder={t("common.enter_leave_project")}
                 className="mt-2 w-full"
               />
             )}
