@@ -45,12 +45,13 @@ import { usePlatformOS } from "@/hooks/use-platform-os";
 interface IWorkspaceAuthWrapper {
   children: ReactNode;
   isLoading?: boolean;
+  loadingFallback?: ReactNode;
 }
 
 const DEFERRED_WORKSPACE_PREFETCH_DELAY = 150;
 
 export const WorkspaceAuthWrapper = observer(function WorkspaceAuthWrapper(props: IWorkspaceAuthWrapper) {
-  const { children, isLoading: isParentLoading = false } = props;
+  const { children, isLoading: isParentLoading = false, loadingFallback } = props;
   const [shouldLoadDeferredWorkspaceData, setShouldLoadDeferredWorkspaceData] = useState(false);
   const { t } = useTranslation();
   // router params
@@ -177,11 +178,15 @@ export const WorkspaceAuthWrapper = observer(function WorkspaceAuthWrapper(props
   // if list of workspaces are not there then we have to render the spinner
   if (isParentLoading || allWorkspaces === undefined || loader) {
     return (
-      <div className="grid h-full place-items-center rounded-lg border border-subtle p-4">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <LogoSpinner />
-        </div>
-      </div>
+      <>
+        {loadingFallback ?? (
+          <div className="grid h-full place-items-center rounded-lg border border-subtle p-4">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <LogoSpinner />
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 

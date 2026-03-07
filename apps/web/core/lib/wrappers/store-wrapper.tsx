@@ -48,7 +48,14 @@ function StoreWrapper(props: TStoreWrapper) {
   useEffect(() => {
     const localValue = localStorage && localStorage.getItem("app_sidebar_collapsed");
     const localBoolValue = localValue === "true";
-    if (localValue && sidebarCollapsed === undefined) toggleSidebar(localBoolValue);
+    if (sidebarCollapsed !== undefined) return;
+
+    if (localValue) {
+      toggleSidebar(localBoolValue);
+      return;
+    }
+
+    toggleSidebar(false);
   }, [sidebarCollapsed, setTheme, toggleSidebar]);
 
   /**
