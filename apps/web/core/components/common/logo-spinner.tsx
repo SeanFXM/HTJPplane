@@ -10,13 +10,8 @@ const LOGO_SPINNER_SRC = "/logo-spinner.png";
 export function LogoSpinner() {
   return (
     <div className="flex items-center justify-center bg-transparent">
-      <span className="inline-block h-11 w-11 animate-spin sm:h-14 sm:w-14 bg-transparent">
-        <img
-          src={LOGO_SPINNER_SRC}
-          alt=""
-          className="h-full w-full object-contain bg-transparent"
-          aria-hidden
-        />
+      <span className="inline-block h-11 w-11 animate-spin bg-transparent sm:h-14 sm:w-14">
+        <img src={LOGO_SPINNER_SRC} alt="" className="h-full w-full bg-transparent object-contain" aria-hidden />
       </span>
     </div>
   );

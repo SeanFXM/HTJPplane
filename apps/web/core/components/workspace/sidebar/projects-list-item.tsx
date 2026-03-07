@@ -111,6 +111,7 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
   // Validate that the default tab is available
   const validatedDefaultTabKey = availableTabKeys.includes(defaultTabKey) ? defaultTabKey : DEFAULT_TAB_KEY;
   const defaultTabUrl = project ? getTabUrl(workspaceSlug.toString(), project.id, validatedDefaultTabKey) : "";
+  const isReorderable = !!project && !disableDrag && project.sort_order !== null;
 
   // toggle project list open
   const setIsProjectListOpen = useCallback(
@@ -140,7 +141,7 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
     return combine(
       draggable({
         element: projectElement,
-        canDrag: () => !disableDrag,
+        canDrag: () => !!isReorderable,
         dragHandle: dragHandleElement ?? undefined,
         getInitialData: () => ({ id: projectId, dragInstanceId: "PROJECTS" }),
         onDragStart: () => {
@@ -222,6 +223,7 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
     disableDrag,
     disableDrop,
     handleOnProjectDrop,
+    isReorderable,
     isLastChild,
     project,
     project?.logo_props,
@@ -303,58 +305,73 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
             )}
             id={`${project?.id}`}
           >
-            {!disableDrag && (
+            <>
               <Tooltip
                 isMobile={isMobile}
-                tooltipContent={
-                  project.sort_order === null ? t("join_the_project_to_rearrange") : t("drag_to_rearrange")
-                }
+                tooltipContent={isReorderable ? t("drag_to_rearrange") : t("join_the_project_to_rearrange")}
                 position="top-end"
-                disabled={isDragging}
+                disabled={isDragging || disableDrag}
               >
-                <button
-                  type="button"
-                  className={cn(
-                    "absolute top-1/2 -left-3 hidden -translate-y-1/2 cursor-grab items-center justify-center rounded-sm text-placeholder group-hover/project-item:flex",
-                    {
-                      "cursor-not-allowed opacity-60": project.sort_order === null,
-                      "cursor-grabbing": isDragging,
-                      flex: isMenuActive || renderInExtendedSidebar,
-                    }
-                  )}
+                <div
                   ref={dragHandleRef}
+                  className={cn("flex flex-grow truncate", {
+                    "cursor-grab": isReorderable && !isDragging,
+                    "cursor-grabbing": isReorderable && isDragging,
+                    "cursor-not-allowed": !isReorderable && !disableDrag,
+                  })}
                 >
-                  <DragHandle className="bg-transparent" />
-                </button>
+                  <ControlLink href={defaultTabUrl} className="flex flex-grow truncate" onClick={handleItemClick}>
+                    {isAccordionMode ? (
+                      <Disclosure.Button
+                        as="button"
+                        type="button"
+                        className={cn("flex w-full flex-grow items-center gap-1.5 text-left select-none", {})}
+                        aria-label={
+                          isProjectListOpen
+                            ? t("aria_labels.projects_sidebar.close_project_menu")
+                            : t("aria_labels.projects_sidebar.open_project_menu")
+                        }
+                      >
+                        {!disableDrag && (
+                          <DragHandle
+                            className={cn("size-3.5 shrink-0 bg-transparent text-placeholder transition-opacity", {
+                              "opacity-100": isMenuActive || renderInExtendedSidebar || isDragging,
+                              "opacity-0 group-hover/project-item:opacity-100": !(
+                                isMenuActive ||
+                                renderInExtendedSidebar ||
+                                isDragging
+                              ),
+                            })}
+                          />
+                        )}
+                        <div className="grid size-4 flex-shrink-0 place-items-center">
+                          <Logo logo={project.logo_props} size={16} />
+                        </div>
+                        <p className="truncate text-13 font-medium text-secondary">{project.name}</p>
+                      </Disclosure.Button>
+                    ) : (
+                      <div className="flex w-full flex-grow items-center gap-1.5 text-left select-none">
+                        {!disableDrag && (
+                          <DragHandle
+                            className={cn("size-3.5 shrink-0 bg-transparent text-placeholder transition-opacity", {
+                              "opacity-100": isMenuActive || renderInExtendedSidebar || isDragging,
+                              "opacity-0 group-hover/project-item:opacity-100": !(
+                                isMenuActive ||
+                                renderInExtendedSidebar ||
+                                isDragging
+                              ),
+                            })}
+                          />
+                        )}
+                        <div className="grid size-4 flex-shrink-0 place-items-center">
+                          <Logo logo={project.logo_props} size={16} />
+                        </div>
+                        <p className="truncate text-13 font-medium text-secondary">{project.name}</p>
+                      </div>
+                    )}
+                  </ControlLink>
+                </div>
               </Tooltip>
-            )}
-            <>
-              <ControlLink href={defaultTabUrl} className="flex flex-grow truncate" onClick={handleItemClick}>
-                {isAccordionMode ? (
-                  <Disclosure.Button
-                    as="button"
-                    type="button"
-                    className={cn("flex w-full flex-grow items-center gap-1.5 text-left select-none", {})}
-                    aria-label={
-                      isProjectListOpen
-                        ? t("aria_labels.projects_sidebar.close_project_menu")
-                        : t("aria_labels.projects_sidebar.open_project_menu")
-                    }
-                  >
-                    <div className="grid size-4 flex-shrink-0 place-items-center">
-                      <Logo logo={project.logo_props} size={16} />
-                    </div>
-                    <p className="truncate text-13 font-medium text-secondary">{project.name}</p>
-                  </Disclosure.Button>
-                ) : (
-                  <div className="flex w-full flex-grow items-center gap-1.5 text-left select-none">
-                    <div className="grid size-4 flex-shrink-0 place-items-center">
-                      <Logo logo={project.logo_props} size={16} />
-                    </div>
-                    <p className="truncate text-13 font-medium text-secondary">{project.name}</p>
-                  </div>
-                )}
-              </ControlLink>
               <div className="flex items-center gap-1">
                 <CustomMenu
                   customButton={

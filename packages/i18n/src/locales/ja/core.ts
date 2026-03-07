@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2023-present Plane Software, Inc. and contributors
+ * Copyright (c) 2023-present the project authors
  * SPDX-License-Identifier: AGPL-3.0-only
  * See the LICENSE file for details.
  *
@@ -91,7 +91,7 @@ export default {
       already_have_an_account: "すでにアカウントをお持ちですか？",
       login: "ログイン",
       create_account: "アカウントを作成",
-      new_to_plane: "Planeは初めてですか？",
+      new_to_plane: "初めてご利用ですか？",
       back_to_sign_in: "サインインに戻る",
       resend_in: "{seconds}秒後に再送信",
       sign_in_with_unique_code: "ユニークコードでサインイン",
@@ -147,7 +147,7 @@ export default {
       email_sent: "リセットリンクをメールアドレスに送信しました",
       send_reset_link: "リセットリンクを送信",
       errors: {
-        smtp_not_enabled: "管理者がSMTPを有効にしていないため、パスワードリセットリンクを送信できません",
+        smtp_not_enabled: "変更については管理者までご連絡ください。",
       },
       toast: {
         success: {

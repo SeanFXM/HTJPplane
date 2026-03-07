@@ -34,7 +34,7 @@ export const StartOfWeekPreference = observer(function StartOfWeekPreference(pro
 
   const getStartOfWeekLabel = (startOfWeek: EStartOfTheWeek) => {
     const key = DAY_KEYS[startOfWeek as EStartOfTheWeek];
-    return key ? t(key) : START_OF_THE_WEEK_OPTIONS.find((opt) => opt.value === startOfWeek)?.label ?? "";
+    return key ? t(key) : (START_OF_THE_WEEK_OPTIONS.find((opt) => opt.value === startOfWeek)?.label ?? "");
   };
 
   const handleStartOfWeekChange = async (val: number) => {

@@ -33,7 +33,9 @@ export const WorkspaceSettingsSidebarItemCategories = observer(function Workspac
         const categoryItems = GROUPED_WORKSPACE_SETTINGS[category];
         const accessibleItems = categoryItems.filter(
           (item) =>
-            item.key !== "export" && allowPermissions(item.access, EUserPermissionsLevel.WORKSPACE, workspaceSlug)
+            item.key !== "export" &&
+            item.key !== "billing-and-plans" &&
+            allowPermissions(item.access, EUserPermissionsLevel.WORKSPACE, workspaceSlug)
         );
 
         if (accessibleItems.length === 0) return null;
