@@ -8,6 +8,7 @@ import { useState } from "react";
 import { observer } from "mobx-react";
 import { Clock } from "lucide-react";
 // plane imports
+import { useTranslation } from "@plane/i18n";
 import { Avatar, Row } from "@plane/ui";
 import { cn, calculateTimeAgo, renderFormattedDate, renderFormattedTime, getFileURL } from "@plane/utils";
 // hooks
@@ -27,6 +28,7 @@ type TNotificationItem = {
 export const NotificationItem = observer(function NotificationItem(props: TNotificationItem) {
   const { workspaceSlug, notificationId } = props;
   // hooks
+  const { t } = useTranslation();
   const { currentSelectedNotificationId, setCurrentSelectedNotificationId } = useWorkspaceNotifications();
   const { asJson: notification, markNotificationAsRead } = useNotification(notificationId);
   const { getIsIssuePeeked, setPeekIssue } = useIssueDetail();
@@ -65,7 +67,14 @@ export const NotificationItem = observer(function NotificationItem(props: TNotif
     }
   };
 
-  if (!workspaceSlug || !notificationId || !notification?.id || !notificationField || !workspace?.id || !projectId)
+  if (
+    !workspaceSlug ||
+    !notificationId ||
+    !notification?.id ||
+    (!notificationField && !notification?.is_mentioned_notification) ||
+    !workspace?.id ||
+    !projectId
+  )
     return <></>;
 
   return (
@@ -126,7 +135,7 @@ export const NotificationItem = observer(function NotificationItem(props: TNotif
                 <p className="flex flex-shrink-0 items-center justify-end gap-x-1 text-tertiary">
                   <Clock className="h-4 w-4" />
                   <span>
-                    Till {renderFormattedDate(notification.snoozed_till)},&nbsp;
+                    {t("notification.content.snoozed_until")} {renderFormattedDate(notification.snoozed_till)},&nbsp;
                     {renderFormattedTime(notification.snoozed_till, "12-hour")}
                   </span>
                 </p>

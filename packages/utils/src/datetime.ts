@@ -4,8 +4,61 @@
  * See the LICENSE file for details.
  */
 
-import { differenceInDays, format, formatDistanceToNow, isAfter, isEqual, isValid, parseISO } from "date-fns";
+import { differenceInDays, format, isAfter, isEqual, isValid, parseISO } from "date-fns";
 import { isNumber } from "lodash-es";
+
+type TRelativeTimeLocale = "en" | "ja" | "zh-CN" | "zh-TW";
+
+const JUST_NOW_LABELS: Record<TRelativeTimeLocale, string> = {
+  en: "just now",
+  ja: "たった今",
+  "zh-CN": "刚刚",
+  "zh-TW": "剛剛",
+};
+
+const relativeTimeFormatterCache = new Map<TRelativeTimeLocale, Intl.RelativeTimeFormat>();
+
+const getRelativeTimeLocale = (): TRelativeTimeLocale => {
+  if (typeof document !== "undefined" && document.documentElement.lang) {
+    const lang = document.documentElement.lang;
+    if (lang === "ja") return "ja";
+    if (lang === "zh-TW") return "zh-TW";
+    if (lang.startsWith("zh")) return "zh-CN";
+  }
+
+  if (typeof window !== "undefined") {
+    const storedLanguage = window.localStorage.getItem("userLanguage");
+    if (storedLanguage === "ja") return "ja";
+    if (storedLanguage === "zh-TW") return "zh-TW";
+    if (storedLanguage?.startsWith("zh")) return "zh-CN";
+
+    const browserLanguage = window.navigator.language;
+    if (browserLanguage === "ja") return "ja";
+    if (browserLanguage === "zh-TW") return "zh-TW";
+    if (browserLanguage?.startsWith("zh")) return "zh-CN";
+  }
+
+  return "en";
+};
+
+const getRelativeTimeFormatter = (locale: TRelativeTimeLocale) => {
+  const cachedFormatter = relativeTimeFormatterCache.get(locale);
+  if (cachedFormatter) return cachedFormatter;
+
+  const formatter = new Intl.RelativeTimeFormat(locale, {
+    numeric: "always",
+  });
+
+  relativeTimeFormatterCache.set(locale, formatter);
+  return formatter;
+};
+
+const parseRelativeTimeInput = (time: string | number | Date | null) => {
+  if (!time) return null;
+
+  const parsedTime = typeof time === "string" ? parseISO(time) : new Date(time);
+  return isValid(parsedTime) ? parsedTime : null;
+};
 
 // Format Date Helpers
 /**
@@ -169,14 +222,35 @@ export const findHowManyDaysLeft = (
  * @example calculateTimeAgo("2023-01-01") // 1 year ago
  */
 export const calculateTimeAgo = (time: string | number | Date | null): string => {
-  if (!time) return "";
-  // Parse the time to check if it is valid
-  const parsedTime = typeof time === "string" || typeof time === "number" ? parseISO(String(time)) : time;
-  // return if undefined
-  if (!parsedTime) return ""; // Return empty string for invalid dates
-  // Format the time in the form of amount of time passed since the event happened
-  const distance = formatDistanceToNow(parsedTime, { addSuffix: true });
-  return distance;
+  const parsedTime = parseRelativeTimeInput(time);
+  if (!parsedTime) return "";
+
+  const locale = getRelativeTimeLocale();
+  const formatter = getRelativeTimeFormatter(locale);
+  const diffInSeconds = Math.round((parsedTime.getTime() - Date.now()) / 1000);
+  const absDiffInSeconds = Math.abs(diffInSeconds);
+
+  if (absDiffInSeconds < 60) {
+    return JUST_NOW_LABELS[locale];
+  }
+
+  if (absDiffInSeconds < 60 * 60) {
+    return formatter.format(Math.round(diffInSeconds / 60), "minute");
+  }
+
+  if (absDiffInSeconds < 60 * 60 * 24) {
+    return formatter.format(Math.round(diffInSeconds / (60 * 60)), "hour");
+  }
+
+  if (absDiffInSeconds < 60 * 60 * 24 * 30) {
+    return formatter.format(Math.round(diffInSeconds / (60 * 60 * 24)), "day");
+  }
+
+  if (absDiffInSeconds < 60 * 60 * 24 * 365) {
+    return formatter.format(Math.round(diffInSeconds / (60 * 60 * 24 * 30)), "month");
+  }
+
+  return formatter.format(Math.round(diffInSeconds / (60 * 60 * 24 * 365)), "year");
 };
 
 export function calculateTimeAgoShort(date: string | number | Date | null): string {
@@ -284,7 +358,7 @@ export const getDate = (date: string | Date | undefined | null): Date | undefine
   try {
     if (!date || date === "") return;
 
-    if (typeof date !== "string" && !(date instanceof String)) return date;
+    if (typeof date !== "string") return date;
 
     const [yearString, monthString, dayString] = date.substring(0, 10).split("-");
     const year = parseInt(yearString);
@@ -392,21 +466,20 @@ export const getReadTimeFromWordsCount = (wordsCount: number): number => {
 export const generateDateArray = (startDate: string | Date, endDate: string | Date) => {
   // Convert the start and end dates to Date objects if they aren't already
   const start = new Date(startDate);
-  // start.setDate(start.getDate() + 1);
   const end = new Date(endDate);
   end.setDate(end.getDate() + 2);
 
   // Create an empty array to store the dates
   const dateArray = [];
 
-  // Use a while loop to generate dates between the range
-  while (start <= end) {
+  // Iterate with a cursor date and break once we move past the end date.
+  for (let cursor = new Date(start); ; cursor.setDate(cursor.getDate() + 1)) {
+    if (cursor > end) break;
+
     // Push the current date (converted to ISO string for consistency)
     dateArray.push({
-      date: new Date(start).toISOString().split("T")[0],
+      date: new Date(cursor).toISOString().split("T")[0],
     });
-    // Increment the date by 1 day (86400000 milliseconds)
-    start.setDate(start.getDate() + 1);
   }
 
   return dateArray;
