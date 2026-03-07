@@ -7,6 +7,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { observer } from "mobx-react";
+import { usePathname } from "next/navigation";
 import useSWR from "swr";
 // plane imports
 import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
@@ -45,10 +46,14 @@ interface IProjectAuthWrapper {
   isLoading?: boolean;
 }
 
+const DEFERRED_PROJECT_PREFETCH_DELAY = 150;
+
 export const ProjectAuthWrapper = observer(function ProjectAuthWrapper(props: IProjectAuthWrapper) {
   const { workspaceSlug, projectId, children, isLoading: isParentLoading = false } = props;
   // states
   const [isJoiningProject, setIsJoiningProject] = useState(false);
+  const [shouldLoadDeferredProjectData, setShouldLoadDeferredProjectData] = useState(false);
+  const pathname = usePathname();
   // store hooks
   const { fetchUserProjectInfo, allowPermissions, getProjectRoleByWorkspaceSlugAndProjectId } = useUserPermissions();
   const { fetchProjectDetails } = useProject();
@@ -79,6 +84,28 @@ export const ProjectAuthWrapper = observer(function ProjectAuthWrapper(props: IP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!workspaceSlug || !projectId) {
+      setShouldLoadDeferredProjectData(false);
+      return;
+    }
+
+    const deferredLoad = () => setShouldLoadDeferredProjectData(true);
+
+    if (typeof window === "undefined") return;
+
+    if ("requestIdleCallback" in window) {
+      const idleCallbackId = window.requestIdleCallback(deferredLoad, {
+        timeout: DEFERRED_PROJECT_PREFETCH_DELAY,
+      });
+
+      return () => window.cancelIdleCallback(idleCallbackId);
+    }
+
+    const timeoutId = globalThis.setTimeout(deferredLoad, DEFERRED_PROJECT_PREFETCH_DELAY);
+    return () => globalThis.clearTimeout(timeoutId);
+  }, [workspaceSlug, projectId]);
+
   // fetching project details
   const { isLoading: isProjectDetailsLoading, error: projectDetailsError } = useSWR(
     PROJECT_DETAILS(workspaceSlug, projectId),
@@ -88,53 +115,89 @@ export const ProjectAuthWrapper = observer(function ProjectAuthWrapper(props: IP
   useSWR(PROJECT_ME_INFORMATION(workspaceSlug, projectId), () => fetchUserProjectInfo(workspaceSlug, projectId));
   // fetching project member preferences
   useSWR(
-    currentUserData?.id ? PROJECT_MEMBER_PREFERENCES(projectId, currentProjectRole) : null,
-    currentUserData?.id ? () => fetchProjectUserProperties(workspaceSlug, projectId) : null,
+    currentUserData?.id && shouldLoadDeferredProjectData
+      ? PROJECT_MEMBER_PREFERENCES(projectId, currentProjectRole)
+      : null,
+    currentUserData?.id && shouldLoadDeferredProjectData
+      ? () => fetchProjectUserProperties(workspaceSlug, projectId)
+      : null,
     { revalidateIfStale: false, revalidateOnFocus: false }
   );
   // fetching project labels
-  useSWR(PROJECT_LABELS(projectId, currentProjectRole), () => fetchProjectLabels(workspaceSlug, projectId), {
-    revalidateIfStale: false,
-    revalidateOnFocus: false,
-  });
+  useSWR(
+    shouldLoadDeferredProjectData ? PROJECT_LABELS(projectId, currentProjectRole) : null,
+    shouldLoadDeferredProjectData ? () => fetchProjectLabels(workspaceSlug, projectId) : null,
+    {
+      revalidateIfStale: false,
+      revalidateOnFocus: false,
+    }
+  );
   // fetching project members
-  useSWR(PROJECT_MEMBERS(projectId, currentProjectRole), () => fetchProjectMembers(workspaceSlug, projectId), {
-    revalidateIfStale: false,
-    revalidateOnFocus: false,
-  });
+  useSWR(
+    shouldLoadDeferredProjectData ? PROJECT_MEMBERS(projectId, currentProjectRole) : null,
+    shouldLoadDeferredProjectData ? () => fetchProjectMembers(workspaceSlug, projectId) : null,
+    {
+      revalidateIfStale: false,
+      revalidateOnFocus: false,
+    }
+  );
   // fetching project states
-  useSWR(PROJECT_STATES(projectId, currentProjectRole), () => fetchProjectStates(workspaceSlug, projectId), {
-    revalidateIfStale: false,
-    revalidateOnFocus: false,
-  });
+  useSWR(
+    shouldLoadDeferredProjectData ? PROJECT_STATES(projectId, currentProjectRole) : null,
+    shouldLoadDeferredProjectData ? () => fetchProjectStates(workspaceSlug, projectId) : null,
+    {
+      revalidateIfStale: false,
+      revalidateOnFocus: false,
+    }
+  );
   // fetching project intake state
-  useSWR(PROJECT_INTAKE_STATE(projectId, currentProjectRole), () => fetchProjectIntakeState(workspaceSlug, projectId), {
-    revalidateIfStale: false,
-    revalidateOnFocus: false,
-  });
+  useSWR(
+    shouldLoadDeferredProjectData ? PROJECT_INTAKE_STATE(projectId, currentProjectRole) : null,
+    shouldLoadDeferredProjectData ? () => fetchProjectIntakeState(workspaceSlug, projectId) : null,
+    {
+      revalidateIfStale: false,
+      revalidateOnFocus: false,
+    }
+  );
   // fetching project estimates
-  useSWR(PROJECT_ESTIMATES(projectId, currentProjectRole), () => getProjectEstimates(workspaceSlug, projectId), {
-    revalidateIfStale: false,
-    revalidateOnFocus: false,
-  });
+  useSWR(
+    shouldLoadDeferredProjectData ? PROJECT_ESTIMATES(projectId, currentProjectRole) : null,
+    shouldLoadDeferredProjectData ? () => getProjectEstimates(workspaceSlug, projectId) : null,
+    {
+      revalidateIfStale: false,
+      revalidateOnFocus: false,
+    }
+  );
   // fetching project cycles
-  useSWR(PROJECT_ALL_CYCLES(projectId, currentProjectRole), () => fetchAllCycles(workspaceSlug, projectId), {
-    revalidateIfStale: false,
-    revalidateOnFocus: false,
-  });
+  useSWR(
+    shouldLoadDeferredProjectData ? PROJECT_ALL_CYCLES(projectId, currentProjectRole) : null,
+    shouldLoadDeferredProjectData ? () => fetchAllCycles(workspaceSlug, projectId) : null,
+    {
+      revalidateIfStale: false,
+      revalidateOnFocus: false,
+    }
+  );
   // fetching project modules
   useSWR(
-    PROJECT_MODULES(projectId, currentProjectRole),
+    shouldLoadDeferredProjectData ? PROJECT_MODULES(projectId, currentProjectRole) : null,
     async () => {
-      await Promise.all([fetchModulesSlim(workspaceSlug, projectId), fetchModules(workspaceSlug, projectId)]);
+      await fetchModulesSlim(workspaceSlug, projectId);
+
+      if (pathname?.includes("/modules")) {
+        await fetchModules(workspaceSlug, projectId);
+      }
     },
-    { revalidateIfStale: false, revalidateOnFocus: false }
+    shouldLoadDeferredProjectData ? { revalidateIfStale: false, revalidateOnFocus: false } : undefined
   );
   // fetching project views
-  useSWR(PROJECT_VIEWS(projectId, currentProjectRole), () => fetchViews(workspaceSlug, projectId), {
-    revalidateIfStale: false,
-    revalidateOnFocus: false,
-  });
+  useSWR(
+    shouldLoadDeferredProjectData ? PROJECT_VIEWS(projectId, currentProjectRole) : null,
+    shouldLoadDeferredProjectData ? () => fetchViews(workspaceSlug, projectId) : null,
+    {
+      revalidateIfStale: false,
+      revalidateOnFocus: false,
+    }
+  );
 
   // handle join project
   const handleJoinProject = () => {

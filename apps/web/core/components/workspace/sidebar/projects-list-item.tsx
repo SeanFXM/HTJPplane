@@ -29,8 +29,6 @@ import { cn } from "@plane/utils";
 // components
 import { DEFAULT_TAB_KEY, getTabUrl } from "@/components/navigation/tab-navigation-utils";
 import { useTabPreferences } from "@/components/navigation/use-tab-preferences";
-import { LeaveProjectModal } from "@/components/project/leave-project-modal";
-import { PublishProjectModal } from "@/components/project/publish-project/modal";
 // hooks
 import { useAppTheme } from "@/hooks/store/use-app-theme";
 import { useCommandPalette } from "@/hooks/store/use-command-palette";
@@ -57,6 +55,8 @@ type Props = {
   disableDrop?: boolean;
   isLastChild: boolean;
   renderInExtendedSidebar?: boolean;
+  onLeaveProject?: (projectId: string) => void;
+  onPublishProject?: (projectId: string) => void;
 };
 
 export const SidebarProjectsListItem = observer(function SidebarProjectsListItem(props: Props) {
@@ -69,6 +69,8 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
     handleOnProjectDrop,
     projectListType,
     renderInExtendedSidebar = false,
+    onLeaveProject,
+    onPublishProject,
   } = props;
   // store hooks
   const { t } = useTranslation();
@@ -80,8 +82,6 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
   const { isExtendedProjectSidebarOpened, toggleExtendedProjectSidebar, toggleAnySidebarDropdown } = useAppTheme();
 
   // states
-  const [leaveProjectModalOpen, setLeaveProjectModal] = useState(false);
-  const [publishModalOpen, setPublishModal] = useState(false);
   const [isMenuActive, setIsMenuActive] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const isProjectListOpen = getIsProjectListOpen(projectId);
@@ -131,19 +131,15 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
     project?.id
   );
 
-  const handleLeaveProject = () => {
-    setLeaveProjectModal(true);
-  };
-
   useEffect(() => {
-    const element = projectRef.current;
+    const projectElement = projectRef.current;
     const dragHandleElement = dragHandleRef.current;
 
-    if (!element) return;
+    if (!projectElement) return;
 
     return combine(
       draggable({
-        element,
+        element: projectElement,
         canDrag: () => !disableDrag,
         dragHandle: dragHandleElement ?? undefined,
         getInitialData: () => ({ id: projectId, dragInstanceId: "PROJECTS" }),
@@ -174,16 +170,16 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
         },
       }),
       dropTargetForElements({
-        element,
+        element: projectElement,
         canDrop: ({ source }) =>
           !disableDrop && source?.data?.id !== projectId && source?.data?.dragInstanceId === "PROJECTS",
-        getData: ({ input, element }) => {
+        getData: ({ input, element: dropTargetElement }) => {
           const data = { id: projectId };
 
           // attach instruction for last in list
           return attachInstruction(data, {
             input,
-            element,
+            element: dropTargetElement,
             currentLevel: 0,
             indentPerLevel: 0,
             mode: isLastChild ? "last-in-group" : "standard",
@@ -222,7 +218,17 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
         },
       })
     );
-  }, [projectId, isLastChild, projectListType, handleOnProjectDrop]);
+  }, [
+    disableDrag,
+    disableDrop,
+    handleOnProjectDrop,
+    isLastChild,
+    project,
+    project?.logo_props,
+    project?.name,
+    projectId,
+    projectListType,
+  ]);
 
   useEffect(() => {
     if (isMenuActive) toggleAnySidebarDropdown(true);
@@ -278,8 +284,6 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
 
   return (
     <>
-      <PublishProjectModal isOpen={publishModalOpen} projectId={projectId} onClose={() => setPublishModal(false)} />
-      <LeaveProjectModal project={project} isOpen={leaveProjectModalOpen} onClose={() => setLeaveProjectModal(false)} />
       <Disclosure key={`${project.id}_${URLProjectId}`} defaultOpen={isProjectListOpen} as="div">
         <div
           id={`sidebar-${projectId}-${projectListType}`}
@@ -394,7 +398,7 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
 
                   {/* publish project settings */}
                   {isAdmin && (
-                    <CustomMenu.MenuItem onClick={() => setPublishModal(true)}>
+                    <CustomMenu.MenuItem onClick={() => onPublishProject?.(projectId)}>
                       <div className="relative flex flex-shrink-0 items-center justify-start gap-2">
                         <div className="flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm text-secondary transition-all duration-300 hover:bg-layer-1">
                           <Share2 className="h-3.5 w-3.5 stroke-[1.5]" />
@@ -434,7 +438,7 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
                   {/* leave project */}
                   {!isAuthorized && (
                     <CustomMenu.MenuItem
-                      onClick={handleLeaveProject}
+                      onClick={() => onLeaveProject?.(projectId)}
                       data-ph-element={MEMBER_TRACKER_ELEMENTS.SIDEBAR_PROJECT_QUICK_ACTIONS}
                     >
                       <div className="flex items-center justify-start gap-2">

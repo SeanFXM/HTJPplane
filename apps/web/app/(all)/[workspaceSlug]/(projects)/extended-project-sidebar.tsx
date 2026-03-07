@@ -16,7 +16,9 @@ import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 import { copyUrlToClipboard, orderJoinedProjects } from "@plane/utils";
 // components
+import { LeaveProjectModal } from "@/components/project/leave-project-modal";
 import { CreateProjectModal } from "@/components/project/create-project-modal";
+import { PublishProjectModal } from "@/components/project/publish-project/modal";
 import { SidebarProjectsListItem } from "@/components/workspace/sidebar/projects-list-item";
 // hooks
 import { useAppTheme } from "@/hooks/store/use-app-theme";
@@ -31,6 +33,8 @@ export const ExtendedProjectSidebar = observer(function ExtendedProjectSidebar()
   const [searchQuery, setSearchQuery] = useState<string>("");
   // states
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [activeLeaveProjectId, setActiveLeaveProjectId] = useState<string | null>(null);
+  const [activePublishProjectId, setActivePublishProjectId] = useState<string | null>(null);
   // routers
   const { workspaceSlug } = useParams();
   // store hooks
@@ -81,16 +85,16 @@ export const ExtendedProjectSidebar = observer(function ExtendedProjectSidebar()
     [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
     EUserPermissionsLevel.WORKSPACE
   );
+  const activeLeaveProject = activeLeaveProjectId ? getPartialProjectById(activeLeaveProjectId) : null;
 
   const handleClose = useCallback(() => toggleExtendedProjectSidebar(false), [toggleExtendedProjectSidebar]);
 
-  const handleCopyText = (projectId: string) => {
-    copyUrlToClipboard(`${workspaceSlug}/projects/${projectId}/issues`).then(() => {
-      setToast({
-        type: TOAST_TYPE.SUCCESS,
-        title: t("link_copied"),
-        message: t("project_link_copied_to_clipboard"),
-      });
+  const handleCopyText = async (projectId: string) => {
+    await copyUrlToClipboard(`${workspaceSlug}/projects/${projectId}/issues`);
+    setToast({
+      type: TOAST_TYPE.SUCCESS,
+      title: t("link_copied"),
+      message: t("project_link_copied_to_clipboard"),
     });
   };
   return (
@@ -102,6 +106,16 @@ export const ExtendedProjectSidebar = observer(function ExtendedProjectSidebar()
           setToFavorite={false}
           workspaceSlug={workspaceSlug.toString()}
         />
+      )}
+      {activePublishProjectId && (
+        <PublishProjectModal
+          isOpen
+          projectId={activePublishProjectId}
+          onClose={() => setActivePublishProjectId(null)}
+        />
+      )}
+      {activeLeaveProject && (
+        <LeaveProjectModal project={activeLeaveProject} isOpen onClose={() => setActiveLeaveProjectId(null)} />
       )}
       <ExtendedSidebarWrapper
         isExtendedSidebarOpened={!!isExtendedProjectSidebarOpened}
@@ -134,6 +148,7 @@ export const ExtendedProjectSidebar = observer(function ExtendedProjectSidebar()
               className="w-full max-w-[234px] border-none bg-transparent text-13 outline-none placeholder:text-placeholder"
               placeholder={t("search")}
               value={searchQuery}
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -162,6 +177,8 @@ export const ExtendedProjectSidebar = observer(function ExtendedProjectSidebar()
                 isLastChild={index === filteredProjects.length - 1}
                 handleOnProjectDrop={handleOnProjectDrop}
                 renderInExtendedSidebar
+                onLeaveProject={setActiveLeaveProjectId}
+                onPublishProject={setActivePublishProjectId}
               />
             ))}
           </div>

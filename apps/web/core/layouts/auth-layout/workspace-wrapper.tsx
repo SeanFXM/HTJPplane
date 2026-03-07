@@ -5,6 +5,7 @@
  */
 
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { observer } from "mobx-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -46,8 +47,11 @@ interface IWorkspaceAuthWrapper {
   isLoading?: boolean;
 }
 
+const DEFERRED_WORKSPACE_PREFETCH_DELAY = 150;
+
 export const WorkspaceAuthWrapper = observer(function WorkspaceAuthWrapper(props: IWorkspaceAuthWrapper) {
   const { children, isLoading: isParentLoading = false } = props;
+  const [shouldLoadDeferredWorkspaceData, setShouldLoadDeferredWorkspaceData] = useState(false);
   const { t } = useTranslation();
   // router params
   const { workspaceSlug } = useParams();
@@ -73,6 +77,28 @@ export const WorkspaceAuthWrapper = observer(function WorkspaceAuthWrapper(props
     (allWorkspaces && allWorkspaces.find((workspace) => workspace?.slug === workspaceSlug)) || undefined;
   const currentWorkspaceInfo = workspaceSlug && workspaceInfoBySlug(workspaceSlug.toString());
 
+  useEffect(() => {
+    if (!workspaceSlug || !currentWorkspace) {
+      setShouldLoadDeferredWorkspaceData(false);
+      return;
+    }
+
+    const deferredLoad = () => setShouldLoadDeferredWorkspaceData(true);
+
+    if (typeof window === "undefined") return;
+
+    if ("requestIdleCallback" in window) {
+      const idleCallbackId = window.requestIdleCallback(deferredLoad, {
+        timeout: DEFERRED_WORKSPACE_PREFETCH_DELAY,
+      });
+
+      return () => window.cancelIdleCallback(idleCallbackId);
+    }
+
+    const timeoutId = globalThis.setTimeout(deferredLoad, DEFERRED_WORKSPACE_PREFETCH_DELAY);
+    return () => globalThis.clearTimeout(timeoutId);
+  }, [workspaceSlug, currentWorkspace]);
+
   // fetching user workspace information
   useSWR(
     workspaceSlug && currentWorkspace ? WORKSPACE_MEMBER_ME_INFORMATION(workspaceSlug.toString()) : null,
@@ -93,38 +119,48 @@ export const WorkspaceAuthWrapper = observer(function WorkspaceAuthWrapper(props
   );
   // fetch workspace members
   useSWR(
-    workspaceSlug && currentWorkspace ? WORKSPACE_MEMBERS(workspaceSlug.toString()) : null,
-    workspaceSlug && currentWorkspace ? () => fetchWorkspaceMembers(workspaceSlug.toString()) : null,
+    workspaceSlug && currentWorkspace && shouldLoadDeferredWorkspaceData
+      ? WORKSPACE_MEMBERS(workspaceSlug.toString())
+      : null,
+    workspaceSlug && currentWorkspace && shouldLoadDeferredWorkspaceData
+      ? () => fetchWorkspaceMembers(workspaceSlug.toString())
+      : null,
     { revalidateIfStale: false, revalidateOnFocus: false }
   );
   // fetch workspace favorite
   useSWR(
-    workspaceSlug && currentWorkspace && canPerformWorkspaceMemberActions
+    workspaceSlug && currentWorkspace && canPerformWorkspaceMemberActions && shouldLoadDeferredWorkspaceData
       ? WORKSPACE_FAVORITE(workspaceSlug.toString())
       : null,
-    workspaceSlug && currentWorkspace && canPerformWorkspaceMemberActions
+    workspaceSlug && currentWorkspace && canPerformWorkspaceMemberActions && shouldLoadDeferredWorkspaceData
       ? () => fetchFavorite(workspaceSlug.toString())
       : null,
     { revalidateIfStale: false, revalidateOnFocus: false }
   );
   // fetch workspace states
   useSWR(
-    workspaceSlug ? WORKSPACE_STATES(workspaceSlug.toString()) : null,
-    workspaceSlug ? () => fetchWorkspaceStates(workspaceSlug.toString()) : null,
+    workspaceSlug && shouldLoadDeferredWorkspaceData ? WORKSPACE_STATES(workspaceSlug.toString()) : null,
+    workspaceSlug && shouldLoadDeferredWorkspaceData ? () => fetchWorkspaceStates(workspaceSlug.toString()) : null,
     { revalidateIfStale: false, revalidateOnFocus: false }
   );
 
   // fetch workspace sidebar preferences
   useSWR(
-    workspaceSlug ? WORKSPACE_SIDEBAR_PREFERENCES(workspaceSlug.toString()) : null,
-    workspaceSlug ? () => fetchSidebarNavigationPreferences(workspaceSlug.toString()) : null,
+    workspaceSlug && shouldLoadDeferredWorkspaceData ? WORKSPACE_SIDEBAR_PREFERENCES(workspaceSlug.toString()) : null,
+    workspaceSlug && shouldLoadDeferredWorkspaceData
+      ? () => fetchSidebarNavigationPreferences(workspaceSlug.toString())
+      : null,
     { revalidateIfStale: false, revalidateOnFocus: false }
   );
 
   // fetch workspace project navigation preferences
   useSWR(
-    workspaceSlug ? WORKSPACE_PROJECT_NAVIGATION_PREFERENCES(workspaceSlug.toString()) : null,
-    workspaceSlug ? () => fetchProjectNavigationPreferences(workspaceSlug.toString()) : null,
+    workspaceSlug && shouldLoadDeferredWorkspaceData
+      ? WORKSPACE_PROJECT_NAVIGATION_PREFERENCES(workspaceSlug.toString())
+      : null,
+    workspaceSlug && shouldLoadDeferredWorkspaceData
+      ? () => fetchProjectNavigationPreferences(workspaceSlug.toString())
+      : null,
     { revalidateIfStale: false, revalidateOnFocus: false }
   );
 

@@ -21,7 +21,9 @@ import { Tooltip } from "@plane/propel/tooltip";
 import { Loader } from "@plane/ui";
 import { copyUrlToClipboard, cn, orderJoinedProjects } from "@plane/utils";
 // components
+import { LeaveProjectModal } from "@/components/project/leave-project-modal";
 import { CreateProjectModal } from "@/components/project/create-project-modal";
+import { PublishProjectModal } from "@/components/project/publish-project/modal";
 import { SidebarNavItem } from "@/components/sidebar/sidebar-navigation";
 // hooks
 import { useAppTheme } from "@/hooks/store/use-app-theme";
@@ -39,6 +41,8 @@ export const SidebarProjectsList = observer(function SidebarProjectsList() {
   const [isAllProjectsListOpen, setIsAllProjectsListOpen] = useState(true);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false); // scroll animation state
+  const [activeLeaveProjectId, setActiveLeaveProjectId] = useState<string | null>(null);
+  const [activePublishProjectId, setActivePublishProjectId] = useState<string | null>(null);
   // refs
   const containerRef = useRef<HTMLDivElement | null>(null);
   // store hooks
@@ -67,14 +71,15 @@ export const SidebarProjectsList = observer(function SidebarProjectsList() {
   // Check if there are more projects to show
   const hasMoreProjects =
     projectPreferences.showLimitedProjects && joinedProjects.length > projectPreferences.limitedProjectsCount;
+  const activeLeaveProject = activeLeaveProjectId ? getPartialProjectById(activeLeaveProjectId) : null;
+  const projectLoaderPlaceholders = ["project-loader-1", "project-loader-2", "project-loader-3", "project-loader-4"];
 
-  const handleCopyText = (projectId: string) => {
-    copyUrlToClipboard(`${workspaceSlug}/projects/${projectId}/issues`).then(() => {
-      setToast({
-        type: TOAST_TYPE.SUCCESS,
-        title: t("link_copied"),
-        message: t("project_link_copied_to_clipboard"),
-      });
+  const handleCopyText = async (projectId: string) => {
+    await copyUrlToClipboard(`${workspaceSlug}/projects/${projectId}/issues`);
+    setToast({
+      type: TOAST_TYPE.SUCCESS,
+      title: t("link_copied"),
+      message: t("project_link_copied_to_clipboard"),
     });
   };
 
@@ -163,6 +168,16 @@ export const SidebarProjectsList = observer(function SidebarProjectsList() {
           workspaceSlug={workspaceSlug.toString()}
         />
       )}
+      {activePublishProjectId && (
+        <PublishProjectModal
+          isOpen
+          projectId={activePublishProjectId}
+          onClose={() => setActivePublishProjectId(null)}
+        />
+      )}
+      {activeLeaveProject && (
+        <LeaveProjectModal project={activeLeaveProject} isOpen onClose={() => setActiveLeaveProjectId(null)} />
+      )}
       <div
         ref={containerRef}
         className={cn({
@@ -229,8 +244,8 @@ export const SidebarProjectsList = observer(function SidebarProjectsList() {
             >
               {loader === "init-loader" && (
                 <Loader className="w-full space-y-1.5">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <Loader.Item key={index} height="28px" />
+                  {projectLoaderPlaceholders.map((placeholderId) => (
+                    <Loader.Item key={placeholderId} height="28px" />
                   ))}
                 </Loader>
               )}
@@ -247,6 +262,8 @@ export const SidebarProjectsList = observer(function SidebarProjectsList() {
                         disableDrop={false}
                         isLastChild={index === displayedProjects.length - 1}
                         handleOnProjectDrop={handleOnProjectDrop}
+                        onLeaveProject={setActiveLeaveProjectId}
+                        onPublishProject={setActivePublishProjectId}
                       />
                     ))}
                     {hasMoreProjects && (

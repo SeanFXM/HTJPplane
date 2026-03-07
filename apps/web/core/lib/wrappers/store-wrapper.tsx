@@ -40,6 +40,7 @@ function StoreWrapper(props: TStoreWrapper) {
   const currentUserIdRef = useRef<string | undefined>(undefined);
   // Track previous theme to detect transitions from custom theme
   const previousThemeRef = useRef<string | undefined>(undefined);
+  const previousParamsRef = useRef("");
 
   /**
    * Sidebar collapsed fetching from local storage
@@ -114,6 +115,11 @@ function StoreWrapper(props: TStoreWrapper) {
 
   useEffect(() => {
     if (!params) return;
+
+    const serializedParams = JSON.stringify(params);
+    if (serializedParams === previousParamsRef.current) return;
+
+    previousParamsRef.current = serializedParams;
     setQuery(params);
   }, [params, setQuery]);
 

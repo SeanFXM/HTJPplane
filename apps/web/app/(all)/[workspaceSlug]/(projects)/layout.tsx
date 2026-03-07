@@ -7,11 +7,14 @@
 import { observer } from "mobx-react";
 import { Outlet } from "react-router";
 import { ProjectsAppPowerKProvider } from "@/components/power-k/projects-app-provider";
+import { useAppTheme } from "@/hooks/store/use-app-theme";
 // plane web components
 import { ProjectAppSidebar } from "./_sidebar";
 import { ExtendedProjectSidebar } from "./extended-project-sidebar";
 
 function WorkspaceLayout() {
+  const { isExtendedProjectSidebarOpened } = useAppTheme();
+
   return (
     <>
       <ProjectsAppPowerKProvider />
@@ -19,7 +22,7 @@ function WorkspaceLayout() {
         <div id="full-screen-portal" className="absolute inset-0 w-full" />
         <div className="relative flex size-full overflow-hidden">
           <ProjectAppSidebar />
-          <ExtendedProjectSidebar />
+          {isExtendedProjectSidebarOpened && <ExtendedProjectSidebar />}
           <main className="relative flex h-full w-full flex-col overflow-hidden bg-surface-1">
             <Outlet />
           </main>

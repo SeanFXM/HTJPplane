@@ -29,6 +29,12 @@ const isValidURL = (url: string): boolean => {
   return !disallowedSchemes.test(url);
 };
 
+const LoadingScreen = () => (
+  <div className="relative flex h-screen w-full items-center justify-center">
+    <LogoSpinner />
+  </div>
+);
+
 export const AuthenticationWrapper = observer(function AuthenticationWrapper(props: TAuthenticationWrapper) {
   const pathname = usePathname();
   const router = useAppRouter();
@@ -38,8 +44,8 @@ export const AuthenticationWrapper = observer(function AuthenticationWrapper(pro
   const { children, pageType = EPageTypes.AUTHENTICATED } = props;
   // hooks
   const { isLoading: isUserLoading, data: currentUser, fetchCurrentUser } = useUser();
-  const { data: currentUserProfile } = useUserProfile();
-  const { data: currentUserSettings } = useUserSettings();
+  const { data: currentUserProfile, isLoading: isUserProfileLoading } = useUserProfile();
+  const { data: currentUserSettings, isLoading: isUserSettingsLoading } = useUserSettings();
   const { loader: workspacesLoader, workspaces } = useWorkspace();
 
   const { isLoading: isUserSWRLoading } = useSWR("USER_INFORMATION", async () => await fetchCurrentUser(), {
@@ -78,18 +84,15 @@ export const AuthenticationWrapper = observer(function AuthenticationWrapper(pro
     return redirectionRoute;
   };
 
-  if ((isUserSWRLoading || isUserLoading || workspacesLoader) && !currentUser?.id)
-    return (
-      <div className="relative flex h-screen w-full items-center justify-center">
-        <LogoSpinner />
-      </div>
-    );
+  if ((isUserSWRLoading || isUserLoading) && !currentUser?.id) return <LoadingScreen />;
 
   if (pageType === EPageTypes.PUBLIC) return <>{children}</>;
 
   if (pageType === EPageTypes.NON_AUTHENTICATED) {
     if (!currentUser?.id) return <>{children}</>;
     else {
+      if (isUserProfileLoading || isUserSettingsLoading || workspacesLoader) return <LoadingScreen />;
+
       if (currentUserProfile?.id && isUserOnboard) {
         const currentRedirectRoute = getWorkspaceRedirectionUrl();
         router.push(currentRedirectRoute);
@@ -106,7 +109,11 @@ export const AuthenticationWrapper = observer(function AuthenticationWrapper(pro
       router.push(`/${pathname ? `?next_path=${pathname}` : ``}`);
       return <></>;
     } else {
+      if (isUserProfileLoading) return <LoadingScreen />;
+
       if (currentUser && currentUserProfile?.id && isUserOnboard) {
+        if (isUserSettingsLoading || workspacesLoader) return <LoadingScreen />;
+
         const currentRedirectRoute = getWorkspaceRedirectionUrl();
         router.replace(currentRedirectRoute);
         return <></>;
@@ -119,7 +126,11 @@ export const AuthenticationWrapper = observer(function AuthenticationWrapper(pro
       router.push(`/${pathname ? `?next_path=${pathname}` : ``}`);
       return <></>;
     } else {
+      if (isUserProfileLoading) return <LoadingScreen />;
+
       if (currentUser && !currentUser?.is_password_autoset && currentUserProfile?.id && isUserOnboard) {
+        if (isUserSettingsLoading || workspacesLoader) return <LoadingScreen />;
+
         const currentRedirectRoute = getWorkspaceRedirectionUrl();
         router.push(currentRedirectRoute);
         return <></>;
@@ -129,6 +140,8 @@ export const AuthenticationWrapper = observer(function AuthenticationWrapper(pro
 
   if (pageType === EPageTypes.AUTHENTICATED) {
     if (currentUser?.id) {
+      if (isUserProfileLoading) return <LoadingScreen />;
+
       if (currentUserProfile && currentUserProfile?.id && isUserOnboard) return <>{children}</>;
       else {
         router.push(`/onboarding`);

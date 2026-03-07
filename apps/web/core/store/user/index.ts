@@ -105,6 +105,14 @@ export class UserStore implements IUserStore {
     });
   }
 
+  private preloadCurrentUserContext = async (): Promise<void> => {
+    await Promise.all([
+      this.userProfile.fetchUserProfile(),
+      this.userSettings.fetchCurrentUserSettings(),
+      this.store.workspaceRoot.fetchWorkspaces(),
+    ]);
+  };
+
   /**
    * @description fetches the current user
    * @returns {Promise<IUser>}
@@ -117,15 +125,13 @@ export class UserStore implements IUserStore {
       });
       const user = await this.userService.currentUser();
       if (user && user?.id) {
-        await Promise.all([
-          this.userProfile.fetchUserProfile(),
-          this.userSettings.fetchCurrentUserSettings(),
-          this.store.workspaceRoot.fetchWorkspaces(),
-        ]);
         runInAction(() => {
           this.data = user;
           this.isLoading = false;
           this.isAuthenticated = true;
+        });
+        void this.preloadCurrentUserContext().catch((error) => {
+          console.error("Failed to preload current user context:", error);
         });
       } else
         runInAction(() => {

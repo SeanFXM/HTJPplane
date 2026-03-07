@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // hooks
@@ -13,15 +13,44 @@ import { usePowerK } from "@/hooks/store/use-power-k";
 import { useUser } from "@/hooks/store/user";
 import { useAppRouter } from "@/hooks/use-app-router";
 // plane web imports
-import { ProjectLevelModals } from "@/plane-web/components/command-palette/modals/project-level";
-import { WorkItemLevelModals } from "@/plane-web/components/command-palette/modals/work-item-level";
-import { WorkspaceLevelModals } from "@/plane-web/components/command-palette/modals/workspace-level";
 // local imports
 import { useProjectsAppPowerKCommands } from "./config/commands";
 import type { TPowerKCommandConfig, TPowerKContext } from "./core/types";
 import { GlobalShortcutsProvider } from "./global-shortcuts";
-import { ProjectsAppPowerKCommandsList } from "./ui/modal/commands-list";
-import { ProjectsAppPowerKModalWrapper } from "./ui/modal/wrapper";
+import type { TPowerKCommandsListProps } from "./ui/modal/commands-list";
+
+const WorkspaceLevelModals = lazy(async () =>
+  import("@/plane-web/components/command-palette/modals/workspace-level").then((module) => ({
+    default: module.WorkspaceLevelModals,
+  }))
+);
+const ProjectLevelModals = lazy(async () =>
+  import("@/plane-web/components/command-palette/modals/project-level").then((module) => ({
+    default: module.ProjectLevelModals,
+  }))
+);
+const WorkItemLevelModals = lazy(async () =>
+  import("@/plane-web/components/command-palette/modals/work-item-level").then((module) => ({
+    default: module.WorkItemLevelModals,
+  }))
+);
+const LazyProjectsAppPowerKModal = lazy(async () => {
+  const [{ ProjectsAppPowerKModalWrapper }, { ProjectsAppPowerKCommandsList }] = await Promise.all([
+    import("./ui/modal/wrapper"),
+    import("./ui/modal/commands-list"),
+  ]);
+
+  const DeferredProjectsAppPowerKModal = (props: { context: TPowerKContext; isOpen: boolean; onClose: () => void }) => (
+    <ProjectsAppPowerKModalWrapper
+      commandsListComponent={ProjectsAppPowerKCommandsList as React.FC<TPowerKCommandsListProps>}
+      context={props.context}
+      isOpen={props.isOpen}
+      onClose={props.onClose}
+    />
+  );
+
+  return { default: DeferredProjectsAppPowerKModal };
+});
 
 /**
  * Projects App PowerK provider
@@ -46,6 +75,7 @@ export const ProjectsAppPowerKProvider = observer(function ProjectsAppPowerKProv
   const workItemDetails = workItemId ? getIssueById(workItemId) : undefined;
   const projectId: string | string[] | undefined | null = routerProjectId ?? workItemDetails?.project_id;
   const commands = useProjectsAppPowerKCommands();
+  const shouldRenderPowerKOverlays = isPowerKModalOpen || activeCommand !== null;
   // Build command context from props and store
   const context: TPowerKContext = useMemo(
     () => ({
@@ -79,17 +109,20 @@ export const ProjectsAppPowerKProvider = observer(function ProjectsAppPowerKProv
   return (
     <>
       <GlobalShortcutsProvider context={context} commands={commands} />
-      {workspaceSlug && <WorkspaceLevelModals workspaceSlug={workspaceSlug.toString()} />}
-      {workspaceSlug && projectId && (
-        <ProjectLevelModals workspaceSlug={workspaceSlug.toString()} projectId={projectId.toString()} />
+      {shouldRenderPowerKOverlays && (
+        <Suspense fallback={null}>
+          {workspaceSlug && <WorkspaceLevelModals workspaceSlug={workspaceSlug.toString()} />}
+          {workspaceSlug && projectId && (
+            <ProjectLevelModals workspaceSlug={workspaceSlug.toString()} projectId={projectId.toString()} />
+          )}
+          <WorkItemLevelModals workItemIdentifier={workItemIdentifier?.toString()} />
+          <LazyProjectsAppPowerKModal
+            context={context}
+            isOpen={isPowerKModalOpen}
+            onClose={() => togglePowerKModal(false)}
+          />
+        </Suspense>
       )}
-      <WorkItemLevelModals workItemIdentifier={workItemIdentifier?.toString()} />
-      <ProjectsAppPowerKModalWrapper
-        commandsListComponent={ProjectsAppPowerKCommandsList}
-        context={context}
-        isOpen={isPowerKModalOpen}
-        onClose={() => togglePowerKModal(false)}
-      />
     </>
   );
 });
