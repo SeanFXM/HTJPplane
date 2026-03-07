@@ -48,6 +48,7 @@ export const WorkspaceMenuRoot = observer(function WorkspaceMenuRoot(props: Work
   const { t } = useTranslation();
   // local state
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
+  const workspaceHomeHref = activeWorkspace?.slug ? `/${activeWorkspace.slug}/` : "/";
 
   const handleWorkspaceNavigation = (workspace: IWorkspace) => updateUserProfile({ last_workspace_id: workspace?.id });
 
@@ -111,29 +112,34 @@ export const WorkspaceMenuRoot = observer(function WorkspaceMenuRoot(props: Work
               </Menu.Button>
             )}
             {variant === "top-navigation" && (
-              <Menu.Button
-                className={cn(
-                  "group/menu-button flex flex-grow items-center justify-between gap-1 truncate rounded-sm p-1 text-13 font-medium text-secondary hover:bg-layer-1 focus:outline-none",
-                  {
-                    "bg-layer-1": open,
-                  }
-                )}
-                aria-label={t("aria_labels.projects_sidebar.open_workspace_switcher")}
-              >
-                <div className="flex flex-grow items-center gap-2 truncate">
+              <div className="flex flex-grow items-center gap-1 truncate">
+                <Link
+                  href={workspaceHomeHref}
+                  className="group/home-link flex min-w-0 flex-grow items-center gap-2 truncate rounded-sm p-1 text-13 font-medium text-secondary hover:bg-layer-1"
+                >
                   <WorkspaceLogo
                     logo={activeWorkspace?.logo_url}
                     name={activeWorkspace?.name}
                     classNames="border border-subtle rounded-md size-7"
                   />
                   <h4 className="truncate text-14 font-medium text-primary">{activeWorkspace?.name ?? t("loading")}</h4>
-                </div>
-                <ChevronDownIcon
-                  className={cn("size-4 flex-shrink-0 text-placeholder duration-300", {
-                    "rotate-180": open,
-                  })}
-                />
-              </Menu.Button>
+                </Link>
+                <Menu.Button
+                  className={cn(
+                    "flex size-7 flex-shrink-0 items-center justify-center rounded-sm text-secondary hover:bg-layer-1 focus:outline-none",
+                    {
+                      "bg-layer-1": open,
+                    }
+                  )}
+                  aria-label={t("aria_labels.projects_sidebar.open_workspace_switcher")}
+                >
+                  <ChevronDownIcon
+                    className={cn("size-4 flex-shrink-0 text-placeholder duration-300", {
+                      "rotate-180": open,
+                    })}
+                  />
+                </Menu.Button>
+              </div>
             )}
             <Transition
               as={Fragment}

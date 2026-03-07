@@ -6,6 +6,7 @@
 
 import { ArrowLeft } from "lucide-react";
 import { observer } from "mobx-react";
+import Link from "next/link";
 // plane imports
 import { ROLE_DETAILS } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
@@ -29,6 +30,7 @@ export const WorkspaceSettingsSidebarHeader = observer(function WorkspaceSetting
   const currentWorkspaceRole = currentWorkspace?.slug
     ? getWorkspaceRoleByWorkspaceSlug(currentWorkspace.slug)
     : undefined;
+  const workspaceHomeHref = currentWorkspace?.slug ? `/${currentWorkspace.slug}/` : "/";
   // translation
   const { t } = useTranslation();
 
@@ -46,7 +48,7 @@ export const WorkspaceSettingsSidebarHeader = observer(function WorkspaceSetting
         <p>Workspace settings</p>
       </div>
       <div className="mt-1.5 flex items-center justify-between gap-2 px-5 py-0.5">
-        <div className="flex items-center gap-2 truncate">
+        <Link href={workspaceHomeHref} className="flex min-w-0 items-center gap-2 truncate rounded-sm">
           <WorkspaceLogo
             logo={currentWorkspace?.logo_url}
             name={currentWorkspace?.name}
@@ -56,7 +58,7 @@ export const WorkspaceSettingsSidebarHeader = observer(function WorkspaceSetting
             <p className="truncate text-body-sm-medium">{currentWorkspace?.name}</p>
             <p className="truncate text-caption-md-regular">{t(ROLE_DETAILS[currentWorkspaceRole].i18n_title)}</p>
           </div>
-        </div>
+        </Link>
         <div className="shrink-0">
           <SubscriptionPill />
         </div>
