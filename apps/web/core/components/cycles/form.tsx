@@ -65,9 +65,10 @@ export function CycleForm(props: Props) {
   useEffect(() => {
     reset({
       ...defaultValues,
+      project_id: data?.project_id ?? projectId,
       ...data,
     });
-  }, [data, reset]);
+  }, [data, projectId, reset]);
 
   return (
     <form onSubmit={handleSubmit((formData) => handleFormSubmit(formData))}>

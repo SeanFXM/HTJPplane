@@ -70,15 +70,17 @@ export function ModuleForm(props: Props) {
 
     reset({
       ...defaultValues,
+      project_id: projectId,
     });
   };
 
   useEffect(() => {
     reset({
       ...defaultValues,
+      project_id: data?.project_id ?? projectId,
       ...data,
     });
-  }, [data, reset]);
+  }, [data, projectId, reset]);
 
   return (
     <form onSubmit={handleSubmit(handleCreateUpdateModule)}>

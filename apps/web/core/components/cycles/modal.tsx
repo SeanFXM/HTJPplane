@@ -48,7 +48,7 @@ export function CycleCreateUpdateModal(props: CycleModalProps) {
   const handleCreateCycle = async (payload: Partial<ICycle>) => {
     if (!workspaceSlug || !projectId) return;
 
-    const selectedProjectId = payload.project_id ?? projectId.toString();
+    const selectedProjectId = payload.project_id || activeProject || projectId.toString();
     await createCycle(workspaceSlug, selectedProjectId, payload)
       .then((res) => {
         // mutate when the current cycle creation is active
@@ -79,7 +79,7 @@ export function CycleCreateUpdateModal(props: CycleModalProps) {
   const handleUpdateCycle = async (cycleId: string, payload: Partial<ICycle>) => {
     if (!workspaceSlug || !projectId) return;
 
-    const selectedProjectId = payload.project_id ?? projectId.toString();
+    const selectedProjectId = payload.project_id || activeProject || projectId.toString();
     await updateCycleDetails(workspaceSlug, selectedProjectId, cycleId, payload)
       .then((res) => {
         setToast({
@@ -110,8 +110,10 @@ export function CycleCreateUpdateModal(props: CycleModalProps) {
   const handleFormSubmit = async (formData: Partial<ICycle>) => {
     if (!workspaceSlug || !projectId) return;
 
+    const selectedProjectId = formData.project_id || activeProject || projectId.toString();
     const payload: Partial<ICycle> = {
       ...formData,
+      project_id: selectedProjectId,
       start_date: renderFormattedPayloadDate(formData.start_date) ?? null,
       end_date: renderFormattedPayloadDate(formData.end_date) ?? null,
     };

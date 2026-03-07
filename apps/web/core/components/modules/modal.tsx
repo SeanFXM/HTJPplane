@@ -56,7 +56,7 @@ export const CreateUpdateModuleModal = observer(function CreateUpdateModuleModal
   const handleCreateModule = async (payload: Partial<IModule>) => {
     if (!workspaceSlug || !projectId) return;
 
-    const selectedProjectId = payload.project_id ?? projectId.toString();
+    const selectedProjectId = payload.project_id || activeProject || projectId.toString();
     await createModule(workspaceSlug.toString(), selectedProjectId, payload)
       .then((res) => {
         handleClose();
@@ -78,7 +78,7 @@ export const CreateUpdateModuleModal = observer(function CreateUpdateModuleModal
   const handleUpdateModule = async (payload: Partial<IModule>) => {
     if (!workspaceSlug || !projectId || !data) return;
 
-    const selectedProjectId = payload.project_id ?? projectId.toString();
+    const selectedProjectId = payload.project_id || activeProject || projectId.toString();
     await updateModuleDetails(workspaceSlug.toString(), selectedProjectId, data.id, payload)
       .then((res) => {
         handleClose();
@@ -101,8 +101,10 @@ export const CreateUpdateModuleModal = observer(function CreateUpdateModuleModal
   const handleFormSubmit = async (formData: Partial<IModule>) => {
     if (!workspaceSlug || !projectId) return;
 
+    const selectedProjectId = formData.project_id || activeProject || projectId.toString();
     const payload: Partial<IModule> = {
       ...formData,
+      project_id: selectedProjectId,
     };
     if (!data) await handleCreateModule(payload);
     else await handleUpdateModule(payload);
