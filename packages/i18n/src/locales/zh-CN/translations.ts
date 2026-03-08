@@ -842,6 +842,12 @@ export default {
     creating: "创建中",
     create: "创建",
     cancel: "取消",
+    join_project_modal: {
+      title: "加入项目？",
+      message: "您确定要加入项目 {projectName} 吗？请点击下方的「加入项目」按钮继续。",
+      confirm: "加入项目",
+      joining: "加入中...",
+    },
     description: "描述",
     title: "标题",
     attachment: "附件",

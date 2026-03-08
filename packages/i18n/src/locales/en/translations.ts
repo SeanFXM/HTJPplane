@@ -692,6 +692,13 @@ export default {
     creating: "Creating",
     create: "Create",
     cancel: "Cancel",
+    join_project_modal: {
+      title: "Join Project?",
+      message:
+        "Are you sure you want to join the project {projectName}? Please click the 'Join Project' button below to continue.",
+      confirm: "Join Project",
+      joining: "Joining...",
+    },
     description: "Description",
     title: "Title",
     attachment: "Attachment",

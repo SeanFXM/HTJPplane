@@ -855,6 +855,13 @@ export default {
     creating: "作成中",
     create: "作成",
     cancel: "キャンセル",
+    join_project_modal: {
+      title: "プロジェクトに参加しますか？",
+      message:
+        "プロジェクト {projectName} に参加してもよろしいですか？続行するには下の「プロジェクトに参加」ボタンをクリックしてください。",
+      confirm: "プロジェクトに参加",
+      joining: "参加中...",
+    },
     description: "説明",
     title: "タイトル",
     attachment: "添付ファイル",
