@@ -132,6 +132,7 @@ const getBaseNotificationContentDetails = (
   if (isMentionedNotification) {
     return {
       action: t("notification.content.actions.mentioned_you"),
+      value: sanitizeCommentForNotification(newValue) || null,
       suffix: null,
     };
   }
@@ -281,6 +282,7 @@ const getBaseNotificationContentDetails = (
           verb === "deleted"
             ? t("notification.content.actions.removed_attachment")
             : t("notification.content.actions.uploaded_attachment"),
+        value: null,
         suffix: null,
       };
     case "description":
