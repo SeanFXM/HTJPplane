@@ -876,6 +876,8 @@ export default {
     properties: "プロパティ",
     parent: "親",
     page: "ページ",
+    pages: "ページ",
+    views: "ビュー",
     remove: "削除",
     archiving: "アーカイブ中",
     archive: "アーカイブ",

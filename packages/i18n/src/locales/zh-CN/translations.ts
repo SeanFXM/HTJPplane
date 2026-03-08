@@ -863,6 +863,8 @@ export default {
     properties: "属性",
     parent: "父项",
     page: "页面",
+    pages: "页面",
+    views: "视图",
     remove: "移除",
     archiving: "归档中",
     archive: "归档",

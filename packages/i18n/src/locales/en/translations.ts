@@ -713,6 +713,8 @@ export default {
     properties: "Properties",
     parent: "Parent",
     page: "Page",
+    pages: "Pages",
+    views: "Views",
     remove: "Remove",
     archiving: "Archiving",
     archive: "Archive",
