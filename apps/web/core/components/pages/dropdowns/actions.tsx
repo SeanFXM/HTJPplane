@@ -108,14 +108,14 @@ export const PageActions = observer(function PageActions(props: Props) {
         {
           key: "open-in-new-tab",
           action: pageOperations.openInNewTab,
-          title: t("common.open_in_new_tab"),
+          title: t("open_in_new_tab"),
           icon: NewTabIcon,
           shouldRender: true,
         },
         {
           key: "copy-link",
           action: pageOperations.copyLink,
-          title: t("common.copy_link"),
+          title: t("copy_link"),
           icon: LinkIcon,
           shouldRender: true,
         },
@@ -124,7 +124,7 @@ export const PageActions = observer(function PageActions(props: Props) {
           action: () => {
             pageOperations.duplicate();
           },
-          title: t("common.make_a_copy"),
+          title: t("make_a_copy"),
           icon: CopyIcon,
           shouldRender: canCurrentUserDuplicatePage,
         },
@@ -144,14 +144,14 @@ export const PageActions = observer(function PageActions(props: Props) {
           action: () => {
             setDeletePageModal(true);
           },
-          title: t("common.delete"),
+          title: t("delete"),
           icon: TrashIcon,
           shouldRender: canCurrentUserDeletePage && !!archived_at,
         },
         {
           key: "move",
           action: () => setMovePageModal(true),
-          title: t("common.move_to_project"),
+          title: t("move_to_project"),
           icon: FileOutput,
           shouldRender: canCurrentUserMovePage && isMovePageEnabled,
         },
