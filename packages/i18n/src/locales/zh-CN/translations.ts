@@ -2104,6 +2104,26 @@ export default {
         error: "项目无法更新。请重试。",
       },
     },
+    danger_zone: {
+      archive_project: {
+        title: "归档项目",
+        description:
+          "归档项目将从您的侧边导航中取消列出您的项目，但您仍然可以从项目页面访问它。您可以随时恢复或删除项目。",
+        button: "归档项目",
+      },
+      delete_project: {
+        title: "删除项目",
+        description: "删除项目时，该项目内的所有数据和资源将被永久删除且无法恢复。",
+        button: "删除我的项目",
+        confirmation_message: "您确定要删除项目 {projectName} 吗？与该项目相关的所有数据将被永久删除。此操作无法撤消。",
+        enter_project_name_to_continue: "输入项目名称 {projectName} 以继续：",
+        type_to_confirm: "为确认，请在下方输入 {phrase}：",
+        confirm_phrase: "删除我的项目",
+        confirm_placeholder: "输入「{phrase}」",
+        toast_success: "项目已成功删除。",
+        toast_error: "出现错误。请稍后重试。",
+      },
+    },
     members: {
       label: "成员",
       project_lead: "项目负责人",

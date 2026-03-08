@@ -2130,6 +2130,28 @@ export default {
         error: "プロジェクトを更新できませんでした。もう一度お試しください。",
       },
     },
+    danger_zone: {
+      archive_project: {
+        title: "プロジェクトをアーカイブ",
+        description:
+          "プロジェクトをアーカイブすると、サイドナビゲーションから非表示になりますが、プロジェクトページからアクセスすることはできます。プロジェクトを復元または削除することもできます。",
+        button: "プロジェクトをアーカイブ",
+      },
+      delete_project: {
+        title: "プロジェクトを削除",
+        description:
+          "プロジェクトを削除すると、そのプロジェクト内のすべてのデータとリソースが永久に削除され、復元できなくなります。",
+        button: "プロジェクトを削除",
+        confirmation_message:
+          "プロジェクト {projectName} を削除してもよろしいですか？プロジェクトに関連するすべてのデータが永久に削除されます。この操作は元に戻せません。",
+        enter_project_name_to_continue: "続行するには、プロジェクト名 {projectName} を入力してください：",
+        type_to_confirm: "確認するには、下に {phrase} と入力してください：",
+        confirm_phrase: "delete my project",
+        confirm_placeholder: "「{phrase}」と入力",
+        toast_success: "プロジェクトが正常に削除されました。",
+        toast_error: "エラーが発生しました。後でもう一度お試しください。",
+      },
+    },
     members: {
       label: "メンバー",
       project_lead: "プロジェクトリーダー",

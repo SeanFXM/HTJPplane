@@ -45,7 +45,8 @@ export function DeleteProjectModal(props: DeleteProjectModal) {
     watch,
   } = useForm({ defaultValues });
 
-  const canDelete = watch("projectName") === project?.name && watch("confirmDelete") === "delete my project";
+  const confirmPhrase = t("project_settings.danger_zone.delete_project.confirm_phrase");
+  const canDelete = watch("projectName") === project?.name && watch("confirmDelete") === confirmPhrase;
 
   const handleClose = () => {
     const timer = setTimeout(() => {
@@ -65,14 +66,14 @@ export function DeleteProjectModal(props: DeleteProjectModal) {
       handleClose();
       setToast({
         type: TOAST_TYPE.SUCCESS,
-        title: "Success!",
-        message: "Project deleted successfully.",
+        title: t("success"),
+        message: t("project_settings.danger_zone.delete_project.toast_success"),
       });
     } catch (_error) {
       setToast({
         type: TOAST_TYPE.ERROR,
-        title: "Error!",
-        message: "Something went wrong. Please try again later.",
+        title: t("error"),
+        message: t("project_settings.danger_zone.delete_project.toast_error"),
       });
     }
   };
@@ -85,18 +86,23 @@ export function DeleteProjectModal(props: DeleteProjectModal) {
             <AlertTriangle className="h-6 w-6 text-danger-primary" aria-hidden="true" />
           </span>
           <span className="flex items-center justify-start">
-            <h3 className="text-18 font-medium 2xl:text-20">Delete project</h3>
+            <h3 className="text-18 font-medium 2xl:text-20">
+              {t("project_settings.danger_zone.delete_project.title")}
+            </h3>
           </span>
         </div>
         <span>
           <p className="text-13 leading-7 text-secondary">
-            Are you sure you want to delete project <span className="font-semibold break-words">{project?.name}</span>?
-            All of the data related to the project will be permanently removed. This action cannot be undone
+            {t("project_settings.danger_zone.delete_project.confirmation_message", {
+              projectName: project?.name ?? "",
+            })}
           </p>
         </span>
         <div className="text-secondary">
           <p className="text-13 break-words">
-            Enter the project name <span className="font-medium text-primary">{project?.name}</span> to continue:
+            {t("project_settings.danger_zone.delete_project.enter_project_name_to_continue", {
+              projectName: project?.name ?? "",
+            })}
           </p>
           <Controller
             control={control}
@@ -119,7 +125,9 @@ export function DeleteProjectModal(props: DeleteProjectModal) {
         </div>
         <div className="text-secondary">
           <p className="text-13">
-            To confirm, type <span className="font-medium text-primary">delete my project</span> below:
+            {t("project_settings.danger_zone.delete_project.type_to_confirm", {
+              phrase: confirmPhrase,
+            })}
           </p>
           <Controller
             control={control}
@@ -133,7 +141,9 @@ export function DeleteProjectModal(props: DeleteProjectModal) {
                 onChange={onChange}
                 ref={ref}
                 hasError={Boolean(errors.confirmDelete)}
-                placeholder={t("common.enter_delete_my_project")}
+                placeholder={t("project_settings.danger_zone.delete_project.confirm_placeholder", {
+                  phrase: confirmPhrase,
+                })}
                 className="mt-2 w-full"
                 autoComplete="off"
               />
@@ -142,10 +152,10 @@ export function DeleteProjectModal(props: DeleteProjectModal) {
         </div>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" size="lg" onClick={handleClose}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button variant="error-fill" size="lg" type="submit" disabled={!canDelete} loading={isSubmitting}>
-            {isSubmitting ? t("common.deleting") : t("project_settings.danger_zone.delete_project.title")}
+            {isSubmitting ? t("common.deleting") : t("project_settings.danger_zone.delete_project.button")}
           </Button>
         </div>
       </form>

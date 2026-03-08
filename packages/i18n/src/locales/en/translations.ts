@@ -1985,6 +1985,28 @@ export default {
         error: "Project could not be updated. Please try again.",
       },
     },
+    danger_zone: {
+      archive_project: {
+        title: "Archive project",
+        description:
+          "Archiving a project will unlist your project from your side navigation although you will still be able to access it from your projects page. You can restore the project or delete it whenever you want.",
+        button: "Archive project",
+      },
+      delete_project: {
+        title: "Delete project",
+        description:
+          "When deleting a project, all of the data and resources within that project will be permanently removed and cannot be recovered.",
+        button: "Delete my project",
+        confirmation_message:
+          "Are you sure you want to delete project {projectName}? All of the data related to the project will be permanently removed. This action cannot be undone.",
+        enter_project_name_to_continue: "Enter the project name {projectName} to continue:",
+        type_to_confirm: "To confirm, type {phrase} below:",
+        confirm_phrase: "delete my project",
+        confirm_placeholder: "Enter '{phrase}'",
+        toast_success: "Project deleted successfully.",
+        toast_error: "Something went wrong. Please try again later.",
+      },
+    },
     members: {
       label: "Members",
       project_lead: "Project lead",
