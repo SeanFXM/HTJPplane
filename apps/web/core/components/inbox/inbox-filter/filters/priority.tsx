@@ -4,11 +4,12 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { useState } from "react";
 import { observer } from "mobx-react";
 import { ISSUE_PRIORITIES } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
+// lib
+import { getPriorityDisplayName } from "@/lib/priority-display";
 import { PriorityIcon } from "@plane/propel/icons";
 import type { TIssuePriorities } from "@plane/types";
 // plane constants
@@ -49,10 +50,10 @@ export const FilterPriority = observer(function FilterPriority(props: Props) {
             filteredOptions.map((priority) => (
               <FilterOption
                 key={priority.key}
-                isChecked={filterValue?.includes(priority.key) ? true : false}
+                isChecked={!!filterValue?.includes(priority.key)}
                 onClick={() => handleInboxIssueFilters("priority", handleFilterValue(priority.key))}
                 icon={<PriorityIcon priority={priority.key} className="h-3.5 w-3.5" />}
-                title={priority.title}
+                title={getPriorityDisplayName(priority.key, t)}
               />
             ))
           ) : (

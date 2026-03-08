@@ -907,6 +907,7 @@ export default {
     links_count: "{count, plural, one {# 个链接} other {# 个链接}}",
     attachments_count: "{count, plural, one {# 个附件} other {# 个附件}}",
     sub_work_items_count: "{count, plural, one {# 个子工作项} other {# 个子工作项}}",
+    modules_count: "{count, plural, one {# 个模块} other {# 个模块}}",
     select_labels: "选择标签",
     select_modules: "选择模块",
     select_date: "选择日期",

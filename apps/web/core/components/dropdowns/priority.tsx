@@ -19,6 +19,8 @@ import type { TIssuePriorities } from "@plane/types";
 import { ComboDropDown } from "@plane/ui";
 // helpers
 import { cn } from "@plane/utils";
+// lib
+import { getPriorityDisplayName } from "@/lib/priority-display";
 // hooks
 import { useDropdown } from "@/hooks/use-dropdown";
 import { usePlatformOS } from "@/hooks/use-platform-os";
@@ -66,8 +68,6 @@ function BorderButton(props: ButtonProps) {
     renderToolTipByDefault = true,
   } = props;
 
-  const priorityDetails = ISSUE_PRIORITIES.find((p) => p.key === priority);
-
   const priorityClasses = {
     urgent: "bg-layer-2 border-priority-urgent px-1",
     high: "bg-layer-2 border-priority-high",
@@ -82,7 +82,7 @@ function BorderButton(props: ButtonProps) {
   return (
     <Tooltip
       tooltipHeading={t("priority")}
-      tooltipContent={priorityDetails?.title ?? t("common.none")}
+      tooltipContent={getPriorityDisplayName(priority, t)}
       disabled={!showTooltip}
       isMobile={isMobile}
       renderByDefault={renderToolTipByDefault}
@@ -132,7 +132,7 @@ function BorderButton(props: ButtonProps) {
               "text-placeholder": !priority || priority === "none",
             })}
           >
-            {priorityDetails?.title ?? placeholder}
+            {getPriorityDisplayName(priority, t) || placeholder}
           </span>
         )}
         {dropdownArrow && (
@@ -157,8 +157,6 @@ function BackgroundButton(props: ButtonProps) {
     renderToolTipByDefault = true,
   } = props;
 
-  const priorityDetails = ISSUE_PRIORITIES.find((p) => p.key === priority);
-
   const priorityClasses = {
     urgent: "bg-layer-2",
     high: "bg-layer-2",
@@ -173,7 +171,7 @@ function BackgroundButton(props: ButtonProps) {
   return (
     <Tooltip
       tooltipHeading={t("priority")}
-      tooltipContent={t(priorityDetails?.key ?? "none")}
+      tooltipContent={getPriorityDisplayName(priority, t)}
       disabled={!showTooltip}
       isMobile={isMobile}
       renderByDefault={renderToolTipByDefault}
@@ -223,7 +221,7 @@ function BackgroundButton(props: ButtonProps) {
               "text-placeholder": !priority || priority === "none",
             })}
           >
-            {priorityDetails?.title ?? t("common.priority") ?? placeholder}
+            {getPriorityDisplayName(priority, t) || placeholder}
           </span>
         )}
         {dropdownArrow && (
@@ -257,7 +255,7 @@ function TransparentButton(props: ButtonProps) {
   return (
     <Tooltip
       tooltipHeading={t("priority")}
-      tooltipContent={priorityDetails?.title ?? t("common.none")}
+      tooltipContent={getPriorityDisplayName(priority, t)}
       disabled={!showTooltip}
       isMobile={isMobile}
       renderByDefault={renderToolTipByDefault}
@@ -307,7 +305,7 @@ function TransparentButton(props: ButtonProps) {
               "text-placeholder": !priority || priority === "none",
             })}
           >
-            {priorityDetails?.title ?? t("common.priority") ?? placeholder}
+            {getPriorityDisplayName(priority, t) || placeholder}
           </span>
         )}
         {dropdownArrow && (
@@ -369,7 +367,7 @@ export function PriorityDropdown(props: Props) {
     content: (
       <div className="flex items-center gap-2">
         <PriorityIcon priority={priority.key} size={14} withContainer />
-        <span className="flex-grow truncate">{priority.title}</span>
+        <span className="flex-grow truncate">{getPriorityDisplayName(priority.key, t)}</span>
       </div>
     ),
   }));

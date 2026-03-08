@@ -757,6 +757,7 @@ export default {
     links_count: "{count, plural, one {# link} other {# links}}",
     attachments_count: "{count, plural, one {# attachment} other {# attachments}}",
     sub_work_items_count: "{count, plural, one {# sub-work item} other {# sub-work items}}",
+    modules_count: "{count, plural, one {# module} other {# modules}}",
     select_labels: "Select labels",
     select_modules: "Select modules",
     select_date: "Select date",

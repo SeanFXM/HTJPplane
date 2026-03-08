@@ -9,6 +9,8 @@ import { observer } from "mobx-react";
 // plane constants
 import { ISSUE_PRIORITIES } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
+// lib
+import { getPriorityDisplayName } from "@/lib/priority-display";
 // ui
 import { PriorityIcon } from "@plane/propel/icons";
 
@@ -42,10 +44,10 @@ export const FilterPriority = observer(function FilterPriority(props: Props) {
             filteredOptions.map((priority) => (
               <FilterOption
                 key={priority.key}
-                isChecked={appliedFilters?.includes(priority.key) ? true : false}
+                isChecked={!!appliedFilters?.includes(priority.key)}
                 onClick={() => handleUpdate(priority.key)}
                 icon={<PriorityIcon priority={priority.key} className="h-3.5 w-3.5" />}
-                title={priority.title}
+                title={getPriorityDisplayName(priority.key, t)}
               />
             ))
           ) : (

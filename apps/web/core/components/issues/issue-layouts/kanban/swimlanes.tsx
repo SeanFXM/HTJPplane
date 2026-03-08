@@ -23,6 +23,7 @@ import type {
 } from "@plane/types";
 import { Row } from "@plane/ui";
 // hooks
+import { getPriorityDisplayName } from "@/lib/priority-display";
 import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 // plane web imports
 import { useWorkFlowFDragNDrop } from "@/plane-web/components/workflow";
@@ -92,7 +93,9 @@ const SubGroupSwimlaneHeader = observer(function SubGroupSwimlaneHeader({
             ? t(`workspace_projects.state.${_list.id}`)
             : isStateWithGroup
               ? t(`workspace_projects.state.${_list.stateGroupKey}`)
-              : _list.name;
+              : group_by === "priority"
+                ? getPriorityDisplayName(_list.id, t)
+                : _list.name;
 
           return (
             <div key={`${sub_group_by}_${_list.id}`} className="flex w-[350px] flex-shrink-0 flex-col">
@@ -206,7 +209,9 @@ const SubGroupSwimlane = observer(function SubGroupSwimlane(props: ISubGroupSwim
                         ? t(`workspace_projects.state.${_list.id}`)
                         : sub_group_by === "state" && _list.stateGroupKey && _list.stateGroupKey in STATE_GROUPS
                           ? t(`workspace_projects.state.${_list.stateGroupKey}`)
-                          : _list.name
+                          : sub_group_by === "priority"
+                            ? getPriorityDisplayName(_list.id, t)
+                            : _list.name
                     }
                     count={issueCount}
                     collapsedGroups={collapsedGroups}

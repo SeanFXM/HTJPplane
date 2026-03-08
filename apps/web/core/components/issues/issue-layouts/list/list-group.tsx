@@ -27,6 +27,7 @@ import { Row } from "@plane/ui";
 import { cn } from "@plane/utils";
 // components
 import { ListLoaderItemRow } from "@/components/ui/loader/layouts/list-layout-loader";
+import { getPriorityDisplayName } from "@/lib/priority-display";
 // hooks
 import { useProjectState } from "@/hooks/store/use-project-state";
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
@@ -274,7 +275,9 @@ export const ListGroup = observer(function ListGroup(props: Props) {
               ? t(`workspace_projects.state.${group.id}`)
               : group_by === "state" && group.stateGroupKey && group.stateGroupKey in STATE_GROUPS
                 ? t(`workspace_projects.state.${group.stateGroupKey}`)
-                : group.name
+                : group_by === "priority"
+                  ? getPriorityDisplayName(group.id, t)
+                  : group.name
           }
           count={groupIssueCount}
           issuePayload={group.payload}

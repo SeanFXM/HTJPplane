@@ -21,6 +21,7 @@ import { EmptyStateCompact } from "@plane/propel/empty-state";
 import type { TBarItem, TChart, TChartDatum, ChartXAxisProperty, ChartYAxisMetric } from "@plane/types";
 // plane web components
 import { generateExtendedColors, parseChartData } from "@/components/chart/utils";
+import { getPriorityDisplayName } from "@/lib/priority-display";
 // hooks
 import { useAnalytics } from "@/hooks/store/use-analytics";
 import { useProjectState } from "@/hooks/store/use-project-state";
@@ -77,11 +78,17 @@ const PriorityChart = observer(function PriorityChart(props: Props) {
         isPeekView
       )
   );
-  const parsedData = useMemo(
-    () =>
-      priorityChartData && parseChartData(priorityChartData, props.x_axis, props.group_by, props.x_axis_date_grouping),
-    [priorityChartData, props.x_axis, props.group_by, props.x_axis_date_grouping]
-  );
+  const parsedData = useMemo(() => {
+    const raw = priorityChartData && parseChartData(priorityChartData, props.x_axis, props.group_by, props.x_axis_date_grouping);
+    if (!raw || (props.x_axis !== "PRIORITY" && props.group_by !== "PRIORITY")) return raw;
+    const priorityKey = (s: string) => (typeof s === "string" ? s.toLowerCase() : s);
+    return {
+      data: raw.data.map((d) => ({ ...d, name: getPriorityDisplayName(priorityKey(d.name), t) })),
+      schema: Object.fromEntries(
+        Object.entries(raw.schema).map(([k, v]) => [k, getPriorityDisplayName(priorityKey(v), t)])
+      ),
+    };
+  }, [priorityChartData, props.x_axis, props.group_by, props.x_axis_date_grouping, t]);
   const chart_model = props.group_by ? EChartModels.STACKED : EChartModels.BASIC;
 
   const bars: TBarItem<string>[] = useMemo(() => {

@@ -25,6 +25,7 @@ import { STATE_GROUPS } from "@plane/constants";
 import { ContentWrapper } from "@plane/ui";
 // components
 import RenderIfVisible from "@/components/core/render-if-visible-HOC";
+import { getPriorityDisplayName } from "@/lib/priority-display";
 import { KanbanColumnLoader } from "@/components/ui/loader/layouts/kanban-layout-loader";
 // hooks
 import { useKanbanView } from "@/hooks/store/use-kanban-view";
@@ -181,7 +182,9 @@ export const KanBan = observer(function KanBan(props: IKanBan) {
                         ? t(`workspace_projects.state.${subList.id}`)
                         : group_by === "state" && subList.stateGroupKey && subList.stateGroupKey in STATE_GROUPS
                           ? t(`workspace_projects.state.${subList.stateGroupKey}`)
-                          : subList.name
+                          : group_by === "priority"
+                            ? getPriorityDisplayName(subList.id, t)
+                            : subList.name
                     }
                     count={getGroupIssueCount(subList.id, undefined, false) ?? 0}
                     issuePayload={subList.payload}
