@@ -6,6 +6,7 @@
 
 import { observer } from "mobx-react";
 // hooks
+import { useTranslation } from "@plane/i18n";
 import { ModuleIcon } from "@plane/propel/icons";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 // components
@@ -16,7 +17,7 @@ type TIssueModuleActivity = { activityId: string; ends: "top" | "bottom" | undef
 
 export const IssueModuleActivity = observer(function IssueModuleActivity(props: TIssueModuleActivity) {
   const { activityId, ends } = props;
-  // hooks
+  const { t } = useTranslation();
   const {
     activity: { getActivityById },
   } = useIssueDetail();
@@ -33,7 +34,10 @@ export const IssueModuleActivity = observer(function IssueModuleActivity(props: 
       <>
         {activity.verb === "created" ? (
           <>
-            <span>added this work item to the module </span>
+            <span>
+              {t("activity_messages.added_to_module")} {t("activity_messages.this_work_item")}{" "}
+              {t("activity_messages.to_the_module")}{" "}
+            </span>
             <a
               href={`/${activity.workspace_detail?.slug}/projects/${activity.project}/modules/${activity.new_identifier}`}
               target="_blank"
@@ -45,7 +49,7 @@ export const IssueModuleActivity = observer(function IssueModuleActivity(props: 
           </>
         ) : activity.verb === "updated" ? (
           <>
-            <span>set the module to </span>
+            <span>{t("activity_messages.set_module_to")} </span>
             <a
               href={`/${activity.workspace_detail?.slug}/projects/${activity.project}/modules/${activity.new_identifier}`}
               target="_blank"
@@ -57,7 +61,10 @@ export const IssueModuleActivity = observer(function IssueModuleActivity(props: 
           </>
         ) : (
           <>
-            <span>removed the work item from the module </span>
+            <span>
+              {t("activity_messages.removed_from_module")} {t("activity_messages.this_work_item")}{" "}
+              {t("activity_messages.from_the_module")}{" "}
+            </span>
             <a
               href={`/${activity.workspace_detail?.slug}/projects/${activity.project}/modules/${activity.old_identifier}`}
               target="_blank"

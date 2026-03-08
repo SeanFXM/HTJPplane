@@ -6,10 +6,9 @@
 
 import { useRef } from "react";
 import { observer } from "mobx-react";
+import { useTranslation } from "@plane/i18n";
 import { Logo } from "@plane/propel/emoji-icon-picker";
 import { PageIcon } from "@plane/propel/icons";
-// plane imports
-import { getPageName } from "@plane/utils";
 // components
 import { ListItem } from "@/components/core/list";
 import { BlockItemAction } from "@/components/pages/list/block-item-action";
@@ -26,6 +25,7 @@ type TPageListBlock = {
 
 export const PageListBlock = observer(function PageListBlock(props: TPageListBlock) {
   const { pageId, storeType } = props;
+  const { t } = useTranslation();
   // refs
   const parentRef = useRef(null);
   // hooks
@@ -38,6 +38,7 @@ export const PageListBlock = observer(function PageListBlock(props: TPageListBlo
   if (!page) return null;
   // derived values
   const { name, logo_props, getRedirectionLink } = page;
+  const displayTitle = name && name.trim() ? name : t("common.untitled");
 
   return (
     <ListItem
@@ -50,7 +51,7 @@ export const PageListBlock = observer(function PageListBlock(props: TPageListBlo
           )}
         </>
       }
-      title={getPageName(name)}
+      title={displayTitle}
       itemLink={getRedirectionLink()}
       actionableItems={<BlockItemAction page={page} parentRef={parentRef} storeType={storeType} />}
       isMobile={isMobile}

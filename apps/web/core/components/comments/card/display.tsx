@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation";
 // plane imports
 import type { EditorRefApi } from "@plane/editor";
 import { useHashScroll } from "@plane/hooks";
+import { useTranslation } from "@plane/i18n";
 import { GlobeIcon, LockIcon } from "@plane/propel/icons";
 import { EIssueCommentAccessSpecifier } from "@plane/types";
 import type { TCommentsOperations, TIssueComment } from "@plane/types";
@@ -60,6 +61,7 @@ export const CommentCardDisplay = observer(function CommentCardDisplay(props: TC
   // state
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   // store hooks
+  const { t } = useTranslation();
   const { getUserDetails } = useMember();
   // derived values
   const userDetails = getUserDetails(comment?.actor);
@@ -121,14 +123,14 @@ export const CommentCardDisplay = observer(function CommentCardDisplay(props: TC
         <div className="flex flex-1 flex-wrap items-center gap-1">
           <div className="text-caption-sm-medium">{displayName}</div>
           <div className="text-caption-sm-regular text-tertiary">
-            commented{" "}
+            {t("activity_messages.commented_word")}{" "}
             <Tooltip
               tooltipContent={`${renderFormattedDate(comment.created_at)} at ${renderFormattedTime(comment.created_at)}`}
               position="bottom"
             >
               <span className="text-tertiary">
                 {calculateTimeAgo(comment.created_at)}
-                {comment.edited_at && " (edited)"}
+                {comment.edited_at && ` (${t("common.edited")})`}
               </span>
             </Tooltip>
           </div>

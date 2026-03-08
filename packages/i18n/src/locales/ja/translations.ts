@@ -294,6 +294,7 @@ export default {
     from_intake_by_duplicate: " 重複ワークアイテムとしてマークしてインテークから。",
     work_item_deleted: "このワークアイテムは削除されました",
     a_work_item: " ワークアイテム",
+    commented_word: "コメントしました",
   },
   appearance: "外観",
   notifications: "通知",
@@ -864,6 +865,7 @@ export default {
     project_id: "プロジェクトID",
     project_timezone: "プロジェクトのタイムゾーン",
     created_on: "作成日",
+    owned_by: "所有者",
     update_project: "プロジェクトを更新",
     identifier_already_exists: "識別子は既に存在します",
     add_more: "さらに追加",
@@ -920,7 +922,8 @@ export default {
     links_count: "{count, plural, one {# 件のリンク} other {# 件のリンク}}",
     attachments_count: "{count, plural, one {# 件の添付} other {# 件の添付}}",
     sub_work_items_count: "{count, plural, one {# 件のサブ作業項目} other {# 件のサブ作業項目}}",
-    project_work_items_tooltip: "{count, plural, one {このプロジェクトに # 件の作業項目があります} other {このプロジェクトに # 件の作業項目があります}}",
+    project_work_items_tooltip:
+      "{count, plural, one {このプロジェクトに # 件の作業項目があります} other {このプロジェクトに # 件の作業項目があります}}",
     modules_count: "{count, plural, one {# 件のモジュール} other {# 件のモジュール}}",
     select_labels: "ラベルを選択",
     select_modules: "モジュールを選択",
@@ -2314,6 +2317,8 @@ export default {
     remove_filters_to_see_all_cycles: "すべてのサイクルを表示するにはフィルターを解除してください",
     remove_search_criteria_to_see_all_cycles: "すべてのサイクルを表示するには検索条件を解除してください",
     only_completed_cycles_can_be_archived: "完了したサイクルのみアーカイブできます",
+    completed_cycles_not_editable: "完了したサイクルは編集できません。",
+    transfer_work_items_button: "作業項目を転送",
     start_date: "開始日",
     end_date: "終了日",
     in_your_timezone: "あなたのタイムゾーン",
@@ -2330,6 +2335,19 @@ export default {
       ideal: "理想",
       current: "現在",
       labels: "ラベル",
+      work_item_closed: "作業項目をクローズ",
+      work_items_closed: "作業項目をクローズ",
+      work_item: "作業項目",
+      work_items: "作業項目",
+      pending_work_items: "保留中の作業項目 - {count}",
+      pending_points: "保留中のポイント - {count}",
+      chart_current_work_items: "現在の作業項目",
+      chart_ideal_work_items: "理想の作業項目",
+      chart_current_points: "現在のポイント",
+      chart_ideal_points: "理想のポイント",
+      chart_completion: "完了度",
+      chart_date: "日付",
+      cancelled_excluded: "{count} 件のキャンセルされた作業項目はこのレポートから除外されています。",
     },
     upcoming_cycle: {
       label: "今後のサイクル",
@@ -2546,6 +2564,19 @@ export default {
     },
   },
   project_page: {
+    tabs: {
+      public: "公開",
+      private: "非公開",
+      archived: "アーカイブ済み",
+    },
+    sort: {
+      name: "名前",
+      date_created: "作成日",
+      date_modified: "更新日",
+      ascending: "昇順",
+      descending: "降順",
+    },
+    archived_at: "アーカイブ日",
     empty_state: {
       general: {
         title:
@@ -2880,6 +2911,18 @@ export default {
       not_removed: {
         title: "付箋を削除できませんでした",
         message: "付箋を削除できませんでした",
+      },
+    },
+  },
+  power_k: {
+    contextual_actions: {
+      page: {
+        lock: "ロック",
+        unlock: "ロック解除",
+        make_private: "非公開にする",
+        make_public: "公開にする",
+        archive: "アーカイブ",
+        restore: "復元",
       },
     },
   },

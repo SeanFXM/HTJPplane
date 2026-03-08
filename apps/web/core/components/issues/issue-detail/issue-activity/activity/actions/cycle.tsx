@@ -6,6 +6,7 @@
 
 import { observer } from "mobx-react";
 // hooks
+import { useTranslation } from "@plane/i18n";
 import { CycleIcon } from "@plane/propel/icons";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 // components
@@ -16,7 +17,7 @@ type TIssueCycleActivity = { activityId: string; ends: "top" | "bottom" | undefi
 
 export const IssueCycleActivity = observer(function IssueCycleActivity(props: TIssueCycleActivity) {
   const { activityId, ends } = props;
-  // hooks
+  const { t } = useTranslation();
   const {
     activity: { getActivityById },
   } = useIssueDetail();
@@ -33,7 +34,10 @@ export const IssueCycleActivity = observer(function IssueCycleActivity(props: TI
       <>
         {activity.verb === "created" ? (
           <>
-            <span>added this work item to the cycle </span>
+            <span>
+              {t("activity_messages.added_to_cycle")} {t("activity_messages.this_work_item")}{" "}
+              {t("activity_messages.to_the_cycle")}{" "}
+            </span>
             <a
               href={`/${activity.workspace_detail?.slug}/projects/${activity.project}/cycles/${activity.new_identifier}`}
               target="_blank"
@@ -45,7 +49,7 @@ export const IssueCycleActivity = observer(function IssueCycleActivity(props: TI
           </>
         ) : activity.verb === "updated" ? (
           <>
-            <span>set the cycle to </span>
+            <span>{t("activity_messages.set_cycle_to")} </span>
             <a
               href={`/${activity.workspace_detail?.slug}/projects/${activity.project}/cycles/${activity.new_identifier}`}
               target="_blank"
@@ -57,14 +61,17 @@ export const IssueCycleActivity = observer(function IssueCycleActivity(props: TI
           </>
         ) : (
           <>
-            <span>removed the work item from the cycle </span>
+            <span>
+              {t("activity_messages.removed_from_cycle")} {t("activity_messages.this_work_item")}{" "}
+              {t("activity_messages.from_the_cycle")}{" "}
+            </span>
             <a
               href={`/${activity.workspace_detail?.slug}/projects/${activity.project}/cycles/${activity.old_identifier}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 truncate font-medium text-primary hover:underline"
             >
-              <span className="truncate"> {activity.new_value}</span>
+              <span className="truncate"> {activity.old_value}</span>
             </a>
           </>
         )}

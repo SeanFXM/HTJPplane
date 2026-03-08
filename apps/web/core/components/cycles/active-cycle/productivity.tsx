@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { Fragment } from "react";
 import { observer } from "mobx-react";
 import Link from "next/link";
@@ -65,9 +64,18 @@ export const ActiveCycleProductivity = observer(function ActiveCycleProductivity
             <div className="h-full w-full px-2">
               <div className="flex items-center justify-end gap-4 py-1 text-11 text-tertiary">
                 {estimateType === "points" ? (
-                  <span>{`Pending points - ${cycle.backlog_estimate_points + cycle.unstarted_estimate_points + cycle.started_estimate_points}`}</span>
+                  <span>
+                    {t("project_cycles.active_cycle.pending_points", {
+                      count:
+                        cycle.backlog_estimate_points + cycle.unstarted_estimate_points + cycle.started_estimate_points,
+                    })}
+                  </span>
                 ) : (
-                  <span>{`Pending work items - ${cycle.backlog_issues + cycle.unstarted_issues + cycle.started_issues}`}</span>
+                  <span>
+                    {t("project_cycles.active_cycle.pending_work_items", {
+                      count: cycle.backlog_issues + cycle.unstarted_issues + cycle.started_issues,
+                    })}
+                  </span>
                 )}
               </div>
 
@@ -79,12 +87,20 @@ export const ActiveCycleProductivity = observer(function ActiveCycleProductivity
                         distribution={completionChartDistributionData}
                         totalIssues={cycle.total_estimate_points || 0}
                         plotTitle={"points"}
+                        currentLabel={t("project_cycles.active_cycle.chart_current_points")}
+                        idealLabel={t("project_cycles.active_cycle.chart_ideal_points")}
+                        xAxisLabel={t("project_cycles.active_cycle.chart_date")}
+                        yAxisLabel={t("project_cycles.active_cycle.chart_completion")}
                       />
                     ) : (
                       <ProgressChart
                         distribution={completionChartDistributionData}
                         totalIssues={cycle.total_issues || 0}
                         plotTitle={"work items"}
+                        currentLabel={t("project_cycles.active_cycle.chart_current_work_items")}
+                        idealLabel={t("project_cycles.active_cycle.chart_ideal_work_items")}
+                        xAxisLabel={t("project_cycles.active_cycle.chart_date")}
+                        yAxisLabel={t("project_cycles.active_cycle.chart_completion")}
                       />
                     )}
                   </Fragment>

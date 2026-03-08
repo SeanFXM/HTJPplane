@@ -62,9 +62,11 @@ export const ActiveCycleProgress = observer(function ActiveCycleProgress(props: 
           <h3 className="text-14 font-semibold text-tertiary">{t("project_cycles.active_cycle.progress")}</h3>
           {cycle.total_issues > 0 && (
             <span className="flex gap-1 rounded-xs px-3 py-1 text-13 font-medium whitespace-nowrap text-placeholder">
-              {`${cycle.completed_issues + cycle.cancelled_issues}/${cycle.total_issues - cycle.cancelled_issues} ${
-                cycle.completed_issues + cycle.cancelled_issues > 1 ? "Work items" : "Work item"
-              } closed`}
+              {`${cycle.completed_issues + cycle.cancelled_issues}/${cycle.total_issues - cycle.cancelled_issues} ${t(
+                cycle.completed_issues + cycle.cancelled_issues > 1
+                  ? "project_cycles.active_cycle.work_items_closed"
+                  : "project_cycles.active_cycle.work_item_closed"
+              )}`}
             </span>
           )}
         </div>
@@ -77,8 +79,9 @@ export const ActiveCycleProgress = observer(function ActiveCycleProgress(props: 
             <>
               {groupedIssues[group] > 0 && (
                 <div key={group}>
-                  <div
-                    className="flex cursor-pointer items-center justify-between gap-2 text-13"
+                  <button
+                    type="button"
+                    className="flex w-full cursor-pointer items-center justify-between gap-2 border-none bg-transparent p-0 text-left text-13"
                     onClick={() => {
                       handleFiltersUpdate([{ property: "state_group", operator: "in", value: [group] }]);
                     }}
@@ -92,21 +95,19 @@ export const ActiveCycleProgress = observer(function ActiveCycleProgress(props: 
                       />
                       <span className="w-16 font-medium text-tertiary">{t(`workspace_projects.state.${group}`)}</span>
                     </div>
-                    <span className="text-tertiary">{`${groupedIssues[group]} ${
-                      groupedIssues[group] > 1 ? "Work items" : "Work item"
-                    }`}</span>
-                  </div>
+                    <span className="text-tertiary">{`${groupedIssues[group]} ${t(
+                      groupedIssues[group] > 1
+                        ? "project_cycles.active_cycle.work_items"
+                        : "project_cycles.active_cycle.work_item"
+                    )}`}</span>
+                  </button>
                 </div>
               )}
             </>
           ))}
           {cycle.cancelled_issues > 0 && (
             <span className="flex items-center gap-2 text-13 text-tertiary">
-              <span>
-                {`${cycle.cancelled_issues} cancelled ${
-                  cycle.cancelled_issues > 1 ? "work items are" : "work item is"
-                } excluded from this report.`}{" "}
-              </span>
+              <span>{t("project_cycles.active_cycle.cancelled_excluded", { count: cycle.cancelled_issues })}</span>
             </span>
           )}
         </div>

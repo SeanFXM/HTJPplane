@@ -291,6 +291,7 @@ export default {
     from_intake_by_duplicate: " 通过标记重复工作项从收件箱。",
     work_item_deleted: "此工作项已被删除",
     a_work_item: " 工作项",
+    commented_word: "发表了评论",
   },
   appearance: "外观",
   notifications: "通知",
@@ -851,6 +852,7 @@ export default {
     project_id: "项目ID",
     project_timezone: "项目时区",
     created_on: "创建于",
+    owned_by: "所有者",
     update_project: "更新项目",
     identifier_already_exists: "标识符已存在",
     add_more: "添加更多",
@@ -2270,6 +2272,8 @@ export default {
     remove_filters_to_see_all_cycles: "移除筛选器以查看所有周期",
     remove_search_criteria_to_see_all_cycles: "移除搜索条件以查看所有周期",
     only_completed_cycles_can_be_archived: "只能归档已完成的周期",
+    completed_cycles_not_editable: "已完成的周期不可编辑。",
+    transfer_work_items_button: "转移工作项",
     start_date: "开始日期",
     end_date: "结束日期",
     in_your_timezone: "在您的时区",
@@ -2286,6 +2290,19 @@ export default {
       ideal: "理想",
       current: "当前",
       labels: "标签",
+      work_item_closed: "工作项已关闭",
+      work_items_closed: "工作项已关闭",
+      work_item: "工作项",
+      work_items: "工作项",
+      pending_work_items: "待处理工作项 - {count}",
+      pending_points: "待处理点数 - {count}",
+      chart_current_work_items: "当前工作项",
+      chart_ideal_work_items: "理想工作项",
+      chart_current_points: "当前点数",
+      chart_ideal_points: "理想点数",
+      chart_completion: "完成度",
+      chart_date: "日期",
+      cancelled_excluded: "{count} 个已取消的工作项已从此报告中排除。",
     },
     upcoming_cycle: {
       label: "即将到来的周期",
@@ -2493,6 +2510,19 @@ export default {
     },
   },
   project_page: {
+    tabs: {
+      public: "公开",
+      private: "私有",
+      archived: "已归档",
+    },
+    sort: {
+      name: "名称",
+      date_created: "创建日期",
+      date_modified: "修改日期",
+      ascending: "升序",
+      descending: "降序",
+    },
+    archived_at: "归档于",
     empty_state: {
       general: {
         title: "写笔记、文档或完整的知识库。让 AI 助手 Galileo 帮助您开始",
@@ -2820,6 +2850,18 @@ export default {
       not_removed: {
         title: "便签未移除",
         message: "无法移除便签",
+      },
+    },
+  },
+  power_k: {
+    contextual_actions: {
+      page: {
+        lock: "锁定",
+        unlock: "解锁",
+        make_private: "设为私有",
+        make_public: "设为公开",
+        archive: "归档",
+        restore: "恢复",
       },
     },
   },
