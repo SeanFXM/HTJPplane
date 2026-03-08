@@ -119,6 +119,7 @@ const getStateColumns = (projectState: IStateStore): IGroupByColumn[] | undefine
   return sortedStates.map((state) => ({
     id: state.id,
     name: state.name,
+    stateGroupKey: state.group,
     icon: (
       <div className="h-3.5 w-3.5 rounded-full">
         <StateGroupIcon stateGroup={state.group} color={state.color} size={EIconSize.MD} />

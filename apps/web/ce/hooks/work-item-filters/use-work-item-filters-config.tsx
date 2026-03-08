@@ -133,10 +133,7 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
     [moduleIds, getModuleById]
   );
   const projects = useMemo(
-    () =>
-      projectIds
-        ? (projectIds.map((id) => getProjectById(id)).filter((p) => p) as IProject[])
-        : [],
+    () => (projectIds ? (projectIds.map((id) => getProjectById(id)).filter((p) => p) as IProject[]) : []),
     [projectIds, getProjectById]
   );
   const areAllConfigsInitialized = useMemo(() => isLoaderReady(projectLoader), [projectLoader]);

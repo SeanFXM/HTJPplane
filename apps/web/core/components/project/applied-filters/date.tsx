@@ -28,10 +28,7 @@ export const AppliedDateFilters = observer(function AppliedDateFilters(props: Pr
     const dateDetails = PROJECT_CREATED_AT_FILTER_OPTIONS.find((d) => d.value === value);
 
     if (dateDetails) {
-      dateLabel =
-        "i18n_label" in dateDetails && dateDetails.i18n_label
-          ? t(dateDetails.i18n_label)
-          : dateDetails.name;
+      dateLabel = "i18n_label" in dateDetails && dateDetails.i18n_label ? t(dateDetails.i18n_label) : dateDetails.name;
     } else {
       const dateParts = value.split(";");
 

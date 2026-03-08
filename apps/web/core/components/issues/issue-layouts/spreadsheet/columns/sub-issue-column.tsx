@@ -12,6 +12,7 @@ import type { TIssue } from "@plane/types";
 // helpers
 import { Row } from "@plane/ui";
 import { cn } from "@plane/utils";
+import { useTranslation } from "@plane/i18n";
 // hooks
 import { useAppRouter } from "@/hooks/use-app-router";
 import { IssueStats } from "@/plane-web/components/issues/issue-layouts/issue-stats";
@@ -21,6 +22,7 @@ type Props = {
 };
 
 export const SpreadsheetSubIssueColumn = observer(function SpreadsheetSubIssueColumn(props: Props) {
+  const { t } = useTranslation();
   const { issue } = props;
   // router
   const router = useAppRouter();
@@ -36,7 +38,7 @@ export const SpreadsheetSubIssueColumn = observer(function SpreadsheetSubIssueCo
     );
   };
 
-  const label = `${subIssueCount} sub-work item${subIssueCount !== 1 ? "s" : ""}`;
+  const label = t("common.sub_work_items_count", { count: subIssueCount });
 
   return (
     <Row

@@ -16,6 +16,8 @@ import { Calendar } from "@plane/propel/calendar";
 import { CloseIcon } from "@plane/propel/icons";
 import { ComboDropDown } from "@plane/ui";
 import { cn, renderFormattedDate, getDate } from "@plane/utils";
+import { useTranslation } from "@plane/i18n";
+import { enUS, ja, zhCN } from "date-fns/locale";
 // helpers
 // hooks
 import { useUserProfile } from "@/hooks/store/user";
@@ -45,6 +47,7 @@ type Props = TDropdownProps & {
 };
 
 export const DateDropdown = observer(function DateDropdown(props: Props) {
+  const { t } = useTranslation();
   const {
     buttonClassName = "",
     buttonContainerClassName,
@@ -62,7 +65,7 @@ export const DateDropdown = observer(function DateDropdown(props: Props) {
     maxDate,
     onChange,
     onClose,
-    placeholder = "Date",
+    placeholder,
     placement,
     showTooltip = false,
     tabIndex,
@@ -71,6 +74,16 @@ export const DateDropdown = observer(function DateDropdown(props: Props) {
     renderByDefault = true,
     labelClassName = "",
   } = props;
+  const displayPlaceholder = placeholder ?? t("common.date");
+  const localeMap: Record<string, typeof enUS> = {
+    en: enUS,
+    "en-US": enUS,
+    ja,
+    "zh-CN": zhCN,
+    "zh-TW": zhCN,
+  };
+  const docLang = typeof document !== "undefined" ? document.documentElement?.lang : undefined;
+  const currentLocale = (docLang && localeMap[docLang]) ?? (docLang && localeMap[docLang.split("-")[0]]) ?? enUS;
   // states
   const [isOpen, setIsOpen] = useState(defaultOpen);
   // refs
@@ -138,8 +151,8 @@ export const DateDropdown = observer(function DateDropdown(props: Props) {
       <DropdownButton
         className={buttonClassName}
         isActive={isOpen}
-        tooltipHeading={placeholder}
-        tooltipContent={value ? renderFormattedDate(value, formatToken) : "None"}
+        tooltipHeading={displayPlaceholder}
+        tooltipContent={value ? renderFormattedDate(value, formatToken) : t("common.none")}
         showTooltip={showTooltip}
         variant={buttonVariant}
         renderToolTipByDefault={renderByDefault}
@@ -147,7 +160,7 @@ export const DateDropdown = observer(function DateDropdown(props: Props) {
         {!hideIcon && icon}
         {BUTTON_VARIANTS_WITH_TEXT.includes(buttonVariant) && (
           <span className={cn("flex-grow truncate text-left text-body-xs-medium", labelClassName)}>
-            {value ? renderFormattedDate(value, formatToken) : placeholder}
+            {value ? renderFormattedDate(value, formatToken) : displayPlaceholder}
           </span>
         )}
         {isClearable && !disabled && isDateSelected && (
@@ -205,6 +218,7 @@ export const DateDropdown = observer(function DateDropdown(props: Props) {
                 mode="single"
                 fixedWeeks
                 weekStartsOn={startOfWeek}
+                locale={currentLocale}
               />
             </div>
           </Combobox.Options>,

@@ -90,9 +90,7 @@ export const ActiveCycleProgress = observer(function ActiveCycleProgress(props: 
                           backgroundColor: PROGRESS_STATE_GROUPS_DETAILS[index].color,
                         }}
                       />
-                      <span className="w-16 font-medium text-tertiary">
-                        {t(`workspace_projects.state.${group}`)}
-                      </span>
+                      <span className="w-16 font-medium text-tertiary">{t(`workspace_projects.state.${group}`)}</span>
                     </div>
                     <span className="text-tertiary">{`${groupedIssues[group]} ${
                       groupedIssues[group] > 1 ? "Work items" : "Work item"

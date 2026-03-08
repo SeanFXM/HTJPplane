@@ -13,9 +13,7 @@ import type { IBaseUserPermissionStore } from "@/store/user/base-permissions.sto
 export type IUserPermissionStore = IBaseUserPermissionStore;
 
 export class UserPermissionStore extends BaseUserPermissionStore implements IUserPermissionStore {
-  constructor(store: RootStore) {
-    super(store);
-  }
+  
 
   /**
    * @description Returns the project role from the workspace

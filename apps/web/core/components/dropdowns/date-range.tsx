@@ -19,6 +19,7 @@ import { Calendar } from "@plane/propel/calendar";
 import { CloseIcon, DueDatePropertyIcon } from "@plane/propel/icons";
 import { ComboDropDown } from "@plane/ui";
 import { cn, renderFormattedDate } from "@plane/utils";
+import { enUS, ja, zhCN } from "date-fns/locale";
 // helpers
 // hooks
 import { useUserProfile } from "@/hooks/store/user";
@@ -70,8 +71,18 @@ type Props = {
   renderInPortal?: boolean;
 };
 
+const LOCALE_MAP: Record<string, typeof enUS> = {
+  en: enUS,
+  "en-US": enUS,
+  ja,
+  "zh-CN": zhCN,
+  "zh-TW": zhCN,
+};
+
 export const DateRangeDropdown = observer(function DateRangeDropdown(props: Props) {
   const { t } = useTranslation();
+  const docLang = typeof document !== "undefined" ? document.documentElement?.lang : undefined;
+  const currentLocale = (docLang && LOCALE_MAP[docLang]) ?? (docLang && LOCALE_MAP[docLang.split("-")[0]]) ?? enUS;
   const {
     buttonClassName,
     buttonContainerClassName,
@@ -277,6 +288,7 @@ export const DateRangeDropdown = observer(function DateRangeDropdown(props: Prop
           }}
           mode="range"
           disabled={disabledDays}
+          locale={currentLocale}
           showOutsideDays
           fixedWeeks
           weekStartsOn={startOfWeek}

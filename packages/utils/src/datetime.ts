@@ -5,7 +5,18 @@
  */
 
 import { differenceInDays, format, isAfter, isEqual, isValid, parseISO } from "date-fns";
+import { enUS, ja, zhCN } from "date-fns/locale";
 import { isNumber } from "lodash-es";
+
+type TDateFnsLocale = typeof enUS;
+
+const DATE_FNS_LOCALE_MAP: Record<string, TDateFnsLocale> = {
+  en: enUS,
+  "en-US": enUS,
+  ja,
+  "zh-CN": zhCN,
+  "zh-TW": zhCN,
+};
 
 type TRelativeTimeLocale = "en" | "ja" | "zh-CN" | "zh-TW";
 
@@ -39,6 +50,22 @@ const getRelativeTimeLocale = (): TRelativeTimeLocale => {
   }
 
   return "en";
+};
+
+const getDateFnsLocale = (): TDateFnsLocale => {
+  if (typeof document !== "undefined" && document.documentElement.lang) {
+    const lang = document.documentElement.lang;
+    const mapped = DATE_FNS_LOCALE_MAP[lang] ?? DATE_FNS_LOCALE_MAP[lang.split("-")[0]];
+    if (mapped) return mapped;
+  }
+  if (typeof window !== "undefined") {
+    const stored = window.localStorage.getItem("userLanguage");
+    if (stored) {
+      const mapped = DATE_FNS_LOCALE_MAP[stored] ?? DATE_FNS_LOCALE_MAP[stored.split("-")[0]];
+      if (mapped) return mapped;
+    }
+  }
+  return enUS;
 };
 
 const getRelativeTimeFormatter = (locale: TRelativeTimeLocale) => {
@@ -80,12 +107,11 @@ export const renderFormattedDate = (
   // Check if the parsed date is valid before formatting
   if (!isValid(parsedDate)) return; // Return null for invalid dates
   let formattedDate;
+  const locale = getDateFnsLocale();
   try {
-    // Format the date in the format provided or default format (MMM dd, yyyy)
-    formattedDate = format(parsedDate, formatToken);
+    formattedDate = format(parsedDate, formatToken, { locale });
   } catch (_e) {
-    // Format the date in format (MMM dd, yyyy) in case of any error
-    formattedDate = format(parsedDate, "MMM dd, yyyy");
+    formattedDate = format(parsedDate, "MMM dd, yyyy", { locale });
   }
   return formattedDate;
 };
@@ -103,8 +129,7 @@ export const renderFormattedDateWithoutYear = (date: string | Date): string => {
   if (!parsedDate) return "";
   // Check if the parsed date is valid before formatting
   if (!isValid(parsedDate)) return ""; // Return empty string for invalid dates
-  // Format the date in short format (MMM dd)
-  const formattedDate = format(parsedDate, "MMM dd");
+  const formattedDate = format(parsedDate, "MMM dd", { locale: getDateFnsLocale() });
   return formattedDate;
 };
 

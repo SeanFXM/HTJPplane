@@ -920,6 +920,7 @@ export default {
     links_count: "{count, plural, one {# 件のリンク} other {# 件のリンク}}",
     attachments_count: "{count, plural, one {# 件の添付} other {# 件の添付}}",
     sub_work_items_count: "{count, plural, one {# 件のサブ作業項目} other {# 件のサブ作業項目}}",
+    project_work_items_tooltip: "{count, plural, one {このプロジェクトに # 件の作業項目があります} other {このプロジェクトに # 件の作業項目があります}}",
     modules_count: "{count, plural, one {# 件のモジュール} other {# 件のモジュール}}",
     select_labels: "ラベルを選択",
     select_modules: "モジュールを選択",

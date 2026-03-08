@@ -111,11 +111,9 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
       if (!block) return;
 
       const startChanged =
-        update.start_date !== undefined &&
-        (update.start_date ?? null) !== (block.start_date ?? null);
+        update.start_date !== undefined && (update.start_date ?? null) !== (block.start_date ?? null);
       const targetChanged =
-        update.target_date !== undefined &&
-        (update.target_date ?? null) !== (block.target_date ?? null);
+        update.target_date !== undefined && (update.target_date ?? null) !== (block.target_date ?? null);
       const hasDateChange = startChanged || targetChanged;
 
       if (!hasDateChange) {
@@ -204,9 +202,7 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
                 displayProperties={issuesFilter?.issueFilters?.displayProperties}
               />
             )}
-            sidebarToRender={(sidebarProps) => (
-              <IssueGanttSidebar {...sidebarProps} showAllBlocks isEpic={isEpic} />
-            )}
+            sidebarToRender={(sidebarProps) => <IssueGanttSidebar {...sidebarProps} showAllBlocks isEpic={isEpic} />}
             enableBlockLeftResize={isAllowed}
             enableBlockRightResize={isAllowed}
             enableBlockMove={isAllowed}

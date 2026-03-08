@@ -17,9 +17,7 @@ import { BaseProjectMemberStore } from "@/store/member/project/base-project-memb
 export type IProjectMemberStore = IBaseProjectMemberStore;
 
 export class ProjectMemberStore extends BaseProjectMemberStore implements IProjectMemberStore {
-  constructor(_memberRoot: IMemberRootStore, rootStore: RootStore) {
-    super(_memberRoot, rootStore);
-  }
+  
 
   /**
    * @description Returns the highest role from the project membership

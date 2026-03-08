@@ -757,6 +757,7 @@ export default {
     links_count: "{count, plural, one {# link} other {# links}}",
     attachments_count: "{count, plural, one {# attachment} other {# attachments}}",
     sub_work_items_count: "{count, plural, one {# sub-work item} other {# sub-work items}}",
+    project_work_items_tooltip: "{count, plural, one {There is # work item in this project} other {There are # work items in this project}}",
     modules_count: "{count, plural, one {# module} other {# modules}}",
     select_labels: "Select labels",
     select_modules: "Select modules",

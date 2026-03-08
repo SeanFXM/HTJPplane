@@ -108,7 +108,7 @@ export const IssueGanttBlock = observer(function IssueGanttBlock(props: Props) {
                     return (
                       <span
                         key={labelId}
-                        className="flex min-w-[4.5rem] max-w-[80px] flex-shrink-0 items-center gap-1 truncate rounded-sm px-1.5 py-0.5 text-11 text-secondary"
+                        className="flex max-w-[80px] min-w-[4.5rem] flex-shrink-0 items-center gap-1 truncate rounded-sm px-1.5 py-0.5 text-11 text-secondary"
                         style={{
                           backgroundColor: `${label.color ?? "#666"}20`,
                           borderColor: label.color ?? "#666",
