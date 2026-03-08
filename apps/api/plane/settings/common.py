@@ -140,8 +140,8 @@ def _dedupe_origins(origins):
     return normalized_origins
 
 
-# Prefer explicit CORS origins, but fall back to configured frontend base URLs so
-# a missing CORS_ALLOWED_ORIGINS does not silently break cross-origin session auth.
+# Merge explicit CORS origins with configured frontend base URLs so a stale
+# CORS_ALLOWED_ORIGINS value does not silently block custom frontend domains.
 explicit_cors_allowed_origins = [origin.strip() for origin in cors_origins_raw.split(",") if origin.strip()]
 inferred_cors_allowed_origins = _dedupe_origins(
     [
@@ -151,8 +151,8 @@ inferred_cors_allowed_origins = _dedupe_origins(
         _normalize_origin(os.environ.get("LIVE_BASE_URL")),
     ]
 )
-cors_allowed_origins = (
-    explicit_cors_allowed_origins if explicit_cors_allowed_origins else inferred_cors_allowed_origins
+cors_allowed_origins = _dedupe_origins(
+    [*explicit_cors_allowed_origins, *inferred_cors_allowed_origins]
 )
 if cors_allowed_origins:
     CORS_ALLOWED_ORIGINS = cors_allowed_origins
