@@ -546,8 +546,6 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
 
     // If shouldUpdateList is true, call fetchParentStats
     if (shouldUpdateList) await this.fetchParentStats(workspaceSlug, projectId);
-
-    return response;
   }
 
   /**
