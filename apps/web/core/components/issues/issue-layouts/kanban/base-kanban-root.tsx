@@ -105,7 +105,7 @@ export const BaseKanBanRoot = observer(function BaseKanBanRoot(props: IBaseKanBa
         fetchNextIssues(groupId, subgroupId);
       }
     },
-    [fetchNextIssues, issues]
+    [fetchNextIssues]
   );
 
   const groupedIssueIds = issues?.groupedIssueIds;
@@ -130,11 +130,9 @@ export const BaseKanBanRoot = observer(function BaseKanBanRoot(props: IBaseKanBa
   const handleOnDrop = useGroupIssuesDragNDrop(storeType, orderBy, group_by, sub_group_by);
 
   const canEditProperties = useCallback(
-    (targetProjectId: string | undefined) => {
+    (projectId: string | undefined) => {
       const isEditingAllowedBasedOnProject =
-        canEditPropertiesBasedOnProject && targetProjectId
-          ? canEditPropertiesBasedOnProject(targetProjectId)
-          : isEditingAllowed;
+        canEditPropertiesBasedOnProject && projectId ? canEditPropertiesBasedOnProject(projectId) : isEditingAllowed;
 
       return enableInlineEditing && isEditingAllowedBasedOnProject;
     },
@@ -189,10 +187,10 @@ export const BaseKanBanRoot = observer(function BaseKanBanRoot(props: IBaseKanBa
         parentRef={parentRef}
         customActionButton={customActionButton}
         issue={issue}
-        handleDelete={async (payload) => removeIssue(issue.project_id, issue.id, payload)}
+        handleDelete={async () => removeIssue(issue.project_id, issue.id)}
         handleUpdate={async (data) => updateIssue && updateIssue(issue.project_id, issue.id, data)}
         handleRemoveFromView={async () => removeIssueFromView && removeIssueFromView(issue.project_id, issue.id)}
-        handleArchive={async (payload) => archiveIssue && archiveIssue(issue.project_id, issue.id, payload)}
+        handleArchive={async () => archiveIssue && archiveIssue(issue.project_id, issue.id)}
         handleRestore={async () => restoreIssue && restoreIssue(issue.project_id, issue.id)}
         readOnly={!canEditProperties(issue.project_id ?? undefined) || isCompletedCycle}
       />
@@ -219,14 +217,14 @@ export const BaseKanBanRoot = observer(function BaseKanBanRoot(props: IBaseKanBa
   const handleCollapsedGroups = useCallback(
     (toggle: "group_by" | "sub_group_by", value: string) => {
       if (workspaceSlug) {
-        let nextCollapsedGroups = issuesFilter?.issueFilters?.kanbanFilters?.[toggle] || [];
-        if (nextCollapsedGroups.includes(value)) {
-          nextCollapsedGroups = nextCollapsedGroups.filter((_value) => _value != value);
+        let collapsedGroups = issuesFilter?.issueFilters?.kanbanFilters?.[toggle] || [];
+        if (collapsedGroups.includes(value)) {
+          collapsedGroups = collapsedGroups.filter((_value) => _value != value);
         } else {
-          nextCollapsedGroups.push(value);
+          collapsedGroups.push(value);
         }
         updateFilters(projectId?.toString() ?? "", EIssueFilterType.KANBAN_FILTERS, {
-          [toggle]: nextCollapsedGroups,
+          [toggle]: collapsedGroups,
         });
       }
     },

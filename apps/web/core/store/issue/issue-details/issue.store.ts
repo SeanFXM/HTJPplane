@@ -7,7 +7,7 @@
 import { makeObservable, observable } from "mobx";
 import { computedFn } from "mobx-utils";
 // types
-import type { TIssue, TIssueHierarchyActionPayload, TIssueServiceType } from "@plane/types";
+import type { TIssue, TIssueServiceType } from "@plane/types";
 import { EIssueServiceType } from "@plane/types";
 // services
 import { IssueArchiveService, WorkspaceDraftService, IssueService } from "@/services/issue";
@@ -18,18 +18,8 @@ export interface IIssueStoreActions {
   // actions
   fetchIssue: (workspaceSlug: string, projectId: string, issueId: string) => Promise<TIssue>;
   updateIssue: (workspaceSlug: string, projectId: string, issueId: string, data: Partial<TIssue>) => Promise<void>;
-  removeIssue: (
-    workspaceSlug: string,
-    projectId: string,
-    issueId: string,
-    payload?: TIssueHierarchyActionPayload
-  ) => Promise<void>;
-  archiveIssue: (
-    workspaceSlug: string,
-    projectId: string,
-    issueId: string,
-    payload?: TIssueHierarchyActionPayload
-  ) => Promise<void>;
+  removeIssue: (workspaceSlug: string, projectId: string, issueId: string) => Promise<void>;
+  archiveIssue: (workspaceSlug: string, projectId: string, issueId: string) => Promise<void>;
   addCycleToIssue: (workspaceSlug: string, projectId: string, cycleId: string, issueId: string) => Promise<void>;
   addIssueToCycle: (workspaceSlug: string, projectId: string, cycleId: string, issueIds: string[]) => Promise<void>;
   removeIssueFromCycle: (workspaceSlug: string, projectId: string, cycleId: string, issueId: string) => Promise<void>;
@@ -111,8 +101,9 @@ export class IssueStore implements IIssueStore {
     // store handlers from issue detail
     // parent
     if (issue && issue?.parent && issue?.parent?.id && issue?.parent?.project_id) {
-      const parentIssue = await this.issueService.retrieve(workspaceSlug, issue.parent.project_id, issue?.parent?.id);
-      this.rootIssueDetailStore.rootIssueStore.issues.addIssue([parentIssue]);
+      this.issueService.retrieve(workspaceSlug, issue.parent.project_id, issue?.parent?.id).then((res) => {
+        this.rootIssueDetailStore.rootIssueStore.issues.addIssue([res]);
+      });
     }
     // assignees
     // labels
@@ -199,30 +190,20 @@ export class IssueStore implements IIssueStore {
     ]);
   };
 
-  removeIssue = async (
-    workspaceSlug: string,
-    projectId: string,
-    issueId: string,
-    payload?: TIssueHierarchyActionPayload
-  ) => {
+  removeIssue = async (workspaceSlug: string, projectId: string, issueId: string) => {
     const currentStore =
       this.serviceType === EIssueServiceType.EPICS
         ? this.rootIssueDetailStore.rootIssueStore.projectEpics
         : this.rootIssueDetailStore.rootIssueStore.projectIssues;
-    (currentStore.removeIssue as any)(workspaceSlug, projectId, issueId, payload);
+    currentStore.removeIssue(workspaceSlug, projectId, issueId);
   };
 
-  archiveIssue = async (
-    workspaceSlug: string,
-    projectId: string,
-    issueId: string,
-    payload?: TIssueHierarchyActionPayload
-  ) => {
+  archiveIssue = async (workspaceSlug: string, projectId: string, issueId: string) => {
     const currentStore =
       this.serviceType === EIssueServiceType.EPICS
         ? this.rootIssueDetailStore.rootIssueStore.projectEpics
         : this.rootIssueDetailStore.rootIssueStore.projectIssues;
-    (currentStore.archiveIssue as any)(workspaceSlug, projectId, issueId, payload);
+    currentStore.archiveIssue(workspaceSlug, projectId, issueId);
   };
 
   addCycleToIssue = async (workspaceSlug: string, projectId: string, cycleId: string, issueId: string) => {
@@ -305,8 +286,9 @@ export class IssueStore implements IIssueStore {
 
     // handle parent issue if exists
     if (issue?.parent && issue?.parent?.id && issue?.parent?.project_id) {
-      const parentIssue = await this.issueService.retrieve(workspaceSlug, issue.parent.project_id, issue.parent.id);
-      this.rootIssueDetailStore.rootIssueStore.issues.addIssue([parentIssue]);
+      this.issueService.retrieve(workspaceSlug, issue.parent.project_id, issue.parent.id).then((res) => {
+        this.rootIssueDetailStore.rootIssueStore.issues.addIssue([res]);
+      });
     }
 
     // add identifiers to map

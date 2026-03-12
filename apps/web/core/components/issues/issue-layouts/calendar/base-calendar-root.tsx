@@ -137,20 +137,18 @@ export const BaseCalendarRoot = observer(function BaseCalendarRoot(props: IBaseC
 
   const getPaginationData = useCallback(
     (groupId: string | undefined) => issues?.getPaginationData(groupId, undefined),
-    [issues]
+    [issues?.getPaginationData]
   );
 
   const getGroupIssueCount = useCallback(
     (groupId: string | undefined) => issues?.getGroupIssueCount(groupId, undefined, false),
-    [issues]
+    [issues?.getGroupIssueCount]
   );
 
   const canEditProperties = useCallback(
-    (targetProjectId: string | undefined) => {
+    (projectId: string | undefined) => {
       const isEditingAllowedBasedOnProject =
-        canEditPropertiesBasedOnProject && targetProjectId
-          ? canEditPropertiesBasedOnProject(targetProjectId)
-          : isEditingAllowed;
+        canEditPropertiesBasedOnProject && projectId ? canEditPropertiesBasedOnProject(projectId) : isEditingAllowed;
 
       return enableInlineEditing && isEditingAllowedBasedOnProject;
     },
@@ -172,10 +170,10 @@ export const BaseCalendarRoot = observer(function BaseCalendarRoot(props: IBaseC
               parentRef={parentRef}
               customActionButton={customActionButton}
               issue={issue}
-              handleDelete={async (payload) => removeIssue(issue.project_id, issue.id, payload)}
+              handleDelete={async () => removeIssue(issue.project_id, issue.id)}
               handleUpdate={async (data) => updateIssue && updateIssue(issue.project_id, issue.id, data)}
               handleRemoveFromView={async () => removeIssueFromView && removeIssueFromView(issue.project_id, issue.id)}
-              handleArchive={async (payload) => archiveIssue && archiveIssue(issue.project_id, issue.id, payload)}
+              handleArchive={async () => archiveIssue && archiveIssue(issue.project_id, issue.id)}
               handleRestore={async () => restoreIssue && restoreIssue(issue.project_id, issue.id)}
               readOnly={!canEditProperties(issue.project_id ?? undefined) || isCompletedCycle}
               placements={placement}

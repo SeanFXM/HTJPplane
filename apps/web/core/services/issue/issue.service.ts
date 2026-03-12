@@ -11,9 +11,6 @@ import type {
   TIssueParams,
   IIssueDisplayProperties,
   TBulkOperationsPayload,
-  TIssueArchiveResponse,
-  TIssueDeleteResponse,
-  TIssueHierarchyActionPayload,
   TIssue,
   TIssueActivity,
   TIssueLink,
@@ -234,13 +231,8 @@ export class IssueService extends APIService {
       });
   }
 
-  async deleteIssue(
-    workspaceSlug: string,
-    projectId: string,
-    issuesId: string,
-    data?: TIssueHierarchyActionPayload
-  ): Promise<TIssueDeleteResponse> {
-    return this.delete(`/api/workspaces/${workspaceSlug}/projects/${projectId}/${this.serviceType}/${issuesId}/`, data)
+  async deleteIssue(workspaceSlug: string, projectId: string, issuesId: string): Promise<any> {
+    return this.delete(`/api/workspaces/${workspaceSlug}/projects/${projectId}/${this.serviceType}/${issuesId}/`)
       .then((response) => response?.data)
       .catch((error) => {
         throw error?.response?.data;
@@ -357,9 +349,8 @@ export class IssueService extends APIService {
     projectId: string,
     data: {
       issue_ids: string[];
-      sub_issue_strategy?: TIssueHierarchyActionPayload["sub_issue_strategy"];
     }
-  ): Promise<TIssueDeleteResponse> {
+  ): Promise<any> {
     return this.delete(`/api/workspaces/${workspaceSlug}/projects/${projectId}/bulk-delete-issues/`, data)
       .then(async (response) => response?.data)
       .catch((error) => {
@@ -372,9 +363,10 @@ export class IssueService extends APIService {
     projectId: string,
     data: {
       issue_ids: string[];
-      sub_issue_strategy?: TIssueHierarchyActionPayload["sub_issue_strategy"];
     }
-  ): Promise<TIssueArchiveResponse> {
+  ): Promise<{
+    archived_at: string;
+  }> {
     return this.post(`/api/workspaces/${workspaceSlug}/projects/${projectId}/bulk-archive-issues/`, data)
       .then(async (response) => response?.data)
       .catch((error) => {

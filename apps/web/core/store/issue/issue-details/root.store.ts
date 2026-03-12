@@ -23,6 +23,7 @@ import type {
   IIssueActivityStoreActions,
   TActivityLoader,
 } from "@/plane-web/store/issue/issue-details/activity.store";
+import type { RootStore } from "@/plane-web/store/root.store";
 import type { TIssueRelationTypes } from "@/plane-web/types";
 import type { IIssueRootStore } from "../root.store";
 import { IssueAttachmentStore } from "./attachment.store";
@@ -259,8 +260,8 @@ export abstract class IssueDetail implements IIssueDetail {
     this.openWidgets = state;
     if (this.lastWidgetAction) this.lastWidgetAction = null;
   };
-  setLastWidgetAction = (widgetAction: TWorkItemWidgets) => {
-    this.openWidgets = [widgetAction];
+  setLastWidgetAction = (action: TWorkItemWidgets) => {
+    this.openWidgets = [action];
   };
   toggleOpenWidget = (state: TWorkItemWidgets) => {
     if (this.openWidgets && this.openWidgets.includes(state))
@@ -276,10 +277,10 @@ export abstract class IssueDetail implements IIssueDetail {
     this.issue.fetchIssueWithIdentifier(workspaceSlug, projectIdentifier, sequenceId);
   updateIssue = async (workspaceSlug: string, projectId: string, issueId: string, data: Partial<TIssue>) =>
     this.issue.updateIssue(workspaceSlug, projectId, issueId, data);
-  removeIssue = async (workspaceSlug: string, projectId: string, issueId: string, payload?: any) =>
-    this.issue.removeIssue(workspaceSlug, projectId, issueId, payload);
-  archiveIssue = async (workspaceSlug: string, projectId: string, issueId: string, payload?: any) =>
-    this.issue.archiveIssue(workspaceSlug, projectId, issueId, payload);
+  removeIssue = async (workspaceSlug: string, projectId: string, issueId: string) =>
+    this.issue.removeIssue(workspaceSlug, projectId, issueId);
+  archiveIssue = async (workspaceSlug: string, projectId: string, issueId: string) =>
+    this.issue.archiveIssue(workspaceSlug, projectId, issueId);
   addCycleToIssue = async (workspaceSlug: string, projectId: string, cycleId: string, issueId: string) =>
     this.issue.addCycleToIssue(workspaceSlug, projectId, cycleId, issueId);
   addIssueToCycle = async (workspaceSlug: string, projectId: string, cycleId: string, issueIds: string[]) =>

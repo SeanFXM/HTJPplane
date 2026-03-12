@@ -8,7 +8,6 @@ import json
 
 # Django imports
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import transaction
 from django.db.models import OuterRef, Q, Prefetch, Exists, Subquery, Count
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -44,19 +43,6 @@ from plane.utils.paginator import GroupedOffsetPaginator, SubGroupedOffsetPagina
 from plane.app.permissions import allow_permission, ROLE
 from plane.utils.error_codes import ERROR_CODES
 from plane.utils.host import base_host
-from .hierarchy_actions import (
-    SUB_ISSUE_STRATEGY_CASCADE_ARCHIVE,
-    SUB_ISSUE_STRATEGY_RELEASE,
-    archive_issues,
-    collect_descendants,
-    collect_direct_children,
-    ensure_manage_permissions_for_projects,
-    ensure_strategy_when_children_exist,
-    get_sub_issue_strategy,
-    release_direct_children,
-    validate_archivable_issues,
-    validate_sub_issue_strategy,
-)
 
 # Module imports
 from .. import BaseViewSet, BaseAPIView
@@ -270,53 +256,26 @@ class IssueArchiveViewSet(BaseViewSet):
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def archive(self, request, slug, project_id, pk=None):
         issue = Issue.issue_objects.get(workspace__slug=slug, project_id=project_id, pk=pk)
-        direct_children_map = collect_direct_children(slug, [issue.id])
-        strategy = validate_sub_issue_strategy(
-            get_sub_issue_strategy(request),
-            [SUB_ISSUE_STRATEGY_CASCADE_ARCHIVE, SUB_ISSUE_STRATEGY_RELEASE],
+        if issue.state.group not in ["completed", "cancelled"]:
+            return Response(
+                {"error": "Can only archive completed or cancelled state group issue"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        issue_activity.delay(
+            type="issue.activity.updated",
+            requested_data=json.dumps({"archived_at": str(timezone.now().date()), "automation": False}),
+            actor_id=str(request.user.id),
+            issue_id=str(issue.id),
+            project_id=str(project_id),
+            current_instance=json.dumps(IssueSerializer(issue).data, cls=DjangoJSONEncoder),
+            epoch=int(timezone.now().timestamp()),
+            notification=True,
+            origin=base_host(request=request, is_app=True),
         )
-        ensure_strategy_when_children_exist(
-            strategy,
-            direct_children_map,
-            [SUB_ISSUE_STRATEGY_CASCADE_ARCHIVE, SUB_ISSUE_STRATEGY_RELEASE],
-        )
+        issue.archived_at = timezone.now().date()
+        issue.save()
 
-        descendants = (
-            collect_descendants(slug, [issue.id]) if strategy == SUB_ISSUE_STRATEGY_CASCADE_ARCHIVE else {}
-        )
-        issues_to_archive = [issue]
-        if strategy == SUB_ISSUE_STRATEGY_CASCADE_ARCHIVE:
-            issues_to_archive.extend(descendants.values())
-        validate_archivable_issues(issues_to_archive)
-
-        related_project_ids = {str(issue.project_id)}
-        related_project_ids.update(str(child.project_id) for child in direct_children_map.get(str(issue.id), []))
-        related_project_ids.update(str(child.project_id) for child in descendants.values())
-        ensure_manage_permissions_for_projects(request.user, slug, related_project_ids)
-
-        origin = base_host(request=request, is_app=True)
-        archived_at = timezone.now().date()
-        released_sub_issue_ids = []
-
-        with transaction.atomic():
-            if strategy == SUB_ISSUE_STRATEGY_RELEASE:
-                released_sub_issue_ids = release_direct_children(
-                    direct_children_map.get(str(issue.id), []),
-                    request.user,
-                    origin,
-                )
-
-            archived_issue_ids = archive_issues(issues_to_archive, request.user, origin, archived_at)
-
-        return Response(
-            {
-                "archived_at": str(archived_at),
-                "archived_issue_ids": archived_issue_ids,
-                "released_sub_issue_ids": released_sub_issue_ids,
-                "sub_issue_strategy": strategy,
-            },
-            status=status.HTTP_200_OK,
-        )
+        return Response({"archived_at": str(issue.archived_at)}, status=status.HTTP_200_OK)
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def unarchive(self, request, slug, project_id, pk=None):
@@ -353,62 +312,32 @@ class BulkArchiveIssuesEndpoint(BaseAPIView):
         if not len(issue_ids):
             return Response({"error": "Issue IDs are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        issues = list(
-            Issue.issue_objects.filter(workspace__slug=slug, project_id=project_id, pk__in=issue_ids).select_related(
-                "state"
-            )
+        issues = Issue.objects.filter(workspace__slug=slug, project_id=project_id, pk__in=issue_ids).select_related(
+            "state"
         )
-        selected_issue_ids = [str(issue.id) for issue in issues]
-        direct_children_map = collect_direct_children(slug, selected_issue_ids)
-        strategy = validate_sub_issue_strategy(
-            get_sub_issue_strategy(request),
-            [SUB_ISSUE_STRATEGY_CASCADE_ARCHIVE, SUB_ISSUE_STRATEGY_RELEASE],
-        )
-        ensure_strategy_when_children_exist(
-            strategy,
-            direct_children_map,
-            [SUB_ISSUE_STRATEGY_CASCADE_ARCHIVE, SUB_ISSUE_STRATEGY_RELEASE],
-        )
-
-        descendants = (
-            collect_descendants(slug, selected_issue_ids) if strategy == SUB_ISSUE_STRATEGY_CASCADE_ARCHIVE else {}
-        )
-        issues_to_archive = list(issues)
-        if strategy == SUB_ISSUE_STRATEGY_CASCADE_ARCHIVE:
-            issues_to_archive.extend(descendants.values())
-        validate_archivable_issues(issues_to_archive)
-
-        related_project_ids = {str(issue.project_id) for issue in issues}
-        related_project_ids.update(str(child.project_id) for children in direct_children_map.values() for child in children)
-        related_project_ids.update(str(child.project_id) for child in descendants.values())
-        ensure_manage_permissions_for_projects(request.user, slug, related_project_ids)
-
-        archived_at = timezone.now().date()
-        origin = base_host(request=request, is_app=True)
-        released_sub_issue_ids = []
-
-        with transaction.atomic():
-            if strategy == SUB_ISSUE_STRATEGY_RELEASE:
-                releasable_children = []
-                selected_issue_id_set = set(selected_issue_ids)
-                for children in direct_children_map.values():
-                    releasable_children.extend(
-                        child for child in children if str(child.id) not in selected_issue_id_set
-                    )
-                released_sub_issue_ids = release_direct_children(
-                    releasable_children,
-                    request.user,
-                    origin,
+        bulk_archive_issues = []
+        for issue in issues:
+            if issue.state.group not in ["completed", "cancelled"]:
+                return Response(
+                    {
+                        "error_code": ERROR_CODES["INVALID_ARCHIVE_STATE_GROUP"],
+                        "error_message": "INVALID_ARCHIVE_STATE_GROUP",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
+            issue_activity.delay(
+                type="issue.activity.updated",
+                requested_data=json.dumps({"archived_at": str(timezone.now().date()), "automation": False}),
+                actor_id=str(request.user.id),
+                issue_id=str(issue.id),
+                project_id=str(project_id),
+                current_instance=json.dumps(IssueSerializer(issue).data, cls=DjangoJSONEncoder),
+                epoch=int(timezone.now().timestamp()),
+                notification=True,
+                origin=base_host(request=request, is_app=True),
+            )
+            issue.archived_at = timezone.now().date()
+            bulk_archive_issues.append(issue)
+        Issue.objects.bulk_update(bulk_archive_issues, ["archived_at"])
 
-            archived_issue_ids = archive_issues(issues_to_archive, request.user, origin, archived_at)
-
-        return Response(
-            {
-                "archived_at": str(archived_at),
-                "archived_issue_ids": archived_issue_ids,
-                "released_sub_issue_ids": released_sub_issue_ids,
-                "sub_issue_strategy": strategy,
-            },
-            status=status.HTTP_200_OK,
-        )
+        return Response({"archived_at": str(timezone.now().date())}, status=status.HTTP_200_OK)

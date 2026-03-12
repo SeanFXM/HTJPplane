@@ -22,7 +22,6 @@ from django.db.models import (
     UUIDField,
     Value,
 )
-from django.db import transaction
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -76,18 +75,6 @@ from plane.utils.paginator import GroupedOffsetPaginator, SubGroupedOffsetPagina
 from plane.utils.timezone_converter import user_timezone_converter
 
 from .. import BaseAPIView, BaseViewSet
-from .hierarchy_actions import (
-    SUB_ISSUE_STRATEGY_CASCADE_DELETE,
-    SUB_ISSUE_STRATEGY_RELEASE,
-    collect_descendants,
-    collect_direct_children,
-    emit_delete_activities,
-    ensure_manage_permissions_for_projects,
-    ensure_strategy_when_children_exist,
-    get_sub_issue_strategy,
-    release_direct_children,
-    validate_sub_issue_strategy,
-)
 
 
 class IssueListEndpoint(BaseAPIView):
@@ -716,60 +703,28 @@ class IssueViewSet(BaseViewSet):
     @allow_permission([ROLE.ADMIN], creator=True, model=Issue)
     def destroy(self, request, slug, project_id, pk=None):
         issue = Issue.objects.get(workspace__slug=slug, project_id=project_id, pk=pk)
-        direct_children_map = collect_direct_children(slug, [issue.id])
-        strategy = validate_sub_issue_strategy(
-            get_sub_issue_strategy(request),
-            [SUB_ISSUE_STRATEGY_CASCADE_DELETE, SUB_ISSUE_STRATEGY_RELEASE],
+
+        issue.delete()
+        # delete the issue from recent visits
+        UserRecentVisit.objects.filter(
+            project_id=project_id,
+            workspace__slug=slug,
+            entity_identifier=pk,
+            entity_name="issue",
+        ).delete(soft=False)
+        issue_activity.delay(
+            type="issue.activity.deleted",
+            requested_data=json.dumps({"issue_id": str(pk)}),
+            actor_id=str(request.user.id),
+            issue_id=str(pk),
+            project_id=str(project_id),
+            current_instance={},
+            epoch=int(timezone.now().timestamp()),
+            notification=True,
+            origin=base_host(request=request, is_app=True),
+            subscriber=False,
         )
-        ensure_strategy_when_children_exist(
-            strategy,
-            direct_children_map,
-            [SUB_ISSUE_STRATEGY_CASCADE_DELETE, SUB_ISSUE_STRATEGY_RELEASE],
-        )
-
-        descendants = (
-            collect_descendants(slug, [issue.id]) if strategy == SUB_ISSUE_STRATEGY_CASCADE_DELETE else {}
-        )
-        related_project_ids = {str(issue.project_id)}
-        related_project_ids.update(str(child.project_id) for child in direct_children_map.get(str(issue.id), []))
-        related_project_ids.update(str(child.project_id) for child in descendants.values())
-        ensure_manage_permissions_for_projects(request.user, slug, related_project_ids)
-
-        origin = base_host(request=request, is_app=True)
-        released_sub_issue_ids = []
-        deleted_issue_ids = [str(issue.id)]
-        deleted_issue_ids.extend(descendants.keys())
-        issue_project_map = {str(issue.id): str(issue.project_id)}
-        issue_project_map.update({issue_id: str(child.project_id) for issue_id, child in descendants.items()})
-
-        with transaction.atomic():
-            if strategy == SUB_ISSUE_STRATEGY_RELEASE:
-                released_sub_issue_ids = release_direct_children(
-                    [
-                        child
-                        for child in direct_children_map.get(str(issue.id), [])
-                        if str(child.id) != str(issue.id)
-                    ],
-                    request.user,
-                    origin,
-                )
-
-            issue.delete()
-            UserRecentVisit.objects.filter(
-                workspace__slug=slug,
-                entity_identifier__in=deleted_issue_ids,
-                entity_name="issue",
-            ).delete(soft=False)
-            emit_delete_activities(deleted_issue_ids, request.user, origin, issue_project_map)
-
-        return Response(
-            {
-                "deleted_issue_ids": deleted_issue_ids,
-                "released_sub_issue_ids": released_sub_issue_ids,
-                "sub_issue_strategy": strategy,
-            },
-            status=status.HTTP_200_OK,
-        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ProjectUserDisplayPropertyEndpoint(BaseAPIView):
@@ -810,64 +765,21 @@ class BulkDeleteIssuesEndpoint(BaseAPIView):
         if not len(issue_ids):
             return Response({"error": "Issue IDs are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        issues = list(
-            Issue.issue_objects.filter(workspace__slug=slug, project_id=project_id, pk__in=issue_ids).select_related("state")
-        )
-        selected_issue_ids = [str(issue.id) for issue in issues]
-        direct_children_map = collect_direct_children(slug, selected_issue_ids)
-        strategy = validate_sub_issue_strategy(
-            get_sub_issue_strategy(request),
-            [SUB_ISSUE_STRATEGY_CASCADE_DELETE, SUB_ISSUE_STRATEGY_RELEASE],
-        )
-        ensure_strategy_when_children_exist(
-            strategy,
-            direct_children_map,
-            [SUB_ISSUE_STRATEGY_CASCADE_DELETE, SUB_ISSUE_STRATEGY_RELEASE],
-        )
+        issues = Issue.issue_objects.filter(workspace__slug=slug, project_id=project_id, pk__in=issue_ids)
 
-        descendants = (
-            collect_descendants(slug, selected_issue_ids) if strategy == SUB_ISSUE_STRATEGY_CASCADE_DELETE else {}
-        )
-        related_project_ids = {str(issue.project_id) for issue in issues}
-        related_project_ids.update(str(child.project_id) for children in direct_children_map.values() for child in children)
-        related_project_ids.update(str(child.project_id) for child in descendants.values())
-        ensure_manage_permissions_for_projects(request.user, slug, related_project_ids)
+        total_issues = len(issues)
 
-        origin = base_host(request=request, is_app=True)
-        released_sub_issue_ids = []
-        deleted_issue_ids = list(dict.fromkeys(selected_issue_ids + list(descendants.keys())))
-        issue_project_map = {str(issue.id): str(issue.project_id) for issue in issues}
-        issue_project_map.update({issue_id: str(child.project_id) for issue_id, child in descendants.items()})
+        # First, delete all related cycle issues
+        CycleIssue.objects.filter(issue_id__in=issue_ids).delete()
 
-        with transaction.atomic():
-            if strategy == SUB_ISSUE_STRATEGY_RELEASE:
-                releasable_children = []
-                selected_issue_id_set = set(selected_issue_ids)
-                for children in direct_children_map.values():
-                    releasable_children.extend(
-                        child for child in children if str(child.id) not in selected_issue_id_set
-                    )
-                released_sub_issue_ids = release_direct_children(
-                    releasable_children,
-                    request.user,
-                    origin,
-                )
+        # Then, delete all related module issues
+        ModuleIssue.objects.filter(issue_id__in=issue_ids).delete()
 
-            Issue.issue_objects.filter(workspace__slug=slug, project_id=project_id, pk__in=selected_issue_ids).delete()
-            UserRecentVisit.objects.filter(
-                workspace__slug=slug,
-                entity_identifier__in=deleted_issue_ids,
-                entity_name="issue",
-            ).delete(soft=False)
-            emit_delete_activities(deleted_issue_ids, request.user, origin, issue_project_map)
+        # Finally, delete the issues themselves
+        issues.delete()
 
         return Response(
-            {
-                "message": f"{len(deleted_issue_ids)} issues were deleted",
-                "deleted_issue_ids": deleted_issue_ids,
-                "released_sub_issue_ids": released_sub_issue_ids,
-                "sub_issue_strategy": strategy,
-            },
+            {"message": f"{total_issues} issues were deleted"},
             status=status.HTTP_200_OK,
         )
 

@@ -5,7 +5,7 @@
  */
 
 import { API_BASE_URL } from "@plane/constants";
-import type { TIssue, TIssueArchiveResponse, TIssueHierarchyActionPayload, TIssueServiceType } from "@plane/types";
+import type { TIssue, TIssueServiceType } from "@plane/types";
 import { EIssueServiceType } from "@plane/types";
 import { APIService } from "@/services/api.service";
 // types
@@ -36,13 +36,11 @@ export class IssueArchiveService extends APIService {
   async archiveIssue(
     workspaceSlug: string,
     projectId: string,
-    issueId: string,
-    data?: TIssueHierarchyActionPayload
-  ): Promise<TIssueArchiveResponse> {
-    return this.post(
-      `/api/workspaces/${workspaceSlug}/projects/${projectId}/${this.serviceType}/${issueId}/archive/`,
-      data
-    )
+    issueId: string
+  ): Promise<{
+    archived_at: string;
+  }> {
+    return this.post(`/api/workspaces/${workspaceSlug}/projects/${projectId}/${this.serviceType}/${issueId}/archive/`)
       .then((response) => response?.data)
       .catch((error) => {
         throw error?.response?.data;

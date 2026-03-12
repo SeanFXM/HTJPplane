@@ -4,14 +4,13 @@
  * See the LICENSE file for details.
  */
 
-import type { MutableRefObject } from "react";
+import type { FC, MutableRefObject } from "react";
 // components
 import type { TIssue, IIssueDisplayProperties, TIssueMap, TGroupedIssues } from "@plane/types";
 // hooks
 import type { TSelectionHelper } from "@/hooks/use-multiple-select";
 // types
 import { IssueBlockRoot } from "./block-root";
-import { buildIssueHierarchy } from "../hierarchy";
 import type { TRenderQuickActions } from "./list-view-types";
 
 interface Props {
@@ -45,13 +44,11 @@ export function IssueBlocksList(props: Props) {
     isEpic = false,
   } = props;
 
-  const hierarchy = buildIssueHierarchy(issueIds ?? [], issuesMap);
-
   return (
     <div className="relative h-full w-full">
-      {hierarchy.rootIssueIds &&
-        hierarchy.rootIssueIds.length > 0 &&
-        hierarchy.rootIssueIds.map((issueId: string, index: number) => (
+      {issueIds &&
+        issueIds.length > 0 &&
+        issueIds.map((issueId: string, index: number) => (
           <IssueBlockRoot
             key={issueId}
             issueId={issueId}
@@ -65,11 +62,10 @@ export function IssueBlocksList(props: Props) {
             containerRef={containerRef}
             selectionHelpers={selectionHelpers}
             groupId={groupId}
-            isLastChild={index === hierarchy.rootIssueIds.length - 1}
+            isLastChild={index === issueIds.length - 1}
             isDragAllowed={isDragAllowed}
             canDropOverIssue={canDropOverIssue}
             isEpic={isEpic}
-            projectedChildrenByParentId={hierarchy.childrenByParentId}
           />
         ))}
     </div>

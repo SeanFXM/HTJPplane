@@ -91,9 +91,9 @@ export const WorkspaceSpreadsheetRoot = observer(function WorkspaceSpreadsheetRo
         parentRef={parentRef}
         customActionButton={customActionButton}
         issue={issue}
-        handleDelete={async (payload) => removeIssue(issue.project_id, issue.id, payload)}
+        handleDelete={async () => removeIssue(issue.project_id, issue.id)}
         handleUpdate={async (data) => updateIssue && updateIssue(issue.project_id, issue.id, data)}
-        handleArchive={async (payload) => archiveIssue && archiveIssue(issue.project_id, issue.id, payload)}
+        handleArchive={async () => archiveIssue && archiveIssue(issue.project_id, issue.id)}
         portalElement={portalElement}
         readOnly={!canEditProperties(issue.project_id ?? undefined)}
         placements={placement}

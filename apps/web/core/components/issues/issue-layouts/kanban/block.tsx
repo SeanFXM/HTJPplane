@@ -13,7 +13,6 @@ import { useParams } from "next/navigation";
 // plane helpers
 import { MoreHorizontal } from "lucide-react";
 import { useOutsideClickDetector } from "@plane/hooks";
-import { ChevronRightIcon } from "@plane/propel/icons";
 // types
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
@@ -40,11 +39,6 @@ import type { TRenderQuickActions } from "../list/list-view-types";
 import { IssueProperties } from "../properties/all-properties";
 import { WithDisplayPropertiesHOC } from "../properties/with-display-properties-HOC";
 
-const handleIssueActionMouseDown = (e: React.MouseEvent) => {
-  e.stopPropagation();
-  e.preventDefault();
-};
-
 interface IssueBlockProps {
   issueId: string;
   groupId: string;
@@ -60,10 +54,6 @@ interface IssueBlockProps {
   scrollableContainerRef?: MutableRefObject<HTMLDivElement | null>;
   shouldRenderByDefault?: boolean;
   isEpic?: boolean;
-  hasChildren?: boolean;
-  isExpanded?: boolean;
-  onToggleExpand?: () => void;
-  nestingLevel?: number;
 }
 
 interface IssueDetailsBlockProps {
@@ -74,26 +64,10 @@ interface IssueDetailsBlockProps {
   quickActions: TRenderQuickActions;
   isReadOnly: boolean;
   isEpic?: boolean;
-  hasChildren?: boolean;
-  isExpanded?: boolean;
-  onToggleExpand?: () => void;
-  nestingLevel?: number;
 }
 
 const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props: IssueDetailsBlockProps) {
-  const {
-    cardRef,
-    issue,
-    updateIssue,
-    quickActions,
-    isReadOnly,
-    displayProperties,
-    isEpic = false,
-    hasChildren = false,
-    isExpanded = false,
-    onToggleExpand,
-    nestingLevel = 0,
-  } = props;
+  const { cardRef, issue, updateIssue, quickActions, isReadOnly, displayProperties, isEpic = false } = props;
   // refs
   const menuActionRef = useRef<HTMLDivElement | null>(null);
   // states
@@ -102,8 +76,7 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
   const { isMobile } = usePlatformOS();
 
   const customActionButton = (
-    <button
-      type="button"
+    <div
       ref={menuActionRef}
       className={`flex h-full w-full cursor-pointer items-center rounded-sm p-1 text-placeholder hover:bg-layer-1 ${
         isMenuActive ? "bg-layer-1 text-primary" : "text-secondary"
@@ -111,56 +84,37 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
       onClick={() => setIsMenuActive(!isMenuActive)}
     >
       <MoreHorizontal className="h-3.5 w-3.5" />
-    </button>
+    </div>
   );
 
   // derived values
   const subIssueCount = issue?.sub_issues_count ?? 0;
+
+  const handleEventPropagation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+  };
 
   useOutsideClickDetector(menuActionRef, () => setIsMenuActive(false));
 
   return (
     <>
       <div className="relative">
-        <div
-          className="flex items-center gap-1.5"
-          style={nestingLevel > 0 ? { marginLeft: `${nestingLevel * 12}px` } : {}}
-        >
-          {hasChildren && (
-            <button
-              type="button"
-              className="grid size-4 place-items-center rounded-xs text-placeholder hover:text-tertiary"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onToggleExpand?.();
-              }}
-            >
-              <ChevronRightIcon
-                className={cn("size-4 transition-transform", {
-                  "rotate-90": isExpanded,
-                })}
-                strokeWidth={2.5}
-              />
-            </button>
-          )}
-          {issue.project_id && (
-            <IssueIdentifier
-              issueId={issue.id}
-              projectId={issue.project_id}
-              size="xs"
-              variant="tertiary"
-              displayProperties={displayProperties}
-            />
-          )}
-        </div>
+        {issue.project_id && (
+          <IssueIdentifier
+            issueId={issue.id}
+            projectId={issue.project_id}
+            size="xs"
+            variant="tertiary"
+            displayProperties={displayProperties}
+          />
+        )}
         <div
           className={cn("absolute -top-1 right-0", {
             "hidden group-hover/kanban-block:block": !isMobile,
             "!block": isMenuActive,
           })}
-          role="presentation"
-          onMouseDown={handleIssueActionMouseDown}
+          onClick={handleEventPropagation}
         >
           {quickActions({
             issue,
@@ -214,10 +168,6 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
     scrollableContainerRef,
     shouldRenderByDefault,
     isEpic = false,
-    hasChildren = false,
-    isExpanded = false,
-    onToggleExpand,
-    nestingLevel = 0,
   } = props;
 
   const cardRef = useRef<HTMLAnchorElement | null>(null);
@@ -297,13 +247,12 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
       })
     );
   }, [
-    issue?.id,
-    isDragAllowed,
-    canDropOverIssue,
-    setIsCurrentBlockDragging,
-    setIsDraggingOverBlock,
-    setIsKanbanDragging,
-  ]);
+	issue?.id,
+	isDragAllowed,
+	canDropOverIssue,
+	setIsCurrentBlockDragging,
+	setIsDraggingOverBlock
+]);
 
   if (!issue) return null;
 
@@ -356,10 +305,6 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
               quickActions={quickActions}
               isReadOnly={!canEditIssueProperties}
               isEpic={isEpic}
-              hasChildren={hasChildren}
-              isExpanded={isExpanded}
-              onToggleExpand={onToggleExpand}
-              nestingLevel={nestingLevel}
             />
           </RenderIfVisible>
         </ControlLink>
