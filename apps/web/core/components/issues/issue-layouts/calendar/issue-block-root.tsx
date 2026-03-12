@@ -23,10 +23,24 @@ type Props = {
   isDragDisabled: boolean;
   isEpic?: boolean;
   canEditProperties: (projectId: string | undefined) => boolean;
+  hasChildren?: boolean;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
+  nestingLevel?: number;
 };
 
 export const CalendarIssueBlockRoot = observer(function CalendarIssueBlockRoot(props: Props) {
-  const { issueId, quickActions, isDragDisabled, isEpic = false, canEditProperties } = props;
+  const {
+    issueId,
+    quickActions,
+    isDragDisabled,
+    isEpic = false,
+    canEditProperties,
+    hasChildren = false,
+    isExpanded = false,
+    onToggleExpand,
+    nestingLevel = 0,
+  } = props;
 
   const issueRef = useRef<HTMLAnchorElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -72,6 +86,10 @@ export const CalendarIssueBlockRoot = observer(function CalendarIssueBlockRoot(p
       quickActions={quickActions}
       ref={issueRef}
       isEpic={isEpic}
+      hasChildren={hasChildren}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
+      nestingLevel={nestingLevel}
     />
   );
 });

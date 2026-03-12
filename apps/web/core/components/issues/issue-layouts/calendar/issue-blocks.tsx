@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+import { useState } from "react";
 import { observer } from "mobx-react";
 import { useTranslation } from "@plane/i18n";
 import type { TIssue, TPaginationData } from "@plane/types";
@@ -11,6 +12,7 @@ import type { TIssue, TPaginationData } from "@plane/types";
 import { renderFormattedPayloadDate } from "@plane/utils";
 // helpers
 import { useIssuesStore } from "@/hooks/use-issue-layout-store";
+import { buildIssueHierarchy } from "../hierarchy";
 import type { TRenderQuickActions } from "../list/list-view-types";
 import { CalendarIssueBlockRoot } from "./issue-block-root";
 import { CalendarQuickAddIssueActions } from "./quick-add-issue-actions";
@@ -52,6 +54,7 @@ export const CalendarIssueBlocks = observer(function CalendarIssueBlocks(props: 
   } = props;
   const formattedDatePayload = renderFormattedPayloadDate(date);
   const { t } = useTranslation();
+  const { issueMap } = useIssuesStore();
 
   const {
     issues: { getGroupIssueCount, getPaginationData, getIssueLoader },
@@ -67,19 +70,21 @@ export const CalendarIssueBlocks = observer(function CalendarIssueBlocks(props: 
     nextPageResults === undefined && dayIssueCount !== undefined
       ? issueIdList?.length < dayIssueCount
       : !!nextPageResults;
+  const hierarchy = buildIssueHierarchy(issueIdList ?? [], issueMap);
 
   return (
     <>
-      {issueIdList?.map((issueId) => (
-        <div key={issueId} className="relative cursor-pointer p-1 px-2">
-          <CalendarIssueBlockRoot
-            issueId={issueId}
-            quickActions={quickActions}
-            isDragDisabled={isDragDisabled || isMobileView}
-            canEditProperties={canEditProperties}
-            isEpic={isEpic}
-          />
-        </div>
+      {hierarchy.rootIssueIds?.map((issueId) => (
+        <CalendarHierarchyIssueBlock
+          key={issueId}
+          issueId={issueId}
+          quickActions={quickActions}
+          isDragDisabled={isDragDisabled || isMobileView}
+          canEditProperties={canEditProperties}
+          isEpic={isEpic}
+          childrenByParentId={hierarchy.childrenByParentId}
+          nestingLevel={0}
+        />
       ))}
 
       {isPaginating && (
@@ -113,5 +118,62 @@ export const CalendarIssueBlocks = observer(function CalendarIssueBlocks(props: 
         </div>
       )}
     </>
+  );
+});
+
+type TCalendarHierarchyIssueBlockProps = {
+  issueId: string;
+  quickActions: TRenderQuickActions;
+  isDragDisabled: boolean;
+  canEditProperties: (projectId: string | undefined) => boolean;
+  isEpic?: boolean;
+  childrenByParentId: Record<string, string[]>;
+  nestingLevel: number;
+};
+
+const CalendarHierarchyIssueBlock = observer(function CalendarHierarchyIssueBlock(
+  props: TCalendarHierarchyIssueBlockProps
+) {
+  const {
+    issueId,
+    quickActions,
+    isDragDisabled,
+    canEditProperties,
+    isEpic = false,
+    childrenByParentId,
+    nestingLevel,
+  } = props;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const childIssueIds = childrenByParentId[issueId] ?? [];
+
+  return (
+    <div className={nestingLevel > 0 ? "pl-3" : ""}>
+      <div className="relative cursor-pointer p-1 px-2">
+        <CalendarIssueBlockRoot
+          issueId={issueId}
+          quickActions={quickActions}
+          isDragDisabled={isDragDisabled}
+          canEditProperties={canEditProperties}
+          isEpic={isEpic}
+          hasChildren={childIssueIds.length > 0}
+          isExpanded={isExpanded}
+          onToggleExpand={() => setIsExpanded((state) => !state)}
+          nestingLevel={nestingLevel}
+        />
+      </div>
+      {isExpanded &&
+        childIssueIds.map((childIssueId) => (
+          <CalendarHierarchyIssueBlock
+            key={childIssueId}
+            issueId={childIssueId}
+            quickActions={quickActions}
+            isDragDisabled={isDragDisabled}
+            canEditProperties={canEditProperties}
+            isEpic={isEpic}
+            childrenByParentId={childrenByParentId}
+            nestingLevel={nestingLevel + 1}
+          />
+        ))}
+    </div>
   );
 });

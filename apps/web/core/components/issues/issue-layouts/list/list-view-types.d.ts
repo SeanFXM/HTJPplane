@@ -1,13 +1,13 @@
 import type { TPlacement } from "@plane/propel/utils/placement";
-import type { TIssue } from "@plane/types";
+import type { TIssue, TIssueHierarchyActionPayload } from "@plane/types";
 
 export interface IQuickActionProps {
   parentRef: React.RefObject<HTMLElement>;
   issue: TIssue;
-  handleDelete: () => Promise<void>;
+  handleDelete: (payload?: TIssueHierarchyActionPayload) => Promise<void>;
   handleUpdate?: (data: TIssue) => Promise<void>;
   handleRemoveFromView?: () => Promise<void>;
-  handleArchive?: () => Promise<void>;
+  handleArchive?: (payload?: TIssueHierarchyActionPayload) => Promise<void>;
   handleRestore?: () => Promise<void>;
   handleMoveToIssues?: () => Promise<void>;
   customActionButton?: React.ReactElement;

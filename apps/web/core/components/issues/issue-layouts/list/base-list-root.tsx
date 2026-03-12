@@ -99,9 +99,11 @@ export const BaseListRoot = observer(function BaseListRoot(props: IBaseListRoot)
   const { enableInlineEditing, enableQuickAdd, enableIssueCreation } = issues?.viewFlags || {};
 
   const canEditProperties = useCallback(
-    (projectId: string | undefined) => {
+    (targetProjectId: string | undefined) => {
       const isEditingAllowedBasedOnProject =
-        canEditPropertiesBasedOnProject && projectId ? canEditPropertiesBasedOnProject(projectId) : isEditingAllowed;
+        canEditPropertiesBasedOnProject && targetProjectId
+          ? canEditPropertiesBasedOnProject(targetProjectId)
+          : isEditingAllowed;
 
       return !!enableInlineEditing && isEditingAllowedBasedOnProject;
     },
@@ -115,10 +117,10 @@ export const BaseListRoot = observer(function BaseListRoot(props: IBaseListRoot)
       <QuickActions
         parentRef={parentRef}
         issue={issue}
-        handleDelete={async () => removeIssue(issue.project_id, issue.id)}
+        handleDelete={async (payload) => removeIssue(issue.project_id, issue.id, payload)}
         handleUpdate={async (data) => updateIssue && updateIssue(issue.project_id, issue.id, data)}
         handleRemoveFromView={async () => removeIssueFromView && removeIssueFromView(issue.project_id, issue.id)}
-        handleArchive={async () => archiveIssue && archiveIssue(issue.project_id, issue.id)}
+        handleArchive={async (payload) => archiveIssue && archiveIssue(issue.project_id, issue.id, payload)}
         handleRestore={async () => restoreIssue && restoreIssue(issue.project_id, issue.id)}
         readOnly={!canEditProperties(issue.project_id ?? undefined) || isCompletedCycle}
       />
@@ -138,14 +140,14 @@ export const BaseListRoot = observer(function BaseListRoot(props: IBaseListRoot)
   const handleCollapsedGroups = useCallback(
     (value: string) => {
       if (workspaceSlug) {
-        let collapsedGroups = issuesFilter?.issueFilters?.kanbanFilters?.group_by || [];
-        if (collapsedGroups.includes(value)) {
-          collapsedGroups = collapsedGroups.filter((_value) => _value != value);
+        let nextCollapsedGroups = issuesFilter?.issueFilters?.kanbanFilters?.group_by || [];
+        if (nextCollapsedGroups.includes(value)) {
+          nextCollapsedGroups = nextCollapsedGroups.filter((_value) => _value != value);
         } else {
-          collapsedGroups.push(value);
+          nextCollapsedGroups.push(value);
         }
         updateFilters(projectId?.toString() ?? "", EIssueFilterType.KANBAN_FILTERS, {
-          group_by: collapsedGroups,
+          group_by: nextCollapsedGroups,
         } as TIssueKanbanFilters);
       }
     },

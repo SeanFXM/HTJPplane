@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane imports
@@ -31,6 +31,7 @@ import { useBulkOperationStatus } from "@/plane-web/hooks/use-bulk-operation-sta
 import { IssueLayoutHOC } from "../issue-layout-HOC";
 import { GanttQuickAddIssueButton, QuickAddIssueRoot } from "../quick-add";
 import { IssueGanttBlock } from "./blocks";
+import { buildIssueHierarchy, flattenVisibleHierarchy } from "../hierarchy";
 
 interface IBaseGanttRoot {
   viewId?: string | undefined;
@@ -52,7 +53,7 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
   const { workspaceSlug, projectId } = useParams();
 
   const storeType = useIssueStoreType() as GanttStoreType;
-  const { issues, issuesFilter } = useIssues(storeType);
+  const { issueMap, issues, issuesFilter } = useIssues(storeType);
   const { fetchIssues, fetchNextIssues, updateIssue, quickAddIssue } = useIssuesActions(storeType);
   const timelineStore = useTimeLineChart(GANTT_TIMELINE_TYPE.ISSUE);
   const { initGantt, getBlockById } = timelineStore;
@@ -75,10 +76,25 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
 
   useEffect(() => {
     initGantt();
-  }, []);
+  }, [initGantt]);
 
-  const issuesIds = (issues.groupedIssueIds?.[ALL_ISSUES] as string[]) ?? [];
+  const [expandedIssueIds, setExpandedIssueIds] = useState<Set<string>>(new Set());
+  const issuesIds = useMemo(() => (issues.groupedIssueIds?.[ALL_ISSUES] as string[]) ?? [], [issues.groupedIssueIds]);
+  const hierarchy = useMemo(() => buildIssueHierarchy(issuesIds, issueMap), [issuesIds, issueMap]);
+  const visibleIssueIds = useMemo(
+    () => flattenVisibleHierarchy(hierarchy.rootIssueIds, hierarchy.childrenByParentId, expandedIssueIds),
+    [expandedIssueIds, hierarchy]
+  );
   const nextPageResults = issues.getPaginationData(undefined, undefined)?.nextPageResults;
+
+  const handleToggleIssueExpand = useCallback((issueId: string) => {
+    setExpandedIssueIds((previousState) => {
+      const nextState = new Set(previousState);
+      if (nextState.has(issueId)) nextState.delete(issueId);
+      else nextState.add(issueId);
+      return nextState;
+    });
+  }, []);
 
   const { enableIssueCreation } = issues?.viewFlags || {};
 
@@ -92,7 +108,7 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
     const payload: any = { ...data };
     if (data.sort_order) payload.sort_order = data.sort_order.newSortOrder;
 
-    updateIssue && (await updateIssue(issue.project_id, issue.id, payload));
+    if (updateIssue) await updateIssue(issue.project_id, issue.id, payload);
   };
 
   const isAllowed = allowPermissions([EUserPermissions.ADMIN, EUserPermissions.MEMBER], EUserPermissionsLevel.PROJECT);
@@ -192,7 +208,7 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
             border={false}
             title={isEpic ? t("epic.label", { count: 2 }) : t("issue.label", { count: 2 })}
             loaderTitle={isEpic ? t("epic.label", { count: 2 }) : t("issue.label", { count: 2 })}
-            blockIds={issuesIds}
+            blockIds={visibleIssueIds}
             blockUpdateHandler={updateIssueBlockStructure}
             blockToRender={(data: TIssue & { meta?: { position?: { width?: number } } }) => (
               <IssueGanttBlock
@@ -202,7 +218,17 @@ export const BaseGanttRoot = observer(function BaseGanttRoot(props: IBaseGanttRo
                 displayProperties={issuesFilter?.issueFilters?.displayProperties}
               />
             )}
-            sidebarToRender={(sidebarProps) => <IssueGanttSidebar {...sidebarProps} showAllBlocks isEpic={isEpic} />}
+            sidebarToRender={(sidebarProps) => (
+              <IssueGanttSidebar
+                {...sidebarProps}
+                showAllBlocks
+                isEpic={isEpic}
+                depthByIssueId={hierarchy.depthByIssueId}
+                childrenByParentId={hierarchy.childrenByParentId}
+                expandedIssueIds={expandedIssueIds}
+                onToggleIssueExpand={handleToggleIssueExpand}
+              />
+            )}
             enableBlockLeftResize={isAllowed}
             enableBlockRightResize={isAllowed}
             enableBlockMove={isAllowed}

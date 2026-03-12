@@ -71,9 +71,11 @@ export const BaseSpreadsheetRoot = observer(function BaseSpreadsheetRoot(props: 
   }, [fetchIssues, storeType, viewId]);
 
   const canEditProperties = useCallback(
-    (projectId: string | undefined) => {
+    (targetProjectId: string | undefined) => {
       const isEditingAllowedBasedOnProject =
-        canEditPropertiesBasedOnProject && projectId ? canEditPropertiesBasedOnProject(projectId) : isEditingAllowed;
+        canEditPropertiesBasedOnProject && targetProjectId
+          ? canEditPropertiesBasedOnProject(targetProjectId)
+          : isEditingAllowed;
 
       return enableInlineEditing && isEditingAllowedBasedOnProject;
     },
@@ -98,17 +100,26 @@ export const BaseSpreadsheetRoot = observer(function BaseSpreadsheetRoot(props: 
         parentRef={parentRef}
         customActionButton={customActionButton}
         issue={issue}
-        handleDelete={async () => removeIssue(issue.project_id, issue.id)}
+        handleDelete={async (payload) => removeIssue(issue.project_id, issue.id, payload)}
         handleUpdate={async (data) => updateIssue && updateIssue(issue.project_id, issue.id, data)}
         handleRemoveFromView={async () => removeIssueFromView && removeIssueFromView(issue.project_id, issue.id)}
-        handleArchive={async () => archiveIssue && archiveIssue(issue.project_id, issue.id)}
+        handleArchive={async (payload) => archiveIssue && archiveIssue(issue.project_id, issue.id, payload)}
         handleRestore={async () => restoreIssue && restoreIssue(issue.project_id, issue.id)}
         portalElement={portalElement}
         readOnly={!canEditProperties(issue.project_id ?? undefined) || isCompletedCycle}
         placements={placement}
       />
     ),
-    [isCompletedCycle, canEditProperties, removeIssue, updateIssue, removeIssueFromView, archiveIssue, restoreIssue]
+    [
+      QuickActions,
+      isCompletedCycle,
+      canEditProperties,
+      removeIssue,
+      updateIssue,
+      removeIssueFromView,
+      archiveIssue,
+      restoreIssue,
+    ]
   );
 
   if (!Array.isArray(issueIds)) return null;

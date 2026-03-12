@@ -25,10 +25,24 @@ type Props = {
   isDragging: boolean;
   selectionHelpers?: TSelectionHelper;
   isEpic?: boolean;
+  nestingLevel?: number;
+  hasChildren?: boolean;
+  isExpanded?: boolean;
+  onToggleExpand?: (issueId: string) => void;
 };
 
 export const IssuesSidebarBlock = observer(function IssuesSidebarBlock(props: Props) {
-  const { block, enableSelection, isDragging, selectionHelpers, isEpic = false } = props;
+  const {
+    block,
+    enableSelection,
+    isDragging,
+    selectionHelpers,
+    isEpic = false,
+    nestingLevel = 0,
+    hasChildren = false,
+    isExpanded = false,
+    onToggleExpand,
+  } = props;
   // store hooks
   const { updateActiveBlockId, isBlockActive, getNumberOfDaysFromPosition } = useTimeLineChartStore();
   const { getIsIssuePeeked } = useIssueDetail();
@@ -82,7 +96,14 @@ export const IssuesSidebarBlock = observer(function IssuesSidebarBlock(props: Pr
         )}
         <div className="flex h-full flex-grow items-center justify-between gap-2 truncate">
           <div className="flex-grow truncate">
-            <IssueGanttSidebarBlock issueId={block.data.id} isEpic={isEpic} />
+            <IssueGanttSidebarBlock
+              issueId={block.data.id}
+              isEpic={isEpic}
+              nestingLevel={nestingLevel}
+              hasChildren={hasChildren}
+              isExpanded={isExpanded}
+              onToggleExpand={onToggleExpand}
+            />
           </div>
           {duration && (
             <div className="flex-shrink-0 text-13 text-secondary">

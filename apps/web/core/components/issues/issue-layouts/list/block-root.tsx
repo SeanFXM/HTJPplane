@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import type { FC, MutableRefObject } from "react";
+import type { MutableRefObject } from "react";
 import React, { useEffect, useRef, useState } from "react";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
@@ -27,6 +27,7 @@ import { usePlatformOS } from "@/hooks/use-platform-os";
 import { HIGHLIGHT_CLASS, getIssueBlockId, isIssueNew } from "../utils";
 import { IssueBlock } from "./block";
 import type { TRenderQuickActions } from "./list-view-types";
+import { mergeHierarchyChildren } from "../hierarchy";
 
 type Props = {
   issueId: string;
@@ -46,6 +47,7 @@ type Props = {
   isLastChild?: boolean;
   shouldRenderByDefault?: boolean;
   isEpic?: boolean;
+  projectedChildrenByParentId?: Record<string, string[]>;
 };
 
 export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
@@ -67,6 +69,7 @@ export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
     selectionHelpers,
     shouldRenderByDefault,
     isEpic = false,
+    projectedChildrenByParentId,
   } = props;
   // states
   const [isExpanded, setExpanded] = useState<boolean>(false);
@@ -129,7 +132,10 @@ export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
 
   if (!issueId || !issuesMap[issueId]?.created_at) return null;
 
-  const subIssues = subIssuesStore.subIssuesByIssueId(issueId);
+  const subIssues = mergeHierarchyChildren(
+    projectedChildrenByParentId?.[issueId] ?? [],
+    subIssuesStore.subIssuesByIssueId(issueId) ?? []
+  );
   return (
     <div className="relative" ref={issueBlockRef} id={getIssueBlockId(issueId, groupId)}>
       <DropIndicator classNames={"absolute top-0 z-[2]"} isVisible={instruction === "DRAG_OVER"} />
@@ -182,6 +188,7 @@ export const IssueBlockRoot = observer(function IssueBlockRoot(props: Props) {
             canDropOverIssue={canDropOverIssue}
             isParentIssueBeingDragged={isParentIssueBeingDragged || isCurrentBlockDragging}
             shouldRenderByDefault={isExpanded}
+            projectedChildrenByParentId={projectedChildrenByParentId}
           />
         ))}
       {isLastChild && <DropIndicator classNames={"absolute z-[2]"} isVisible={instruction === "DRAG_BELOW"} />}

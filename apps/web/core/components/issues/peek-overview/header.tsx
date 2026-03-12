@@ -13,7 +13,7 @@ import { useTranslation } from "@plane/i18n";
 import { CenterPanelIcon, CopyLinkIcon, FullScreenPanelIcon, SidePanelIcon } from "@plane/propel/icons";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
-import type { TNameDescriptionLoader } from "@plane/types";
+import type { TIssueHierarchyActionPayload, TNameDescriptionLoader } from "@plane/types";
 import { EIssuesStoreType } from "@plane/types";
 import { CustomSelect } from "@plane/ui";
 import { copyUrlToClipboard, generateWorkItemLink } from "@plane/utils";
@@ -116,25 +116,24 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
     isArchived,
   });
 
-  const handleCopyText = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleCopyText = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     e.preventDefault();
-    copyUrlToClipboard(workItemLink).then(() => {
-      setToast({
-        type: TOAST_TYPE.SUCCESS,
-        title: t("common.link_copied"),
-        message: t("common.link_copied_to_clipboard"),
-      });
+    await copyUrlToClipboard(workItemLink);
+    setToast({
+      type: TOAST_TYPE.SUCCESS,
+      title: t("common.link_copied"),
+      message: t("common.link_copied_to_clipboard"),
     });
   };
 
-  const handleDeleteIssue = async () => {
+  const handleDeleteIssue = async (payload?: TIssueHierarchyActionPayload) => {
     try {
       const deleteIssue = issueDetails?.archived_at ? removeArchivedIssue : removeIssue;
 
-      return deleteIssue(workspaceSlug, projectId, issueId).then(() => {
-        setPeekIssue(undefined);
-      });
+      await deleteIssue(workspaceSlug, projectId, issueId, payload);
+      setPeekIssue(undefined);
+      return;
     } catch (_error) {
       setToast({
         title: t("toast.error"),
@@ -144,8 +143,8 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
     }
   };
 
-  const handleArchiveIssue = async () => {
-    await archiveIssue(workspaceSlug, projectId, issueId);
+  const handleArchiveIssue = async (payload?: TIssueHierarchyActionPayload) => {
+    await archiveIssue(workspaceSlug, projectId, issueId, payload);
     // check and remove if issue is peeked
     if (getIsIssuePeeked(issueId)) {
       removeRoutePeekId();

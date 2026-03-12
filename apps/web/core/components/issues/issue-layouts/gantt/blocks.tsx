@@ -7,11 +7,12 @@
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane imports
+import { ChevronRightIcon } from "@plane/propel/icons";
 import { Popover } from "@plane/propel/popover";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { IIssueDisplayProperties } from "@plane/types";
 import { ControlLink } from "@plane/ui";
-import { findTotalDaysInRange, generateWorkItemLink } from "@plane/utils";
+import { cn, findTotalDaysInRange, generateWorkItemLink } from "@plane/utils";
 // components
 import { ButtonAvatars } from "@/components/dropdowns/member/avatar";
 import { SIDEBAR_WIDTH } from "@/components/gantt-chart/constants";
@@ -40,6 +41,10 @@ type Props = {
   isEpic?: boolean;
   blockWidth?: number;
   displayProperties?: IIssueDisplayProperties | null;
+  nestingLevel?: number;
+  hasChildren?: boolean;
+  isExpanded?: boolean;
+  onToggleExpand?: (issueId: string) => void;
 };
 
 export const IssueGanttBlock = observer(function IssueGanttBlock(props: Props) {
@@ -83,11 +88,18 @@ export const IssueGanttBlock = observer(function IssueGanttBlock(props: Props) {
       <Popover.Button
         className="w-full"
         render={
-          <div
+          <button
+            type="button"
             id={`issue-${issueId}`}
-            className="space-between relative flex h-full w-full cursor-pointer items-center gap-2 rounded-sm"
+            className="space-between relative flex h-full w-full cursor-pointer items-center gap-2 rounded-sm text-left"
             style={blockStyle}
             onClick={handleIssuePeekOverview}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleIssuePeekOverview();
+              }
+            }}
           >
             <div className="absolute top-0 left-0 h-full w-full bg-surface-1/50" />
             <div
@@ -136,7 +148,7 @@ export const IssueGanttBlock = observer(function IssueGanttBlock(props: Props) {
                 showProgressText={duration >= 2}
               />
             )}
-          </div>
+          </button>
         }
       />
       <Popover.Panel side="bottom" align="start">
@@ -158,7 +170,7 @@ export const IssueGanttBlock = observer(function IssueGanttBlock(props: Props) {
 
 // rendering issues on gantt sidebar
 export const IssueGanttSidebarBlock = observer(function IssueGanttSidebarBlock(props: Props) {
-  const { issueId, isEpic = false } = props;
+  const { issueId, isEpic = false, nestingLevel = 0, hasChildren = false, isExpanded = false, onToggleExpand } = props;
   // router
   const { workspaceSlug: routerWorkspaceSlug } = useParams();
   const workspaceSlug = routerWorkspaceSlug?.toString();
@@ -202,6 +214,24 @@ export const IssueGanttSidebarBlock = observer(function IssueGanttSidebarBlock(p
       disabled={!!issueDetails?.tempId}
     >
       <div className="relative flex h-full w-full cursor-pointer items-center gap-2">
+        {hasChildren && (
+          <button
+            type="button"
+            className="grid size-4 place-items-center rounded-xs text-placeholder hover:text-tertiary"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleExpand?.(issueId);
+            }}
+          >
+            <ChevronRightIcon
+              className={cn("size-4 transition-transform", {
+                "rotate-90": isExpanded,
+              })}
+              strokeWidth={2.5}
+            />
+          </button>
+        )}
         {issueDetails?.project_id && (
           <IssueIdentifier
             issueId={issueDetails.id}
@@ -212,7 +242,12 @@ export const IssueGanttSidebarBlock = observer(function IssueGanttSidebarBlock(p
           />
         )}
         <Tooltip tooltipContent={issueDetails?.name} isMobile={isMobile}>
-          <span className="flex-grow truncate text-13 font-medium">{issueDetails?.name}</span>
+          <span
+            className="flex-grow truncate text-13 font-medium"
+            style={nestingLevel > 0 ? { marginLeft: `${nestingLevel * 12}px` } : {}}
+          >
+            {issueDetails?.name}
+          </span>
         </Tooltip>
       </div>
     </ControlLink>

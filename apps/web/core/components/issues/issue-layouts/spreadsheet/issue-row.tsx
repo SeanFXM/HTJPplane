@@ -35,6 +35,7 @@ import { usePlatformOS } from "@/hooks/use-platform-os";
 import { IssueIdentifier } from "@/plane-web/components/issues/issue-details/issue-identifier";
 // local components
 import type { TRenderQuickActions } from "../list/list-view-types";
+import { mergeHierarchyChildren } from "../hierarchy";
 import { isIssueNew } from "../utils";
 import { IssueColumn } from "./issue-column";
 
@@ -54,6 +55,7 @@ interface Props {
   selectionHelpers: TSelectionHelper;
   shouldRenderByDefault?: boolean;
   isEpic?: boolean;
+  projectedChildrenByParentId?: Record<string, string[]>;
 }
 
 export const SpreadsheetIssueRow = observer(function SpreadsheetIssueRow(props: Props) {
@@ -73,6 +75,7 @@ export const SpreadsheetIssueRow = observer(function SpreadsheetIssueRow(props: 
     selectionHelpers,
     shouldRenderByDefault,
     isEpic = false,
+    projectedChildrenByParentId,
   } = props;
   // states
   const [isExpanded, setExpanded] = useState<boolean>(false);
@@ -81,7 +84,10 @@ export const SpreadsheetIssueRow = observer(function SpreadsheetIssueRow(props: 
   const { issueMap } = useIssues();
 
   // derived values
-  const subIssues = subIssuesStore.subIssuesByIssueId(issueId);
+  const subIssues = mergeHierarchyChildren(
+    projectedChildrenByParentId?.[issueId] ?? [],
+    subIssuesStore.subIssuesByIssueId(issueId) ?? []
+  );
   const isIssueSelected = selectionHelpers.getIsEntitySelected(issueId);
   const isIssueActive = selectionHelpers.getIsEntityActive(issueId);
 
@@ -144,6 +150,7 @@ export const SpreadsheetIssueRow = observer(function SpreadsheetIssueRow(props: 
             spreadsheetColumnsList={spreadsheetColumnsList}
             selectionHelpers={selectionHelpers}
             shouldRenderByDefault={isExpanded}
+            projectedChildrenByParentId={projectedChildrenByParentId}
           />
         ))}
     </>
@@ -212,7 +219,8 @@ const IssueRowDetails = observer(function IssueRowDetails(props: IssueRowDetails
   useOutsideClickDetector(menuActionRef, () => setIsMenuActive(false));
 
   const customActionButton = (
-    <div
+    <button
+      type="button"
       ref={menuActionRef}
       className={`flex h-full w-full cursor-pointer items-center rounded-sm p-1 text-placeholder hover:bg-layer-1 ${
         isMenuActive ? "bg-layer-1 text-primary" : "text-secondary"
@@ -220,7 +228,7 @@ const IssueRowDetails = observer(function IssueRowDetails(props: IssueRowDetails
       onClick={() => setIsMenuActive(!isMenuActive)}
     >
       <MoreHorizontal className="h-3.5 w-3.5" />
-    </div>
+    </button>
   );
   if (!issueDetail) return null;
 
@@ -369,7 +377,8 @@ const IssueRowDetails = observer(function IssueRowDetails(props: IssueRowDetails
                 </div>
                 <div
                   className={`opacity-0 transition-opacity group-hover:opacity-100 ${isMenuActive ? "!opacity-100" : ""}`}
-                  onClick={(e) => e.stopPropagation()}
+                  role="presentation"
+                  onMouseDown={(e) => e.stopPropagation()}
                 >
                   {quickActions({
                     issue: issueDetail,

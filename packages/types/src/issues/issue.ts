@@ -155,6 +155,25 @@ export type TBulkOperationsPayload = {
   properties: Partial<TBulkIssueProperties>;
 };
 
+export type TIssueHierarchyActionStrategy = "release" | "cascade_delete" | "cascade_archive";
+
+export type TIssueHierarchyActionPayload = {
+  sub_issue_strategy?: TIssueHierarchyActionStrategy;
+};
+
+export type TIssueDeleteResponse = {
+  deleted_issue_ids: string[];
+  released_sub_issue_ids: string[];
+  sub_issue_strategy?: TIssueHierarchyActionStrategy;
+};
+
+export type TIssueArchiveResponse = {
+  archived_at: string;
+  archived_issue_ids?: string[];
+  released_sub_issue_ids?: string[];
+  sub_issue_strategy?: TIssueHierarchyActionStrategy;
+};
+
 export type TWorkItemWidgets = "sub-work-items" | "relations" | "links" | "attachments";
 
 export type TIssueServiceType = EIssueServiceType.ISSUES | EIssueServiceType.EPICS | EIssueServiceType.WORK_ITEMS;

@@ -10,6 +10,7 @@ import { useParams } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 // plane imports
 import { useOutsideClickDetector } from "@plane/hooks";
+import { ChevronRightIcon } from "@plane/propel/icons";
 import { Popover } from "@plane/propel/popover";
 import type { TIssue } from "@plane/types";
 import { ControlLink } from "@plane/ui";
@@ -34,11 +35,24 @@ type Props = {
   quickActions: TRenderQuickActions;
   isDragging?: boolean;
   isEpic?: boolean;
+  hasChildren?: boolean;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
+  nestingLevel?: number;
 };
 
 export const CalendarIssueBlock = observer(
   forwardRef(function CalendarIssueBlock(props: Props, ref: React.ForwardedRef<HTMLAnchorElement>) {
-    const { issue, quickActions, isDragging = false, isEpic = false } = props;
+    const {
+      issue,
+      quickActions,
+      isDragging = false,
+      isEpic = false,
+      hasChildren = false,
+      isExpanded = false,
+      onToggleExpand,
+      nestingLevel = 0,
+    } = props;
     // states
     const [isMenuActive, setIsMenuActive] = useState(false);
     // refs
@@ -58,12 +72,14 @@ export const CalendarIssueBlock = observer(
     const projectIdentifier = getProjectIdentifierById(issue?.project_id);
 
     // handlers
-    const handleIssuePeekOverview = (issue: TIssue) => handleRedirection(workspaceSlug.toString(), issue, isMobile);
+    const handleIssuePeekOverview = (currentIssue: TIssue) =>
+      handleRedirection(workspaceSlug.toString(), currentIssue, isMobile);
 
     useOutsideClickDetector(menuActionRef, () => setIsMenuActive(false));
 
     const customActionButton = (
-      <div
+      <button
+        type="button"
         ref={menuActionRef}
         className={`w-full cursor-pointer rounded-sm p-1 text-placeholder hover:bg-layer-1 ${
           isMenuActive ? "bg-layer-1-active text-primary" : "text-secondary"
@@ -71,7 +87,7 @@ export const CalendarIssueBlock = observer(
         onClick={() => setIsMenuActive(!isMenuActive)}
       >
         <MoreHorizontal className="h-3.5 w-3.5" />
-      </div>
+      </button>
     );
 
     const isMenuActionRefAboveScreenBottom =
@@ -119,6 +135,24 @@ export const CalendarIssueBlock = observer(
                   )}
                 >
                   <div className="flex h-full items-center gap-1.5 truncate">
+                    {hasChildren && (
+                      <button
+                        type="button"
+                        className="grid size-4 place-items-center rounded-xs text-placeholder hover:text-tertiary"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onToggleExpand?.();
+                        }}
+                      >
+                        <ChevronRightIcon
+                          className={cn("size-4 transition-transform", {
+                            "rotate-90": isExpanded,
+                          })}
+                          strokeWidth={2.5}
+                        />
+                      </button>
+                    )}
                     <span
                       className="h-full w-0.5 flex-shrink-0 rounded-sm"
                       style={{
@@ -134,14 +168,20 @@ export const CalendarIssueBlock = observer(
                         displayProperties={issuesFilter?.issueFilters?.displayProperties}
                       />
                     )}
-                    <div className="truncate text-13 font-medium md:text-11 md:font-regular">{issue.name}</div>
+                    <div
+                      className="truncate text-13 font-medium md:text-11 md:font-regular"
+                      style={nestingLevel > 0 ? { marginLeft: `${nestingLevel * 8}px` } : {}}
+                    >
+                      {issue.name}
+                    </div>
                   </div>
                   <div
                     className={cn("size-5 flex-shrink-0", {
                       "hidden group-hover/calendar-block:block": !isMobile,
                       block: isMenuActive,
                     })}
-                    onClick={(e) => {
+                    role="presentation"
+                    onMouseDown={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                     }}

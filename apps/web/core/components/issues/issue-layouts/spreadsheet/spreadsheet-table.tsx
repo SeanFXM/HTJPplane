@@ -17,6 +17,7 @@ import { useIssuesStore } from "@/hooks/use-issue-layout-store";
 import type { TSelectionHelper } from "@/hooks/use-multiple-select";
 import { useTableKeyboardNavigation } from "@/hooks/use-table-keyboard-navigation";
 // local imports
+import { buildIssueHierarchy } from "../hierarchy";
 import type { TRenderQuickActions } from "../list/list-view-types";
 import { getDisplayPropertiesCount } from "../utils";
 import { SpreadsheetIssueRow } from "./issue-row";
@@ -64,6 +65,7 @@ export const SpreadsheetTable = observer(function SpreadsheetTable(props: Props)
   const [intersectionElement, setIntersectionElement] = useState<HTMLTableSectionElement | null>(null);
 
   const {
+    issueMap,
     issues: { getIssueLoader },
   } = useIssuesStore();
 
@@ -109,6 +111,7 @@ export const SpreadsheetTable = observer(function SpreadsheetTable(props: Props)
   const ignoreFieldsForCounting: (keyof IIssueDisplayProperties)[] = ["key"];
   if (!isEstimateEnabled) ignoreFieldsForCounting.push("estimate");
   const displayPropertiesCount = getDisplayPropertiesCount(displayProperties, ignoreFieldsForCounting);
+  const hierarchy = buildIssueHierarchy(issueIds, issueMap);
 
   return (
     <table className="w-full overflow-y-auto bg-surface-1" onKeyDown={handleKeyBoardNavigation}>
@@ -123,7 +126,7 @@ export const SpreadsheetTable = observer(function SpreadsheetTable(props: Props)
         isEpic={isEpic}
       />
       <tbody>
-        {issueIds.map((id) => (
+        {hierarchy.rootIssueIds.map((id) => (
           <SpreadsheetIssueRow
             key={id}
             issueId={id}
@@ -139,13 +142,14 @@ export const SpreadsheetTable = observer(function SpreadsheetTable(props: Props)
             spreadsheetColumnsList={spreadsheetColumnsList}
             selectionHelpers={selectionHelpers}
             isEpic={isEpic}
+            projectedChildrenByParentId={hierarchy.childrenByParentId}
           />
         ))}
       </tbody>
       {canLoadMoreIssues && (
         <tfoot ref={setIntersectionElement}>
-          {Array.from({ length: 3 }).map((_, index) => (
-            <SpreadsheetIssueRowLoader key={index} columnCount={displayPropertiesCount} />
+          {[0, 1, 2].map((loaderId) => (
+            <SpreadsheetIssueRowLoader key={`loader-${loaderId}`} columnCount={displayPropertiesCount} />
           ))}
         </tfoot>
       )}

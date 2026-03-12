@@ -58,6 +58,7 @@ export const BulkDeleteIssuesModal = observer(function BulkDeleteIssuesModal(pro
   const { resolvedTheme } = useTheme();
   // hooks
   const {
+    issueMap,
     issues: { removeBulkIssues },
   } = useIssues(EIssuesStoreType.PROJECT);
   const { t } = useTranslation();
@@ -94,7 +95,37 @@ export const BulkDeleteIssuesModal = observer(function BulkDeleteIssuesModal(pro
   const handleClose = () => {
     setQuery("");
     reset();
+    setShowHierarchyActions(false);
     onClose();
+  };
+
+  const [showHierarchyActions, setShowHierarchyActions] = useState(false);
+
+  const selectedParentCount = watch("delete_issue_ids").filter(
+    (issueId) => (issueMap?.[issueId]?.sub_issues_count ?? 0) > 0
+  ).length;
+
+  const performDelete = async (subIssueStrategy?: "release" | "cascade_delete") => {
+    if (!workspaceSlug || !projectId) return;
+
+    const deleteIssueIds = watch("delete_issue_ids");
+    try {
+      await (removeBulkIssues as any)(workspaceSlug, projectId, deleteIssueIds, {
+        sub_issue_strategy: subIssueStrategy,
+      });
+      setToast({
+        type: TOAST_TYPE.SUCCESS,
+        title: "Success!",
+        message: "Work items deleted successfully!",
+      });
+      handleClose();
+    } catch {
+      setToast({
+        type: TOAST_TYPE.ERROR,
+        title: "Error!",
+        message: "Something went wrong. Please try again.",
+      });
+    }
   };
 
   const handleDelete: SubmitHandler<FormInput> = async (data) => {
@@ -111,22 +142,12 @@ export const BulkDeleteIssuesModal = observer(function BulkDeleteIssuesModal(pro
 
     if (!Array.isArray(data.delete_issue_ids)) data.delete_issue_ids = [data.delete_issue_ids];
 
-    await removeBulkIssues(workspaceSlug, projectId, data.delete_issue_ids)
-      .then(() => {
-        setToast({
-          type: TOAST_TYPE.SUCCESS,
-          title: "Success!",
-          message: "Work items deleted successfully!",
-        });
-        handleClose();
-      })
-      .catch(() =>
-        setToast({
-          type: TOAST_TYPE.ERROR,
-          title: "Error!",
-          message: "Something went wrong. Please try again.",
-        })
-      );
+    if (selectedParentCount > 0) {
+      setShowHierarchyActions(true);
+      return;
+    }
+
+    await performDelete();
   };
 
   const issueList =
@@ -196,7 +217,26 @@ export const BulkDeleteIssuesModal = observer(function BulkDeleteIssuesModal(pro
           </Combobox.Options>
         </Combobox>
 
-        {issues.length > 0 && (
+        {showHierarchyActions ? (
+          <div className="flex items-center justify-end gap-2 p-3">
+            <Button variant="secondary" size="lg" onClick={() => setShowHierarchyActions(false)}>
+              Back
+            </Button>
+            <Button variant="secondary" size="lg" onClick={() => performDelete("release")} loading={isSubmitting}>
+              Delete parents only
+            </Button>
+            <Button
+              variant="error-fill"
+              size="lg"
+              onClick={() => performDelete("cascade_delete")}
+              loading={isSubmitting}
+            >
+              Delete parents and sub-work items
+            </Button>
+          </div>
+        ) : null}
+
+        {issues.length > 0 && !showHierarchyActions && (
           <div className="flex items-center justify-end gap-2 p-3">
             <Button variant="secondary" size="lg" onClick={handleClose}>
               Cancel

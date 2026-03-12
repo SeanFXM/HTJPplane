@@ -12,6 +12,7 @@ import { CopyLinkIcon } from "@plane/propel/icons";
 import { IconButton } from "@plane/propel/icon-button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
+import type { TIssueHierarchyActionPayload } from "@plane/types";
 import { EIssuesStoreType } from "@plane/types";
 import { generateWorkItemLink, copyTextToClipboard } from "@plane/utils";
 // hooks
@@ -89,14 +90,14 @@ export const IssueDetailQuickActions = observer(function IssueDetailQuickActions
     }
   };
 
-  const handleDeleteIssue = async () => {
+  const handleDeleteIssue = async (payload?: TIssueHierarchyActionPayload) => {
     try {
       const deleteIssue = issue?.archived_at ? removeArchivedIssue : removeIssue;
       const redirectionPath = issue?.archived_at
         ? `/${workspaceSlug}/projects/${projectId}/archives/issues`
         : `/${workspaceSlug}/projects/${projectId}/issues`;
 
-      await deleteIssue(workspaceSlug, projectId, issueId);
+      await deleteIssue(workspaceSlug, projectId, issueId, payload);
       router.push(redirectionPath);
     } catch (_error) {
       setToast({
@@ -107,9 +108,9 @@ export const IssueDetailQuickActions = observer(function IssueDetailQuickActions
     }
   };
 
-  const handleArchiveIssue = async () => {
+  const handleArchiveIssue = async (payload?: TIssueHierarchyActionPayload) => {
     try {
-      await archiveIssue(workspaceSlug, projectId, issueId);
+      await archiveIssue(workspaceSlug, projectId, issueId, payload);
       router.push(`/${workspaceSlug}/projects/${projectId}/issues`);
     } catch (_error) {
       setToast({
