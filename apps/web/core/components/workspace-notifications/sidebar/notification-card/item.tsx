@@ -40,13 +40,15 @@ export const NotificationItem = observer(function NotificationItem(props: TNotif
   // derived values
   const projectId = notification?.project || undefined;
   const issueId = notification?.data?.issue?.id || undefined;
+  const announcement = notification?.data?.announcement;
   const workspace = getWorkspaceBySlug(workspaceSlug);
 
   const notificationField = notification?.data?.issue_activity.field || undefined;
   const notificationTriggeredBy = notification.triggered_by_details || undefined;
+  const isAnnouncementNotification = notification?.entity_name === "workspace_announcement";
 
   const handleNotificationIssuePeekOverview = async () => {
-    if (workspaceSlug && projectId && issueId && !isSnoozeStateModalOpen && !customSnoozeModal) {
+    if (workspaceSlug && !isSnoozeStateModalOpen && !customSnoozeModal) {
       setPeekIssue(undefined);
       setCurrentSelectedNotificationId(notificationId);
 
@@ -59,7 +61,7 @@ export const NotificationItem = observer(function NotificationItem(props: TNotif
         }
       }
 
-      if (notification?.is_inbox_issue === false) {
+      if (!isAnnouncementNotification && projectId && issueId && notification?.is_inbox_issue === false) {
         if (!getIsIssuePeeked(issueId)) {
           setPeekIssue({ workspaceSlug, projectId, issueId });
         }
@@ -71,9 +73,9 @@ export const NotificationItem = observer(function NotificationItem(props: TNotif
     !workspaceSlug ||
     !notificationId ||
     !notification?.id ||
-    (!notificationField && !notification?.is_mentioned_notification) ||
     !workspace?.id ||
-    !projectId
+    (!isAnnouncementNotification && !projectId) ||
+    (!isAnnouncementNotification && !notificationField && !notification?.is_mentioned_notification)
   )
     return <></>;
 
@@ -108,12 +110,24 @@ export const NotificationItem = observer(function NotificationItem(props: TNotif
         <div className="-mt-2 w-full space-y-1">
           <div className="relative flex h-8 items-center gap-3">
             <div className="line-clamp-1 w-full truncate overflow-hidden text-body-xs-medium break-all whitespace-normal text-primary">
-              <NotificationContent
-                notification={notification}
-                workspaceId={workspace.id}
-                workspaceSlug={workspaceSlug}
-                projectId={projectId}
-              />
+              {isAnnouncementNotification ? (
+                <span>
+                  {notificationTriggeredBy?.display_name ||
+                    notificationTriggeredBy?.first_name ||
+                    t("home.announcements.title")}
+                  &nbsp;
+                  {notification?.data?.announcement_activity?.verb === "updated"
+                    ? t("home.announcements.inbox.updated")
+                    : t("home.announcements.inbox.posted")}
+                </span>
+              ) : (
+                <NotificationContent
+                  notification={notification}
+                  workspaceId={workspace.id}
+                  workspaceSlug={workspaceSlug}
+                  projectId={projectId}
+                />
+              )}
             </div>
             <NotificationOption
               workspaceSlug={workspaceSlug}
@@ -127,8 +141,17 @@ export const NotificationItem = observer(function NotificationItem(props: TNotif
 
           <div className="relative flex items-center gap-3 text-caption-sm-regular text-secondary">
             <div className="line-clamp-1 w-full truncate overflow-hidden break-words whitespace-normal">
-              {notification?.data?.issue?.identifier}-{notification?.data?.issue?.sequence_id}&nbsp;
-              {notification?.data?.issue?.name}
+              {isAnnouncementNotification ? (
+                <span>
+                  {announcement?.title}
+                  {announcement?.description ? ` · ${announcement.description}` : ""}
+                </span>
+              ) : (
+                <span>
+                  {notification?.data?.issue?.identifier}-{notification?.data?.issue?.sequence_id}&nbsp;
+                  {notification?.data?.issue?.name}
+                </span>
+              )}
             </div>
             <div className="flex-shrink-0">
               {notification?.snoozed_till ? (
@@ -141,7 +164,9 @@ export const NotificationItem = observer(function NotificationItem(props: TNotif
                 </p>
               ) : (
                 <p className="mt-auto flex-shrink-0 text-tertiary">
-                  {notification.created_at && calculateTimeAgo(notification.created_at)}
+                  {notification.created_at && isAnnouncementNotification
+                    ? `${renderFormattedDate(notification.created_at)} ${renderFormattedTime(notification.created_at)}`
+                    : notification.created_at && calculateTimeAgo(notification.created_at)}
                 </p>
               )}
             </div>

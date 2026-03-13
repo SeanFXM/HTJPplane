@@ -27,9 +27,16 @@ export type TNotificationIssueLite = {
   state_group: string | undefined;
 };
 
+export type TNotificationAnnouncementLite = {
+  id: string | undefined;
+  title: string | undefined;
+  description: string | undefined;
+  category: string | undefined;
+};
+
 export type TNotificationData = {
-  issue: TNotificationIssueLite | undefined;
-  issue_activity: {
+  issue?: TNotificationIssueLite | undefined;
+  issue_activity?: {
     id: string | undefined;
     actor: string | undefined;
     field: string | undefined;
@@ -37,6 +44,10 @@ export type TNotificationData = {
     verb: "created" | "updated" | "deleted";
     new_value: string | undefined;
     old_value: string | undefined;
+  };
+  announcement?: TNotificationAnnouncementLite | undefined;
+  announcement_activity?: {
+    verb: "created" | "updated";
   };
 };
 

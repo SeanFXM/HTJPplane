@@ -765,6 +765,10 @@ export default {
         description_required: "请输入内容。",
         description_placeholder: "填写需要所有成员了解的重要任务、更新或修复说明。",
       },
+      inbox: {
+        posted: "发布了一条通知",
+        updated: "更新了一条通知",
+      },
     },
     recents: {
       title: "最近",

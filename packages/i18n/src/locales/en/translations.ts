@@ -612,6 +612,10 @@ export default {
         description_required: "Details are required.",
         description_placeholder: "Share the key task, update, or fix everyone should know about.",
       },
+      inbox: {
+        posted: "posted an announcement",
+        updated: "updated an announcement",
+      },
     },
     recents: {
       title: "Recents",

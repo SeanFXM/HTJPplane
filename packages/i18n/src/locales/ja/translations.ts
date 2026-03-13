@@ -778,6 +778,10 @@ export default {
         description_required: "内容を入力してください。",
         description_placeholder: "全員に伝えたい重要タスク、更新、修正内容を記入してください。",
       },
+      inbox: {
+        posted: "お知らせを投稿しました",
+        updated: "お知らせを更新しました",
+      },
     },
     recents: {
       title: "最近",

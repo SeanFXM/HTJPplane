@@ -13,7 +13,9 @@ import { EmptyStateCompact } from "@plane/propel/empty-state";
 import { cn } from "@plane/utils";
 // components
 import { LogoSpinner } from "@/components/common/logo-spinner";
+import { AnnouncementPreview } from "@/components/workspace-notifications/announcement-preview";
 // hooks
+import { useNotification } from "@/hooks/store/notifications/use-notification";
 import { useWorkspaceNotifications } from "@/hooks/store/notifications";
 import { useWorkspace } from "@/hooks/store/use-workspace";
 import { useUserPermissions } from "@/hooks/store/user";
@@ -39,6 +41,7 @@ export const NotificationsRoot = observer(function NotificationsRoot({ workspace
   } = useWorkspaceNotifications();
   const { fetchUserProjectInfo } = useUserPermissions();
   const { isWorkItem, PeekOverviewComponent, setPeekWorkItem } = useNotificationPreview();
+  const selectedNotification = useNotification(currentSelectedNotificationId);
   // derived values
   const { workspace_slug, project_id, issue_id, is_inbox_issue } =
     notificationLiteByNotificationId(currentSelectedNotificationId);
@@ -91,7 +94,9 @@ export const NotificationsRoot = observer(function NotificationsRoot({ workspace
         </div>
       ) : (
         <>
-          {is_inbox_issue === true && workspace_slug && project_id && issue_id ? (
+          {selectedNotification?.entity_name === "workspace_announcement" ? (
+            <AnnouncementPreview notification={selectedNotification.asJson} />
+          ) : is_inbox_issue === true && workspace_slug && project_id && issue_id ? (
             <>
               {projectMemberInfoLoader ? (
                 <div className="flex h-full w-full items-center justify-center">

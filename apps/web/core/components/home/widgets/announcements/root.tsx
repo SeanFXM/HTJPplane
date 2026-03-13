@@ -12,7 +12,7 @@ import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { EditIcon, PlusIcon, TrashIcon } from "@plane/propel/icons";
 import type { TWorkspaceAnnouncement, TWorkspaceAnnouncementEditableFields } from "@plane/types";
-import { calculateTimeAgo } from "@plane/utils";
+import { renderFormattedDate, renderFormattedTime } from "@plane/utils";
 import { useUserPermissions } from "@/hooks/store/user/user-permissions";
 import { WorkspaceService } from "@/services/workspace.service";
 import { AnnouncementCreateUpdateModal } from "./create-update-announcement-modal";
@@ -60,6 +60,8 @@ export const WorkspaceAnnouncements = observer(function WorkspaceAnnouncements(p
     }),
     [t]
   );
+
+  const latestAnnouncements = useMemo(() => announcements.slice(0, 3), [announcements]);
 
   const handleOpenCreateModal = useCallback(() => {
     setSelectedAnnouncement(undefined);
@@ -124,7 +126,7 @@ export const WorkspaceAnnouncements = observer(function WorkspaceAnnouncements(p
           </div>
         ) : (
           <div className="space-y-3">
-            {announcements.map((announcement) => (
+            {latestAnnouncements.map((announcement) => (
               <div key={announcement.id} className="rounded-xl border border-subtle bg-surface-1 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -134,7 +136,10 @@ export const WorkspaceAnnouncements = observer(function WorkspaceAnnouncements(p
                       >
                         {categoryLabelMap[announcement.category]}
                       </span>
-                      <span className="text-11 text-tertiary">{calculateTimeAgo(announcement.created_at)}</span>
+                      <span className="text-11 text-tertiary">
+                        {renderFormattedDate(announcement.created_at)}
+                        {announcement.created_at ? ` ${renderFormattedTime(announcement.created_at)}` : ""}
+                      </span>
                     </div>
                     <div className="text-14 font-semibold text-primary">{announcement.title}</div>
                     <p className="mt-2 text-13 leading-6 whitespace-pre-wrap text-secondary">

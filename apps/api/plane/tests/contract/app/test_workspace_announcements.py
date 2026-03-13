@@ -6,7 +6,7 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 
-from plane.db.models import WorkspaceAnnouncement, WorkspaceMember
+from plane.db.models import Notification, WorkspaceAnnouncement, WorkspaceMember
 from plane.tests.factories import UserFactory
 
 
@@ -49,7 +49,10 @@ class TestWorkspaceAnnouncementsAPI:
         assert WorkspaceAnnouncement.objects.count() == 0
 
     @pytest.mark.django_db
-    def test_admin_can_create_update_and_delete_announcements(self, session_client, workspace):
+    def test_admin_can_create_update_and_delete_announcements(self, session_client, workspace, create_user):
+        member_user = UserFactory()
+        WorkspaceMember.objects.create(workspace=workspace, member=member_user, role=15)
+
         list_url = reverse("workspace-announcements", kwargs={"slug": workspace.slug})
         create_response = session_client.post(
             list_url,
@@ -59,6 +62,10 @@ class TestWorkspaceAnnouncementsAPI:
 
         assert create_response.status_code == status.HTTP_201_CREATED
         announcement_id = create_response.data["id"]
+        assert Notification.objects.filter(entity_name="workspace_announcement").count() == 2
+        assert set(
+            Notification.objects.filter(entity_name="workspace_announcement").values_list("receiver_id", flat=True)
+        ) == {create_user.id, member_user.id}
 
         detail_url = reverse("workspace-announcements", kwargs={"slug": workspace.slug, "pk": announcement_id})
         update_response = session_client.patch(
@@ -70,5 +77,6 @@ class TestWorkspaceAnnouncementsAPI:
 
         assert update_response.status_code == status.HTTP_200_OK
         assert update_response.data["title"] == "Bug fixes shipped"
+        assert Notification.objects.filter(entity_name="workspace_announcement").count() == 4
         assert delete_response.status_code == status.HTTP_204_NO_CONTENT
         assert WorkspaceAnnouncement.objects.count() == 0

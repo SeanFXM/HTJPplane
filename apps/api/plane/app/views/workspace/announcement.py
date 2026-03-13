@@ -3,7 +3,7 @@ from rest_framework.response import Response
 
 from plane.app.permissions import ROLE, allow_permission
 from plane.app.serializers import WorkspaceAnnouncementSerializer
-from plane.db.models import Workspace, WorkspaceAnnouncement
+from plane.db.models import Notification, Workspace, WorkspaceAnnouncement, WorkspaceMember
 
 from ..base import BaseViewSet
 
@@ -12,6 +12,46 @@ class WorkspaceAnnouncementViewSet(BaseViewSet):
     model = WorkspaceAnnouncement
     serializer_class = WorkspaceAnnouncementSerializer
     use_read_replica = True
+
+    def _create_inbox_notifications(self, announcement, triggered_by_id, verb):
+        members = WorkspaceMember.objects.filter(
+            workspace_id=announcement.workspace_id,
+            is_active=True,
+            member__is_bot=False,
+        ).values_list("member_id", flat=True)
+
+        sender = (
+            "in_app:workspace_announcements:created"
+            if verb == "created"
+            else "in_app:workspace_announcements:updated"
+        )
+        notifications = [
+            Notification(
+                workspace_id=announcement.workspace_id,
+                entity_identifier=announcement.id,
+                entity_name="workspace_announcement",
+                title=announcement.title,
+                message={"description": announcement.description},
+                message_html=f"<p>{announcement.description}</p>",
+                message_stripped=announcement.description,
+                sender=sender,
+                triggered_by_id=triggered_by_id,
+                receiver_id=member_id,
+                data={
+                    "announcement": {
+                        "id": str(announcement.id),
+                        "title": announcement.title,
+                        "description": announcement.description,
+                        "category": announcement.category,
+                    },
+                    "announcement_activity": {
+                        "verb": verb,
+                    },
+                },
+            )
+            for member_id in members
+        ]
+        Notification.objects.bulk_create(notifications, batch_size=100)
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
     def list(self, request, slug):
@@ -34,7 +74,8 @@ class WorkspaceAnnouncementViewSet(BaseViewSet):
         serializer = WorkspaceAnnouncementSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save(workspace_id=workspace.id)
+            announcement = serializer.save(workspace_id=workspace.id)
+            self._create_inbox_notifications(announcement, request.user.id, "created")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -46,7 +87,8 @@ class WorkspaceAnnouncementViewSet(BaseViewSet):
 
         serializer = WorkspaceAnnouncementSerializer(announcement, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
+            updated_announcement = serializer.save()
+            self._create_inbox_notifications(updated_announcement, request.user.id, "updated")
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
