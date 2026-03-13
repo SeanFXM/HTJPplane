@@ -101,7 +101,7 @@ export const TopNavPowerK = observer(() => {
     return () => {
       setTopNavInputRef(null);
     };
-  }, [setTopNavInputRef]);
+  }, [setTopNavInputRef, inputRef]);
 
   const handleClear = () => {
     setSearchTerm("");
@@ -192,7 +192,7 @@ export const TopNavPowerK = observer(() => {
       }
 
       // Enter key to execute selected command
-      if (e.key === "Enter" && isOpen) {
+      if (e.key === "Enter" && isOpen && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
         e.preventDefault();
         // Find the currently selected/focused item
         const selectedItem = containerRef.current?.querySelector('[cmdk-item][aria-selected="true"]') as HTMLElement;
@@ -203,7 +203,7 @@ export const TopNavPowerK = observer(() => {
         return;
       }
     },
-    [searchTerm, activePage, context, shouldShowContextBasedActions, setActivePage, closePanel]
+    [searchTerm, activePage, context, shouldShowContextBasedActions, setActivePage, closePanel, isOpen, containerRef]
   );
 
   return (
@@ -220,8 +220,6 @@ export const TopNavPowerK = observer(() => {
               "bg-layer-1": isOpen,
             }
           )}
-          onClick={() => inputRef.current?.focus()}
-          role="button"
         >
           <SearchIcon className="mr-2 size-3.5 shrink-0 text-placeholder" />
           <input

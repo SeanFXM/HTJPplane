@@ -153,7 +153,7 @@ export function GptAssistantPopover(props: Props) {
 
   useEffect(() => {
     const handleEnterKeyPress = (event: KeyboardEvent) => {
-      if (event.key === "Enter" && !event.shiftKey) {
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing && event.keyCode !== 229) {
         event.preventDefault();
         handleSubmit(handleAIResponse)();
       }
@@ -271,7 +271,6 @@ export function GptAssistantPopover(props: Props) {
                   prompt && prompt !== "" ? "Tell AI what action to perform on this content..." : "Ask AI anything..."
                 }`}
                 className="w-full"
-                autoFocus
               />
             )}
           />

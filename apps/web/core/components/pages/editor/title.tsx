@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react";
 import { useTranslation } from "@plane/i18n";
 // editor
@@ -28,6 +28,7 @@ export const PageEditorTitle = observer(function PageEditorTitle(props: Props) {
   const { t } = useTranslation();
   // states
   const [isLengthVisible, setIsLengthVisible] = useState(false);
+  const titleInputRef = useRef<HTMLTextAreaElement>(null);
   // page filters
   const { fontSize } = usePageFilters();
   // ui
@@ -35,6 +36,12 @@ export const PageEditorTitle = observer(function PageEditorTitle(props: Props) {
     "text-[1.6rem] leading-[1.9rem]": fontSize === "small-font",
     "text-[2rem] leading-[2.375rem]": fontSize === "large-font",
   });
+
+  useEffect(() => {
+    if (!readOnly) {
+      titleInputRef.current?.focus();
+    }
+  }, [readOnly]);
 
   return (
     <div className="relative w-full flex-shrink-0 py-3">
@@ -53,10 +60,11 @@ export const PageEditorTitle = observer(function PageEditorTitle(props: Props) {
       ) : (
         <div className="relative">
           <TextArea
+            ref={titleInputRef}
             className={cn(titleFontClassName, "block w-full resize-none rounded-none border-none p-0 outline-none")}
             placeholder={t("common.untitled")}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
                 e.preventDefault();
                 editorRef?.setFocusAtPosition(0);
               }
@@ -66,7 +74,6 @@ export const PageEditorTitle = observer(function PageEditorTitle(props: Props) {
             maxLength={255}
             onFocus={() => setIsLengthVisible(true)}
             onBlur={() => setIsLengthVisible(false)}
-            autoFocus
           />
           <div
             className={cn(
