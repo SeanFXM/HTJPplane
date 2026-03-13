@@ -64,7 +64,7 @@ export const SlashCommandsMenu = forwardRef(function SlashCommandsMenu(props: Sl
             nextItem = 0;
           }
         }
-        if (e.key === "Enter") {
+        if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) {
           selectItem(currentSection, currentItem);
         }
         setSelectedIndex({
@@ -100,7 +100,7 @@ export const SlashCommandsMenu = forwardRef(function SlashCommandsMenu(props: Sl
     onKeyDown: ({ event }: { event: KeyboardEvent }) => {
       if (!DROPDOWN_NAVIGATION_KEYS.includes(event.key)) return false;
 
-      if (event.key === "Enter") {
+      if (event.key === "Enter" && !event.isComposing && event.keyCode !== 229) {
         selectItem(selectedIndex.section, selectedIndex.item);
         return true;
       }
@@ -141,10 +141,10 @@ export const SlashCommandsMenu = forwardRef(function SlashCommandsMenu(props: Sl
         style={{
           zIndex: 100,
         }}
-        onClick={(e) => {
+        onClickCapture={(e) => {
           e.stopPropagation();
         }}
-        onMouseDown={(e) => {
+        onMouseDownCapture={(e) => {
           e.stopPropagation();
         }}
       >

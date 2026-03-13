@@ -17,20 +17,20 @@ type InputViewProps = {
   value: string;
   placeholder: string;
   onChange: (value: string) => void;
-  autoFocus?: boolean;
+  inputRef?: React.Ref<HTMLInputElement>;
 };
 
-function InputView({ label, value, placeholder, onChange, autoFocus }: InputViewProps) {
+function InputView({ label, value, placeholder, onChange, inputRef }: InputViewProps) {
   return (
     <div className="flex flex-col gap-1">
       <label className="inline-block text-11 font-semibold text-placeholder">{label}</label>
       <input
+        ref={inputRef}
         placeholder={placeholder}
         onClick={(e) => e.stopPropagation()}
         className="w-[280px] rounded-md border border-strong bg-layer-1 p-2 text-13 text-primary outline-none"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        autoFocus={autoFocus}
       />
     </div>
   );
@@ -50,6 +50,7 @@ export function LinkEditView({ viewProps }: LinkEditViewProps) {
   const [localText, setLocalText] = useState(initialText ?? "");
   const [linkRemoved, setLinkRemoved] = useState(false);
   const hasSubmitted = useRef(false);
+  const urlInputRef = useRef<HTMLInputElement>(null);
 
   const removeLink = useCallback(() => {
     editor.view.dispatch(editor.state.tr.removeMark(from, to, editor.schema.marks.link));
@@ -81,6 +82,10 @@ export function LinkEditView({ viewProps }: LinkEditViewProps) {
   useEffect(() => {
     if (initialText) setLocalText(initialText);
   }, [initialText]);
+
+  useEffect(() => {
+    urlInputRef.current?.focus();
+  }, []);
 
   // Handlers
   const handleTextChange = useCallback((value: string) => {
@@ -123,7 +128,7 @@ export function LinkEditView({ viewProps }: LinkEditViewProps) {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter") {
+      if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
         e.stopPropagation();
         if (applyChanges()) {
           closeLinkView();
@@ -136,23 +141,36 @@ export function LinkEditView({ viewProps }: LinkEditViewProps) {
   );
 
   return (
-    <div
+    <form
       onKeyDown={handleKeyDown}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (applyChanges()) {
+          closeLinkView();
+          setLocalUrl("");
+          setLocalText("");
+        }
+      }}
       className="shadow-md animate-in fade-in flex translate-y-1 flex-col gap-3 rounded-sm border-2 border-subtle bg-layer-1 p-2"
       style={{
         transition: "all 0.1s cubic-bezier(.55, .085, .68, .53)",
       }}
-      tabIndex={0}
     >
-      <InputView label="URL" placeholder="Enter or paste URL" value={localUrl} onChange={setLocalUrl} autoFocus />
+      <InputView
+        label="URL"
+        placeholder="Enter or paste URL"
+        value={localUrl}
+        onChange={setLocalUrl}
+        inputRef={urlInputRef}
+      />
       <InputView label="Text" placeholder="Enter Text to display" value={localText} onChange={handleTextChange} />
       <div className="bg-strong mb-1 h-[1px] w-full gap-2" />
       <div className="flex items-center gap-2 text-13 text-secondary">
         <Link2Off size={14} className="inline-block" />
-        <button onClick={removeLink} className="cursor-pointer transition-colors hover:text-placeholder">
+        <button type="button" onClick={removeLink} className="cursor-pointer transition-colors hover:text-placeholder">
           Remove Link
         </button>
       </div>
-    </div>
+    </form>
   );
 }

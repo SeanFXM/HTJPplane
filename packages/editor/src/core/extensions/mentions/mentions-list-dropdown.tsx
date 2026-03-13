@@ -6,7 +6,16 @@
 
 import { FloatingOverlay } from "@floating-ui/react";
 import type { SuggestionProps } from "@tiptap/suggestion";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { v4 as uuidv4 } from "uuid";
 import { debounce } from "lodash-es";
 // plane utils
@@ -56,7 +65,7 @@ export const MentionsListDropdown = forwardRef(function MentionsListDropdown(pro
     onKeyDown: ({ event }: { event: KeyboardEvent }) => {
       if (!DROPDOWN_NAVIGATION_KEYS.includes(event.key)) return false;
 
-      if (event.key === "Enter") {
+      if (event.key === "Enter" && !event.isComposing && event.keyCode !== 229) {
         selectItem(selectedIndex.section, selectedIndex.item);
         return true;
       }
@@ -83,19 +92,20 @@ export const MentionsListDropdown = forwardRef(function MentionsListDropdown(pro
   }, [sections]);
 
   // debounced search callback
-  const debouncedSearchCallback = useCallback(
-    debounce(async (searchQuery: string) => {
-      try {
-        const sectionsResponse = await searchCallback?.(searchQuery);
-        if (sectionsResponse) {
-          setSections(sectionsResponse);
+  const debouncedSearchCallback = useMemo(
+    () =>
+      debounce(async (searchQuery: string) => {
+        try {
+          const sectionsResponse = await searchCallback?.(searchQuery);
+          if (sectionsResponse) {
+            setSections(sectionsResponse);
+          }
+        } catch (error) {
+          console.error("Failed to fetch suggestions:", error);
+        } finally {
+          setIsLoading(false);
         }
-      } catch (error) {
-        console.error("Failed to fetch suggestions:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 300),
+      }, 300),
     [searchCallback]
   );
 
@@ -150,10 +160,10 @@ export const MentionsListDropdown = forwardRef(function MentionsListDropdown(pro
         style={{
           zIndex: 100,
         }}
-        onClick={(e) => {
+        onClickCapture={(e) => {
           e.stopPropagation();
         }}
-        onMouseDown={(e) => {
+        onMouseDownCapture={(e) => {
           e.stopPropagation();
         }}
       >

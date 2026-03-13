@@ -6,8 +6,7 @@
 
 import type { Editor } from "@tiptap/core";
 
-import type { FC } from "react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LinkIcon, TrashIcon, CheckIcon } from "@plane/propel/icons";
 // plane imports
 import { cn } from "@plane/utils";
@@ -48,6 +47,12 @@ export function BubbleMenuLinkSelector(props: Props) {
     }
   }, [editor, inputRef, context]);
 
+  useEffect(() => {
+    if (context.open) {
+      inputRef.current?.focus();
+    }
+  }, [context.open]);
+
   return (
     <FloatingMenuRoot
       classNames={{
@@ -85,13 +90,12 @@ export function BubbleMenuLinkSelector(props: Props) {
             defaultValue={editor.getAttributes("link").href || ""}
             onKeyDown={(e) => {
               setError(false);
-              if (e.key === "Enter") {
+              if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
                 e.preventDefault();
                 handleLinkSubmit();
               }
             }}
             onFocus={() => setError(false)}
-            autoFocus
           />
           {editor.getAttributes("link").href ? (
             <button

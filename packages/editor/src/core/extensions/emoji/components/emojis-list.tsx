@@ -70,7 +70,7 @@ export const EmojisListDropdown = forwardRef(function EmojisListDropdown(
         return true;
       }
 
-      if (event.key === "Enter") {
+      if (event.key === "Enter" && !event.isComposing && event.keyCode !== 229) {
         selectItem(selectedIndex);
         return true;
       }
@@ -138,10 +138,10 @@ export const EmojisListDropdown = forwardRef(function EmojisListDropdown(
         style={{
           zIndex: 100,
         }}
-        onClick={(e) => {
+        onClickCapture={(e) => {
           e.stopPropagation();
         }}
-        onMouseDown={(e) => {
+        onMouseDownCapture={(e) => {
           e.stopPropagation();
         }}
       >
