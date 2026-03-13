@@ -57,6 +57,23 @@ export type TLinkEditableFields = {
   url: string;
 };
 
+export type TWorkspaceAnnouncementCategory = "important" | "update" | "fix";
+
+export type TWorkspaceAnnouncementEditableFields = {
+  title: string;
+  description: string;
+  category: TWorkspaceAnnouncementCategory;
+};
+
+export type TWorkspaceAnnouncement = TWorkspaceAnnouncementEditableFields & {
+  id: string;
+  workspace: string;
+  created_at: string;
+  updated_at: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+};
+
 export type TLink = TLinkEditableFields & {
   created_by_id: string;
   id: string;

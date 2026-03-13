@@ -68,6 +68,7 @@ from .webhook import Webhook, WebhookLog
 from .workspace import (
     Workspace,
     WorkspaceBaseModel,
+    WorkspaceAnnouncement,
     WorkspaceMember,
     WorkspaceMemberInvite,
     WorkspaceTheme,

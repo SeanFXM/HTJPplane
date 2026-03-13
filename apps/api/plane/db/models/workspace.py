@@ -371,6 +371,30 @@ class WorkspaceUserLink(WorkspaceBaseModel):
         return f"{self.workspace.id} {self.url}"
 
 
+class WorkspaceAnnouncement(WorkspaceBaseModel):
+    class AnnouncementCategory(models.TextChoices):
+        IMPORTANT = "important", "Important task"
+        UPDATE = "update", "Update"
+        FIX = "fix", "Fix"
+
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    category = models.CharField(
+        max_length=20,
+        choices=AnnouncementCategory.choices,
+        default=AnnouncementCategory.IMPORTANT,
+    )
+
+    class Meta:
+        verbose_name = "Workspace Announcement"
+        verbose_name_plural = "Workspace Announcements"
+        db_table = "workspace_announcements"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.workspace.id} {self.title}"
+
+
 class WorkspaceHomePreference(BaseModel):
     """Preference for the home page of a workspace for a user"""
 

@@ -745,6 +745,27 @@ export default {
       title: "快速链接",
       title_plural: "快速链接",
     },
+    announcements: {
+      title: "通知",
+      subtitle: "向所有成员同步重要任务、更新和修复。",
+      add: "添加通知",
+      empty: "还没有通知。添加一条后，工作区所有成员都能看到。",
+      delete_confirm: "确定删除这条通知吗？",
+      category: {
+        important: "重要任务",
+        update: "更新",
+        fix: "修复",
+      },
+      form: {
+        title: "标题",
+        title_required: "请输入标题。",
+        title_placeholder: "例如：本周五上线发布",
+        category: "类型",
+        description: "内容",
+        description_required: "请输入内容。",
+        description_placeholder: "填写需要所有成员了解的重要任务、更新或修复说明。",
+      },
+    },
     recents: {
       title: "最近",
       empty: {

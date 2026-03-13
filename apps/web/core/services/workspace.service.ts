@@ -23,6 +23,7 @@ import type {
   TSearchEntityRequestPayload,
   TWidgetEntityData,
   TActivityEntityData,
+  TWorkspaceAnnouncement,
   IWorkspaceSidebarNavigationItem,
   IWorkspaceSidebarNavigation,
   IWorkspaceUserPropertiesResponse,
@@ -321,6 +322,45 @@ export class WorkspaceService extends APIService {
 
   async deleteWorkspaceLink(workspaceSlug: string, linkId: string): Promise<void> {
     return this.delete(`/api/workspaces/${workspaceSlug}/quick-links/${linkId}/`)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async fetchWorkspaceAnnouncements(workspaceSlug: string): Promise<TWorkspaceAnnouncement[]> {
+    return this.get(`/api/workspaces/${workspaceSlug}/announcements/`)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response;
+      });
+  }
+
+  async createWorkspaceAnnouncement(
+    workspaceSlug: string,
+    data: Partial<TWorkspaceAnnouncement>
+  ): Promise<TWorkspaceAnnouncement> {
+    return this.post(`/api/workspaces/${workspaceSlug}/announcements/`, data)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response;
+      });
+  }
+
+  async updateWorkspaceAnnouncement(
+    workspaceSlug: string,
+    announcementId: string,
+    data: Partial<TWorkspaceAnnouncement>
+  ): Promise<TWorkspaceAnnouncement> {
+    return this.patch(`/api/workspaces/${workspaceSlug}/announcements/${announcementId}/`, data)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response;
+      });
+  }
+
+  async deleteWorkspaceAnnouncement(workspaceSlug: string, announcementId: string): Promise<void> {
+    return this.delete(`/api/workspaces/${workspaceSlug}/announcements/${announcementId}/`)
       .then((response) => response?.data)
       .catch((error) => {
         throw error?.response?.data;

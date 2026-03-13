@@ -758,6 +758,27 @@ export default {
       title: "クイックリンク",
       title_plural: "クイックリンク",
     },
+    announcements: {
+      title: "お知らせ",
+      subtitle: "重要タスク、更新、修正内容を全員に共有します。",
+      add: "お知らせを追加",
+      empty: "まだお知らせはありません。追加するとワークスペース全員に表示されます。",
+      delete_confirm: "このお知らせを削除しますか？",
+      category: {
+        important: "重要タスク",
+        update: "更新",
+        fix: "修正",
+      },
+      form: {
+        title: "タイトル",
+        title_required: "タイトルを入力してください。",
+        title_placeholder: "例: 今週金曜にリリース予定",
+        category: "種類",
+        description: "内容",
+        description_required: "内容を入力してください。",
+        description_placeholder: "全員に伝えたい重要タスク、更新、修正内容を記入してください。",
+      },
+    },
     recents: {
       title: "最近",
       empty: {

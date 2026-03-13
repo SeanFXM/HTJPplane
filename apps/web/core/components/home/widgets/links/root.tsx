@@ -12,6 +12,7 @@ import { useTranslation } from "@plane/i18n";
 import { PlusIcon } from "@plane/propel/icons";
 import type { THomeWidgetProps } from "@plane/types";
 import { useHome } from "@/hooks/store/use-home";
+import { WorkspaceAnnouncements } from "../announcements/root";
 import { LinkCreateUpdateModal } from "./create-update-link-modal";
 import { ProjectLinkList } from "./links";
 import { useLinks } from "./use-links";
@@ -46,6 +47,7 @@ export const DashboardQuickLinks = observer(function DashboardQuickLinks(props: 
         linkOperations={linkOperations}
         preloadedData={linkData}
       />
+      <WorkspaceAnnouncements workspaceSlug={workspaceSlug} />
       <div className="mb-2">
         <div className="mb-4 flex items-center justify-between">
           <div className="text-14 font-semibold text-tertiary">{t("home.quick_links.title_plural")}</div>

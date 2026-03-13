@@ -592,6 +592,27 @@ export default {
       title: "Quicklink",
       title_plural: "Quicklinks",
     },
+    announcements: {
+      title: "Announcements",
+      subtitle: "Share important tasks, updates, and fixes with everyone.",
+      add: "Add announcement",
+      empty: "No announcements yet. Add one to share key updates with the workspace.",
+      delete_confirm: "Delete this announcement?",
+      category: {
+        important: "Important task",
+        update: "Update",
+        fix: "Fix",
+      },
+      form: {
+        title: "Title",
+        title_required: "Title is required.",
+        title_placeholder: "For example: Release this Friday",
+        category: "Category",
+        description: "Details",
+        description_required: "Details are required.",
+        description_placeholder: "Share the key task, update, or fix everyone should know about.",
+      },
+    },
     recents: {
       title: "Recents",
       empty: {
