@@ -17,6 +17,11 @@ export const EnterKeyExtension = (onEnterKeyPress?: () => void) =>
         Enter: () => {
           const { activeDropbarExtensions } = this.editor.storage.utility;
 
+          // Ignore Enter while an IME composition session is active.
+          if (this.editor.view.composing) {
+            return false;
+          }
+
           if (activeDropbarExtensions.length === 0) {
             onEnterKeyPress?.();
             return true;

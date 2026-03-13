@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { useRef, useState } from "react";
 import { observer } from "mobx-react";
 import { useForm, Controller } from "react-hook-form";
@@ -92,11 +91,14 @@ export const CommentCreate = observer(function CommentCreate(props: TCommentCrea
   const isEmpty = isCommentEmpty(commentHTML ?? undefined);
 
   return (
-    <div
+    <form
       className={cn("sticky bottom-0 z-[4] bg-surface-1 sm:static")}
+      onSubmit={handleSubmit(onSubmit)}
       onKeyDown={(e) => {
         if (
           e.key === "Enter" &&
+          !e.nativeEvent.isComposing &&
+          e.nativeEvent.keyCode !== 229 &&
           !e.shiftKey &&
           !e.ctrlKey &&
           !e.metaKey &&
@@ -154,6 +156,6 @@ export const CommentCreate = observer(function CommentCreate(props: TCommentCrea
           />
         )}
       />
-    </div>
+    </form>
   );
 });
