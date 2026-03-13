@@ -10,7 +10,7 @@ import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // hooks
 import { CloseIcon, SearchIcon } from "@plane/propel/icons";
-import { cn } from "@plane/utils";
+import { cn, isImeComposing } from "@plane/utils";
 // power-k
 import type { TPowerKCommandConfig, TPowerKContext } from "@/components/power-k/core/types";
 import { ProjectsAppPowerKCommandsList } from "@/components/power-k/ui/modal/commands-list";
@@ -192,7 +192,7 @@ export const TopNavPowerK = observer(() => {
       }
 
       // Enter key to execute selected command
-      if (e.key === "Enter" && isOpen && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
+      if (e.key === "Enter" && isOpen && !isImeComposing(e)) {
         e.preventDefault();
         // Find the currently selected/focused item
         const selectedItem = containerRef.current?.querySelector('[cmdk-item][aria-selected="true"]') as HTMLElement;

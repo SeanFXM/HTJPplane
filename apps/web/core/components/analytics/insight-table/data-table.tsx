@@ -27,7 +27,7 @@ import { EmptyStateCompact } from "@plane/propel/empty-state";
 import { SearchIcon, CloseIcon } from "@plane/propel/icons";
 // plane package imports
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@plane/propel/table";
-import { cn } from "@plane/utils";
+import { cn, isImeComposing } from "@plane/utils";
 // plane web components
 
 interface DataTableProps<TData, TValue> {
@@ -104,7 +104,7 @@ export function DataTable<TData, TValue>({ columns, data, searchPlaceholder, act
                 if (columnId) table.getColumn(columnId)?.setFilterValue(e.target.value);
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
+                if (e.key === "Enter" && !isImeComposing(e)) {
                   setIsSearchOpen(true);
                 }
               }}

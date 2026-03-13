@@ -11,7 +11,7 @@ import { useTranslation } from "@plane/i18n";
 import type { EditorRefApi } from "@plane/editor";
 // ui
 import { TextArea } from "@plane/ui";
-import { cn, getPageName } from "@plane/utils";
+import { cn, getPageName, isImeComposing } from "@plane/utils";
 // helpers
 // hooks
 import { usePageFilters } from "@/hooks/use-page-filters";
@@ -64,7 +64,7 @@ export const PageEditorTitle = observer(function PageEditorTitle(props: Props) {
             className={cn(titleFontClassName, "block w-full resize-none rounded-none border-none p-0 outline-none")}
             placeholder={t("common.untitled")}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
+              if (e.key === "Enter" && !isImeComposing(e)) {
                 e.preventDefault();
                 editorRef?.setFocusAtPosition(0);
               }

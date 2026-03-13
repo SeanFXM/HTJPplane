@@ -9,7 +9,7 @@ import type { SuggestionKeyDownProps, SuggestionProps } from "@tiptap/suggestion
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 // plane imports
 import { useOutsideClickDetector } from "@plane/hooks";
-import { cn } from "@plane/utils";
+import { cn, isImeComposing } from "@plane/utils";
 
 export type EmojiItem = {
   name: string;
@@ -70,7 +70,7 @@ export const EmojisListDropdown = forwardRef(function EmojisListDropdown(
         return true;
       }
 
-      if (event.key === "Enter" && !event.isComposing && event.keyCode !== 229) {
+      if (event.key === "Enter" && !isImeComposing(event)) {
         selectItem(selectedIndex);
         return true;
       }

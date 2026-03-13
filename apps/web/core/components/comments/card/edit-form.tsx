@@ -11,7 +11,7 @@ import type { EditorRefApi } from "@plane/editor";
 import { CheckIcon, CloseIcon } from "@plane/propel/icons";
 // plane imports
 import type { TCommentsOperations, TIssueComment } from "@plane/types";
-import { cn, isCommentEmpty } from "@plane/utils";
+import { cn, isCommentEmpty, isImeComposing } from "@plane/utils";
 // components
 import { LiteTextEditor } from "@/components/editor/lite-text";
 
@@ -77,15 +77,7 @@ export const CommentCardEditForm = observer(function CommentCardEditForm(props: 
     <form
       className="flex flex-col gap-2"
       onKeyDown={(e) => {
-        if (
-          e.key === "Enter" &&
-          !e.nativeEvent.isComposing &&
-          e.nativeEvent.keyCode !== 229 &&
-          !e.shiftKey &&
-          !e.ctrlKey &&
-          !e.metaKey &&
-          !isEmpty
-        )
+        if (e.key === "Enter" && !isImeComposing(e) && !e.shiftKey && !e.ctrlKey && !e.metaKey && !isEmpty)
           handleSubmit(onEnter)(e);
       }}
     >

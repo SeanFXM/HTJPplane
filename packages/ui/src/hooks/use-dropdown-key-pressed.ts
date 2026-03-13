@@ -5,6 +5,7 @@
  */
 
 import { useCallback } from "react";
+import { isImeComposing } from "@plane/utils";
 
 type TUseDropdownKeyPressed = {
   (
@@ -27,7 +28,7 @@ export const useDropdownKeyPressed: TUseDropdownKeyPressed = (onEnterKeyDown, on
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLElement>) => {
-      if (event.key === "Enter") {
+      if (event.key === "Enter" && !isImeComposing(event)) {
         stopEventPropagation(event);
         onEnterKeyDown();
       } else if (event.key === "Escape") {

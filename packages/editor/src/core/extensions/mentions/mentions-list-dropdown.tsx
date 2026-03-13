@@ -20,7 +20,7 @@ import { v4 as uuidv4 } from "uuid";
 import { debounce } from "lodash-es";
 // plane utils
 import { useOutsideClickDetector } from "@plane/hooks";
-import { cn } from "@plane/utils";
+import { cn, isImeComposing } from "@plane/utils";
 // helpers
 import { DROPDOWN_NAVIGATION_KEYS, getNextValidIndex } from "@/helpers/tippy";
 // types
@@ -65,7 +65,7 @@ export const MentionsListDropdown = forwardRef(function MentionsListDropdown(pro
     onKeyDown: ({ event }: { event: KeyboardEvent }) => {
       if (!DROPDOWN_NAVIGATION_KEYS.includes(event.key)) return false;
 
-      if (event.key === "Enter" && !event.isComposing && event.keyCode !== 229) {
+      if (event.key === "Enter" && !isImeComposing(event)) {
         selectItem(selectedIndex.section, selectedIndex.item);
         return true;
       }

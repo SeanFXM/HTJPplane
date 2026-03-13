@@ -9,6 +9,7 @@ import type { SuggestionProps } from "@tiptap/suggestion";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 // plane imports
 import { useOutsideClickDetector } from "@plane/hooks";
+import { isImeComposing } from "@plane/utils";
 // helpers
 import { DROPDOWN_NAVIGATION_KEYS, getNextValidIndex } from "@/helpers/tippy";
 // types
@@ -64,7 +65,7 @@ export const SlashCommandsMenu = forwardRef(function SlashCommandsMenu(props: Sl
             nextItem = 0;
           }
         }
-        if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) {
+        if (e.key === "Enter" && !isImeComposing(e)) {
           selectItem(currentSection, currentItem);
         }
         setSelectedIndex({
@@ -100,7 +101,7 @@ export const SlashCommandsMenu = forwardRef(function SlashCommandsMenu(props: Sl
     onKeyDown: ({ event }: { event: KeyboardEvent }) => {
       if (!DROPDOWN_NAVIGATION_KEYS.includes(event.key)) return false;
 
-      if (event.key === "Enter" && !event.isComposing && event.keyCode !== 229) {
+      if (event.key === "Enter" && !isImeComposing(event)) {
         selectItem(selectedIndex.section, selectedIndex.item);
         return true;
       }

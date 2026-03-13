@@ -9,7 +9,7 @@ import type { Editor } from "@tiptap/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LinkIcon, TrashIcon, CheckIcon } from "@plane/propel/icons";
 // plane imports
-import { cn } from "@plane/utils";
+import { cn, isImeComposing } from "@plane/utils";
 // constants
 import { CORE_EXTENSIONS } from "@/constants/extension";
 // helpers
@@ -90,7 +90,7 @@ export function BubbleMenuLinkSelector(props: Props) {
             defaultValue={editor.getAttributes("link").href || ""}
             onKeyDown={(e) => {
               setError(false);
-              if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
+              if (e.key === "Enter" && !isImeComposing(e)) {
                 e.preventDefault();
                 handleLinkSubmit();
               }

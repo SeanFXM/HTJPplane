@@ -11,7 +11,7 @@ import { useForm, Controller } from "react-hook-form";
 import { EIssueCommentAccessSpecifier } from "@plane/constants";
 import type { EditorRefApi } from "@plane/editor";
 import type { TIssueComment, TCommentsOperations } from "@plane/types";
-import { cn, isCommentEmpty } from "@plane/utils";
+import { cn, isCommentEmpty, isImeComposing } from "@plane/utils";
 // components
 import { LiteTextEditor } from "@/components/editor/lite-text";
 // hooks
@@ -97,8 +97,7 @@ export const CommentCreate = observer(function CommentCreate(props: TCommentCrea
       onKeyDown={(e) => {
         if (
           e.key === "Enter" &&
-          !e.nativeEvent.isComposing &&
-          e.nativeEvent.keyCode !== 229 &&
+          !isImeComposing(e) &&
           !e.shiftKey &&
           !e.ctrlKey &&
           !e.metaKey &&

@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { LinkViewProps, LinkViews } from "@/components/links";
 // helpers
 import { isValidHttpUrl } from "@/helpers/common";
+import { isImeComposing } from "@plane/utils";
 
 type InputViewProps = {
   label: string;
@@ -128,7 +129,7 @@ export function LinkEditView({ viewProps }: LinkEditViewProps) {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
+      if (e.key === "Enter" && !isImeComposing(e)) {
         e.stopPropagation();
         if (applyChanges()) {
           closeLinkView();

@@ -20,6 +20,7 @@ import { Button, getButtonStyling } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { EFileAssetType } from "@plane/types";
 import { Input, Loader } from "@plane/ui";
+import { isImeComposing } from "@plane/utils";
 // helpers
 import { STATIC_COVER_IMAGES, getCoverImageDisplayURL } from "@/helpers/cover-image.helper";
 // hooks
@@ -227,7 +228,7 @@ export const ImagePickerPopover = observer(function ImagePickerPopover(props: Pr
                               name="search"
                               type="text"
                               onKeyDown={(e) => {
-                                if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
+                                if (e.key === "Enter" && !isImeComposing(e)) {
                                   e.preventDefault();
                                   setSearchParams(formData.search);
                                 }

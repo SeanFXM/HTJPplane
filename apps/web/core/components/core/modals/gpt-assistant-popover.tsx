@@ -16,6 +16,7 @@ import type { EditorRefApi } from "@plane/editor";
 import { Button } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Input } from "@plane/ui";
+import { isImeComposing } from "@plane/utils";
 // components
 import { RichTextEditor } from "@/components/editor/rich-text";
 // services
@@ -153,7 +154,7 @@ export function GptAssistantPopover(props: Props) {
 
   useEffect(() => {
     const handleEnterKeyPress = (event: KeyboardEvent) => {
-      if (event.key === "Enter" && !event.shiftKey && !event.isComposing && event.keyCode !== 229) {
+      if (event.key === "Enter" && !event.shiftKey && !isImeComposing(event)) {
         event.preventDefault();
         handleSubmit(handleAIResponse)();
       }
