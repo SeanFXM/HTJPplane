@@ -43,7 +43,7 @@ export const NotificationItem = observer(function NotificationItem(props: TNotif
   const announcement = notification?.data?.announcement;
   const workspace = getWorkspaceBySlug(workspaceSlug);
 
-  const notificationField = notification?.data?.issue_activity.field || undefined;
+  const notificationField = notification?.data?.issue_activity?.field || undefined;
   const notificationTriggeredBy = notification.triggered_by_details || undefined;
   const isAnnouncementNotification = notification?.entity_name === "workspace_announcement";
 
