@@ -216,9 +216,19 @@ COPY deployments/railway/Caddyfile        /app/proxy/Caddyfile
 COPY deployments/railway/supervisor.conf  /etc/supervisor/conf.d/supervisor.conf
 COPY deployments/railway/start.sh         /app/start.sh
 
-RUN mkdir -p /app/logs/access /app/logs/error /app/data \
+# Non-root runtime user; Caddy/Node caches live under /app/data (writable).
+ENV HOME=/app/data XDG_DATA_HOME=/app/data XDG_CONFIG_HOME=/app/data
+RUN addgroup -g 1001 plane \
+    && adduser -D -u 1001 -G plane -h /app/data plane \
+    && mkdir -p /app/logs/access /app/logs/error /app/data \
     && chmod +x /app/start.sh /app/backend/bin/* \
-    && chmod -R 777 /app/backend
+    && chown -R plane:plane /app
+USER plane
+
+# Liveness of the API process behind Caddy (Railway's own probe only hits Caddy,
+# so a dead api/worker would otherwise still look "healthy").
+HEALTHCHECK --interval=30s --timeout=6s --start-period=120s --retries=3 \
+  CMD curl -s -o /dev/null --max-time 5 http://127.0.0.1:3004/ || exit 1
 
 EXPOSE 80
 CMD ["/app/start.sh"]

@@ -9,16 +9,18 @@ echo "------------------------------------------------"
 echo " Plane Community — All-In-One (Railway)"
 echo "------------------------------------------------"
 
-# --- required external services ---------------------------------------------
+# --- required vars (incl. secrets — NO insecure default, fail hard) ---------
 missing=0
-for key in DATABASE_URL REDIS_URL AMQP_URL; do
+for key in DATABASE_URL REDIS_URL AMQP_URL SECRET_KEY LIVE_SERVER_SECRET_KEY; do
 	if [ -z "${!key}" ]; then
 		echo "  ❌ $key is not set"
 		missing=1
 	fi
 done
 if [ "$missing" = "1" ]; then
-	echo "Aborting: set DATABASE_URL, REDIS_URL and AMQP_URL (external services)."
+	echo "Aborting: required vars missing. Set DATABASE_URL, REDIS_URL, AMQP_URL, and"
+	echo "the secrets SECRET_KEY / LIVE_SERVER_SECRET_KEY. Generate a secret with:"
+	echo "    python -c 'import secrets; print(secrets.token_hex(32))'"
 	exit 1
 fi
 
@@ -35,8 +37,7 @@ export USE_MINIO="${USE_MINIO:-0}"
 export GUNICORN_WORKERS="${GUNICORN_WORKERS:-1}"
 export CELERY_WORKER_CONCURRENCY="${CELERY_WORKER_CONCURRENCY:-2}"
 export FILE_SIZE_LIMIT="${FILE_SIZE_LIMIT:-5242880}"
-export SECRET_KEY="${SECRET_KEY:-60gp0byfz2dvffa45cxl20p1scy9xbpf6d8c5y0geejgkyp1b5}"
-export LIVE_SERVER_SECRET_KEY="${LIVE_SERVER_SECRET_KEY:-htbqvBJAgpm9bzvf3r4urJer0ENReatceh}"
+# SECRET_KEY / LIVE_SERVER_SECRET_KEY are validated as required above — no default.
 export API_KEY_RATE_LIMIT="${API_KEY_RATE_LIMIT:-60/minute}"
 export BUCKET_NAME="${BUCKET_NAME:-${AWS_S3_BUCKET_NAME}}"
 # We run a dedicated [worker] under supervisor, so do NOT also embed one in api.

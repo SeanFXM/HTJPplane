@@ -77,6 +77,8 @@ class TestWorkspaceAnnouncementsAPI:
 
         assert update_response.status_code == status.HTTP_200_OK
         assert update_response.data["title"] == "Bug fixes shipped"
-        assert Notification.objects.filter(entity_name="workspace_announcement").count() == 4
+        # Editing an announcement does NOT re-notify members; only the 2 create-time
+        # notifications (creator + member) exist.
+        assert Notification.objects.filter(entity_name="workspace_announcement").count() == 2
         assert delete_response.status_code == status.HTTP_204_NO_CONTENT
         assert WorkspaceAnnouncement.objects.count() == 0

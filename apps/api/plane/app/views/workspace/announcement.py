@@ -1,3 +1,4 @@
+from django.utils.html import escape
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -32,7 +33,7 @@ class WorkspaceAnnouncementViewSet(BaseViewSet):
                 entity_name="workspace_announcement",
                 title=announcement.title,
                 message={"description": announcement.description},
-                message_html=f"<p>{announcement.description}</p>",
+                message_html=f"<p>{escape(announcement.description)}</p>",
                 message_stripped=announcement.description,
                 sender=sender,
                 triggered_by_id=triggered_by_id,
@@ -87,8 +88,9 @@ class WorkspaceAnnouncementViewSet(BaseViewSet):
 
         serializer = WorkspaceAnnouncementSerializer(announcement, data=request.data, partial=True)
         if serializer.is_valid():
-            updated_announcement = serializer.save()
-            self._create_inbox_notifications(updated_announcement, request.user.id, "updated")
+            # Notify on create only — editing an announcement must not re-spam every
+            # member's inbox (a one-character typo fix shouldn't re-mark it unread for all).
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
