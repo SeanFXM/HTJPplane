@@ -58,7 +58,7 @@ RUN pnpm -C packages/i18n build \
  && pnpm -C packages/propel build \
  && pnpm -C packages/ui build \
  && pnpm -C packages/editor build \
- && pnpm -C packages/tailwind-config build || true
+ && pnpm -C packages/tailwind-config build
 
 # web 自己 build（关键）
 RUN pnpm -C apps/web run build

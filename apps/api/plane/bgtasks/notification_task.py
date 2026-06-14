@@ -316,7 +316,12 @@ def notifications(
                 else:
                     sender = "in_app:issue_activities:subscribed"
 
-                preference = UserNotificationPreference.objects.get(user_id=subscriber)
+                # get_or_create: assignees merged into the receiver set may lack a
+                # preference row (created via a post_save signal); a bare .get() would
+                # raise DoesNotExist and abort notifications for the whole activity.
+                preference, _ = UserNotificationPreference.objects.get_or_create(
+                    user_id=subscriber
+                )
 
                 for issue_activity in issue_activities_created:
                     # If activity done in blocking then blocked by email should not go
