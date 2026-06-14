@@ -15,16 +15,14 @@ const DATE_FNS_LOCALE_MAP: Record<string, TDateFnsLocale> = {
   "en-US": enUS,
   ja,
   "zh-CN": zhCN,
-  "zh-TW": zhCN,
 };
 
-type TRelativeTimeLocale = "en" | "ja" | "zh-CN" | "zh-TW";
+type TRelativeTimeLocale = "en" | "ja" | "zh-CN";
 
 const JUST_NOW_LABELS: Record<TRelativeTimeLocale, string> = {
   en: "just now",
   ja: "たった今",
   "zh-CN": "刚刚",
-  "zh-TW": "剛剛",
 };
 
 const relativeTimeFormatterCache = new Map<TRelativeTimeLocale, Intl.RelativeTimeFormat>();
@@ -33,19 +31,16 @@ const getRelativeTimeLocale = (): TRelativeTimeLocale => {
   if (typeof document !== "undefined" && document.documentElement.lang) {
     const lang = document.documentElement.lang;
     if (lang === "ja") return "ja";
-    if (lang === "zh-TW") return "zh-TW";
     if (lang.startsWith("zh")) return "zh-CN";
   }
 
   if (typeof window !== "undefined") {
     const storedLanguage = window.localStorage.getItem("userLanguage");
     if (storedLanguage === "ja") return "ja";
-    if (storedLanguage === "zh-TW") return "zh-TW";
     if (storedLanguage?.startsWith("zh")) return "zh-CN";
 
     const browserLanguage = window.navigator.language;
     if (browserLanguage === "ja") return "ja";
-    if (browserLanguage === "zh-TW") return "zh-TW";
     if (browserLanguage?.startsWith("zh")) return "zh-CN";
   }
 

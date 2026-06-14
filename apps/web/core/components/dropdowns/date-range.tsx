@@ -76,7 +76,6 @@ const LOCALE_MAP: Record<string, typeof enUS> = {
   "en-US": enUS,
   ja,
   "zh-CN": zhCN,
-  "zh-TW": zhCN,
 };
 
 export const DateRangeDropdown = observer(function DateRangeDropdown(props: Props) {

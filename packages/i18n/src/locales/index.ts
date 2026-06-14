@@ -45,12 +45,6 @@ export const locales = {
     editor: () => import("./zh-CN/editor"),
     "empty-state": () => import("./zh-CN/empty-state"),
   },
-  "zh-TW": {
-    translations: () => import("./zh-TW/translations"),
-    accessibility: () => import("./zh-TW/accessibility"),
-    editor: () => import("./zh-TW/editor"),
-    "empty-state": () => import("./zh-TW/empty-state"),
-  },
   ru: {
     translations: () => import("./ru/translations"),
     accessibility: () => import("./ru/accessibility"),

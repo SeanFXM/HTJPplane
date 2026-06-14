@@ -10,7 +10,6 @@ export type TLanguage =
   | "es"
   | "ja"
   | "zh-CN"
-  | "zh-TW"
   | "ru"
   | "it"
   | "cs"
