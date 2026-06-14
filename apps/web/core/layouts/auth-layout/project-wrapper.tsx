@@ -177,13 +177,18 @@ export const ProjectAuthWrapper = observer(function ProjectAuthWrapper(props: IP
       revalidateOnFocus: false,
     }
   );
-  // fetching project modules
+  // fetching project modules — the key includes the route so navigating INTO
+  // /modules switches the SWR key and re-runs the fetcher (revalidateIfStale is
+  // off, so a fixed key would keep serving the slim-only result fetched first).
+  const isModulesRoute = pathname?.includes("/modules") ?? false;
   useSWR(
-    shouldLoadDeferredProjectData ? PROJECT_MODULES(projectId, currentProjectRole) : null,
+    shouldLoadDeferredProjectData
+      ? `${PROJECT_MODULES(projectId, currentProjectRole)}_${isModulesRoute ? "full" : "slim"}`
+      : null,
     async () => {
       await fetchModulesSlim(workspaceSlug, projectId);
 
-      if (pathname?.includes("/modules")) {
+      if (isModulesRoute) {
         await fetchModules(workspaceSlug, projectId);
       }
     },
