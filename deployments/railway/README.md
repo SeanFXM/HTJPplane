@@ -121,16 +121,31 @@ pnpm turbo run build --filter=web --filter=admin
 
 ---
 
-## 5. 成本对比(粗估,按 Railway ~$10/GB-内存/月)
+## 5. 成本对比(基于本项目 Railway Usage 实测,Jun 5–Jul 5)
 
-| | 服务数 | 常驻内存 | 量级 |
+这个项目("Hotone Japan Plane")当月用量 **$17.04**,几乎全是内存费,而且**单个 api 服务就占 $14.41(85%)** —— 它常驻吃掉 ~1.44GB RAM,根因是 `RUN_EMBEDDED_CELERY_WORKER=1` 且 Celery 并发没设上限(默认按 CPU 核数起进程,每个进程加载整个 Django)。
+
+| 服务 | 实测月费 | 备注 |
+|---|---|---|
+| **HTJPplane-api** | **$14.41** | ~1.44GB,主要是 embedded celery 未限并发 |
+| Bucket(MinIO) | $0.85 | → Cloudflare R2 免费 |
+| HTJPplane-web | $0.79 | 静态,可进一步上 CDN |
+| RabbitMQ | $0.78 | → CloudAMQP 免费 |
+| Postgres | $0.17 | 留 |
+| Redis-Voxz / Redis / Redis-uGEq | $0.09 / $0.09 / $0.05 | **3 个 Redis,留 1 个** |
+| Console / RabbitMQ Web UI | $0.07 / $0.05 | 可删 |
+| Live / migrator service | $0.00 | 闲置 |
+| **合计** | **$17.04** | |
+
+两条优化路径:
+
+| | 做法 | Plane 项目月费 | 整个工作区账单 |
 |---|---|---|---|
-| **改造前** | ~11 | 2.5–3.5GB | $$$ |
-| **本方案(单容器 + 外部免费队列/存储)** | 3(应用 + PG + Redis) | ~1.0–1.5GB | $ |
-| **再 + Pages 卸载静态** | 2(后端容器 + PG)+ 外部 Redis 可选 | ~0.8–1.2GB | $ |
+| 现状 | — | $17.04 | $23.73($20 Pro 固定费 + $3.73 超额) |
+| **A. 只调参(立刻可做)** | `GUNICORN_WORKERS=1` + `CELERY_WORKER_CONCURRENCY=2`,删 2 个多余 Redis / RabbitMQ Web UI | ~$8–10 | ~**$20.00**(超额归零,且留出余量) |
+| **B. 全量切换** | A + 单容器 AIO + 队列/存储外置免费 | ~$6–8 | ~$20.00(Pro 封底)/ 若降级 Hobby 可到 ~$13–14 |
 
-> 实际数字取决于你的流量和数据量;但「常驻内存」直接对应账单,腰斩是很现实的。
-> RabbitMQ、MinIO 两个容器直接消失,worker/beat/live/space 不再各占一个服务。
+> ⚠️ **Pro 计划有 $20/月固定封底**:无论怎么优化,只要留在 Pro,账单最低就是 $20。优化的直接作用是**消掉当前 $3.73 超额并腾出大量余量**(不会因为增长又超支)。想真正压到 $20 以下,需要在用量降下来后**降级到 Hobby**($5/月含 $5 用量),前提是能接受 Hobby 的资源上限且不需要 Pro 的功能。
 
 ---
 
