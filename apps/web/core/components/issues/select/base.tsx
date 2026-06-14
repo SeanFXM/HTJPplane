@@ -16,7 +16,7 @@ import { useOutsideClickDetector } from "@plane/hooks";
 import { useTranslation } from "@plane/i18n";
 import { CheckIcon, SearchIcon, LabelPropertyIcon } from "@plane/propel/icons";
 import type { IIssueLabel } from "@plane/types";
-import { cn } from "@plane/utils";
+import { cn, isImeComposing } from "@plane/utils";
 // components
 import { IssueLabelsList } from "@/components/ui/labels-list";
 // hooks
@@ -108,7 +108,7 @@ export const WorkItemLabelSelectBase = observer(function WorkItemLabelSelectBase
     if (
       q !== "" &&
       e.key === "Enter" &&
-      !e.nativeEvent.isComposing &&
+      !isImeComposing(e) &&
       createLabelEnabled &&
       filteredOptions.length === 0 &&
       !submitting
