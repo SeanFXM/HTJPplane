@@ -1,0 +1,224 @@
+# syntax=docker/dockerfile:1.7
+# =============================================================================
+# Plane — All-In-One image built FROM THIS FORK'S SOURCE, for Railway.
+#
+# Runs the whole app (web + admin static, space SSR, live, api, celery worker,
+# celery beat) inside ONE container behind Caddy. Postgres / Redis / RabbitMQ
+# (queue) / S3 are EXTERNAL and passed in via env (DATABASE_URL, REDIS_URL,
+# AMQP_URL, AWS_*).
+#
+# Build context = repo root. Each app stage mirrors its proven per-app
+# Dockerfile (apps/*/Dockerfile.*), so the build steps are the same ones the
+# project already uses. The BuildKit pnpm-store cache mount is shared by id
+# across stages, so JS deps are fetched once.
+#
+#   docker build -f deployments/railway/Dockerfile.aio -t plane-aio:local .
+# =============================================================================
+
+# ---- shared JS base ---------------------------------------------------------
+FROM node:22-alpine AS node-base
+ENV PNPM_HOME="/pnpm"
+# Include BOTH $PNPM_HOME and $PNPM_HOME/bin: different pnpm versions place the
+# global bin dir in one or the other, and `pnpm add -g` aborts if it's not in PATH.
+ENV PATH="$PNPM_HOME/bin:$PNPM_HOME:$PATH"
+ENV TURBO_TELEMETRY_DISABLED=1
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV CI=1
+RUN apk add --no-cache libc6-compat && corepack enable && corepack enable pnpm
+
+# NOTE: build-time VITE_* envs are declared (with defaults) inside each installer
+# stage below — ARG values do NOT propagate across stages. Everything is served
+# behind Caddy on ONE origin via path-based routing, so base URLs stay empty
+# (relative) and only the paths are set. Changing your domain never needs a rebuild.
+
+# ---- web (static SPA) -------------------------------------------------------
+FROM node-base AS web-builder
+WORKDIR /app
+RUN pnpm add -g turbo@2.8.12
+COPY . .
+RUN turbo prune --scope=web --docker
+
+FROM node-base AS web-installer
+WORKDIR /app
+COPY .gitignore .gitignore
+COPY --from=web-builder /app/out/json/ .
+COPY --from=web-builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=web-builder /app/out/full/ .
+COPY turbo.json turbo.json
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm fetch --store-dir=/pnpm/store
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --offline --frozen-lockfile --store-dir=/pnpm/store
+ARG VITE_API_BASE_URL=""
+ARG VITE_ADMIN_BASE_URL=""
+ARG VITE_ADMIN_BASE_PATH="/god-mode"
+ARG VITE_LIVE_BASE_URL=""
+ARG VITE_LIVE_BASE_PATH="/live"
+ARG VITE_SPACE_BASE_URL=""
+ARG VITE_SPACE_BASE_PATH="/spaces"
+ARG VITE_WEB_BASE_URL=""
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL VITE_ADMIN_BASE_URL=$VITE_ADMIN_BASE_URL VITE_ADMIN_BASE_PATH=$VITE_ADMIN_BASE_PATH VITE_LIVE_BASE_URL=$VITE_LIVE_BASE_URL VITE_LIVE_BASE_PATH=$VITE_LIVE_BASE_PATH VITE_SPACE_BASE_URL=$VITE_SPACE_BASE_URL VITE_SPACE_BASE_PATH=$VITE_SPACE_BASE_PATH VITE_WEB_BASE_URL=$VITE_WEB_BASE_URL
+RUN pnpm turbo run build --filter=web
+
+# ---- admin (static SPA, served under /god-mode) -----------------------------
+FROM node-base AS admin-builder
+WORKDIR /app
+RUN pnpm add -g turbo@2.8.12
+COPY . .
+RUN turbo prune --scope=admin --docker
+
+FROM node-base AS admin-installer
+WORKDIR /app
+ENV NODE_ENV=production
+COPY .gitignore .gitignore
+COPY --from=admin-builder /app/out/json/ .
+COPY --from=admin-builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=admin-builder /app/out/full/ .
+COPY turbo.json turbo.json
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm fetch --store-dir=/pnpm/store
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --offline --frozen-lockfile --store-dir=/pnpm/store --prod=false
+ARG VITE_API_BASE_URL=""
+ARG VITE_API_BASE_PATH="/api"
+ARG VITE_ADMIN_BASE_URL=""
+ARG VITE_ADMIN_BASE_PATH="/god-mode"
+ARG VITE_SPACE_BASE_URL=""
+ARG VITE_SPACE_BASE_PATH="/spaces"
+ARG VITE_LIVE_BASE_URL=""
+ARG VITE_LIVE_BASE_PATH="/live"
+ARG VITE_WEB_BASE_URL=""
+ARG VITE_WEB_BASE_PATH=""
+ARG VITE_WEBSITE_URL="https://plane.so"
+ARG VITE_SUPPORT_EMAIL="support@plane.so"
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL VITE_API_BASE_PATH=$VITE_API_BASE_PATH VITE_ADMIN_BASE_URL=$VITE_ADMIN_BASE_URL VITE_ADMIN_BASE_PATH=$VITE_ADMIN_BASE_PATH VITE_SPACE_BASE_URL=$VITE_SPACE_BASE_URL VITE_SPACE_BASE_PATH=$VITE_SPACE_BASE_PATH VITE_LIVE_BASE_URL=$VITE_LIVE_BASE_URL VITE_LIVE_BASE_PATH=$VITE_LIVE_BASE_PATH VITE_WEB_BASE_URL=$VITE_WEB_BASE_URL VITE_WEB_BASE_PATH=$VITE_WEB_BASE_PATH VITE_WEBSITE_URL=$VITE_WEBSITE_URL VITE_SUPPORT_EMAIL=$VITE_SUPPORT_EMAIL
+RUN pnpm turbo run build --filter=admin
+
+# ---- space (SSR, needs node at runtime) -------------------------------------
+FROM node-base AS space-builder
+WORKDIR /app
+RUN pnpm add -g turbo@2.8.12
+COPY . .
+RUN turbo prune --scope=space --docker
+
+FROM node-base AS space-installer
+WORKDIR /app
+ENV NODE_ENV=production
+COPY .gitignore .gitignore
+COPY --from=space-builder /app/out/json/ .
+COPY --from=space-builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=space-builder /app/out/full/ .
+COPY turbo.json turbo.json
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm fetch --store-dir=/pnpm/store
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --offline --frozen-lockfile --store-dir=/pnpm/store --prod=false
+ARG VITE_API_BASE_URL=""
+ARG VITE_API_BASE_PATH="/api"
+ARG VITE_ADMIN_BASE_URL=""
+ARG VITE_ADMIN_BASE_PATH="/god-mode"
+ARG VITE_SPACE_BASE_URL=""
+ARG VITE_SPACE_BASE_PATH="/spaces"
+ARG VITE_LIVE_BASE_URL=""
+ARG VITE_LIVE_BASE_PATH="/live"
+ARG VITE_WEB_BASE_URL=""
+ARG VITE_WEB_BASE_PATH=""
+ARG VITE_WEBSITE_URL="https://plane.so"
+ARG VITE_SUPPORT_EMAIL="support@plane.so"
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL VITE_API_BASE_PATH=$VITE_API_BASE_PATH VITE_ADMIN_BASE_URL=$VITE_ADMIN_BASE_URL VITE_ADMIN_BASE_PATH=$VITE_ADMIN_BASE_PATH VITE_SPACE_BASE_URL=$VITE_SPACE_BASE_URL VITE_SPACE_BASE_PATH=$VITE_SPACE_BASE_PATH VITE_LIVE_BASE_URL=$VITE_LIVE_BASE_URL VITE_LIVE_BASE_PATH=$VITE_LIVE_BASE_PATH VITE_WEB_BASE_URL=$VITE_WEB_BASE_URL VITE_WEB_BASE_PATH=$VITE_WEB_BASE_PATH VITE_WEBSITE_URL=$VITE_WEBSITE_URL VITE_SUPPORT_EMAIL=$VITE_SUPPORT_EMAIL
+RUN pnpm turbo run build --filter=space
+
+# ---- live (node service) ----------------------------------------------------
+FROM node-base AS live-builder
+WORKDIR /app
+RUN pnpm add -g turbo@2.8.12
+COPY . .
+RUN turbo prune --scope=live --docker
+
+FROM node-base AS live-installer
+WORKDIR /app
+COPY .gitignore .gitignore
+COPY --from=live-builder /app/out/json/ .
+COPY --from=live-builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=live-builder /app/out/full/ .
+COPY turbo.json turbo.json
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm fetch --store-dir=/pnpm/store
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --offline --frozen-lockfile --store-dir=/pnpm/store
+RUN pnpm turbo run build --filter=live
+
+# ---- backend (Django + celery) ----------------------------------------------
+FROM python:3.12.10-alpine AS backend-builder
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+WORKDIR /code
+RUN apk update && apk upgrade && apk add --no-cache --upgrade \
+    "libpq" "libxslt" "xmlsec" "ca-certificates" "openssl"
+COPY apps/api/requirements.txt ./
+COPY apps/api/requirements ./requirements
+RUN apk add --no-cache libffi-dev
+RUN apk add --no-cache --virtual .build-deps \
+    "bash~=5.2" "g++" "gcc" "cargo" "git" "make" \
+    "postgresql-dev" "libc-dev" "linux-headers" \
+    && pip install -r requirements.txt --compile --no-cache-dir \
+    && apk del .build-deps && rm -rf /var/cache/apk/*
+COPY apps/api/manage.py manage.py
+COPY apps/api/plane plane/
+COPY apps/api/templates templates/
+COPY apps/api/package.json package.json
+COPY apps/api/bin ./bin/
+RUN mkdir -p /code/plane/logs && chmod +x ./bin/* && chmod -R 777 /code
+
+# =============================================================================
+# Runtime
+# =============================================================================
+FROM python:3.12.10-alpine AS runner
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV NODE_ENV=production
+
+# Runtime libs: Django C deps, node musl runtime (libstdc++), tooling.
+RUN apk add --no-cache \
+    "libpq" "libxslt" "xmlsec" "ca-certificates" "openssl" \
+    "libstdc++" "libgcc" "bash" "curl" \
+    && pip install --no-cache-dir supervisor \
+    && mkdir -p /etc/supervisor/conf.d
+
+# Node runtime (for space SSR + live) — copied from the alpine node image.
+COPY --from=node-base /usr/local/bin/node /usr/local/bin/node
+COPY --from=node-base /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -sf /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+
+# Caddy (reverse proxy + static file server).
+COPY --from=caddy:2-alpine /usr/bin/caddy /usr/bin/caddy
+
+# Backend (code + installed python packages).
+COPY --from=backend-builder /code /app/backend
+COPY --from=backend-builder /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
+COPY --from=backend-builder /usr/local/bin/ /usr/local/bin/
+
+# Static frontends served directly by Caddy.
+COPY --from=web-installer   /app/apps/web/build/client    /app/web
+COPY --from=admin-installer /app/apps/admin/build/client  /app/admin
+
+# Space SSR app (self-contained pruned workspace + node_modules).
+COPY --from=space-installer /app/apps/space/build         /app/space/apps/space/build
+COPY --from=space-installer /app/apps/space/node_modules  /app/space/apps/space/node_modules
+COPY --from=space-installer /app/node_modules             /app/space/node_modules
+COPY --from=space-installer /app/apps/space/package.json  /app/space/apps/space/package.json
+
+# Live service.
+COPY --from=live-installer /app/packages                 /app/live/packages
+COPY --from=live-installer /app/apps/live/dist           /app/live/apps/live/dist
+COPY --from=live-installer /app/apps/live/node_modules   /app/live/apps/live/node_modules
+COPY --from=live-installer /app/apps/live/package.json   /app/live/apps/live/package.json
+COPY --from=live-installer /app/node_modules             /app/live/node_modules
+
+# Orchestration files.
+COPY deployments/railway/Caddyfile        /app/proxy/Caddyfile
+COPY deployments/railway/supervisor.conf  /etc/supervisor/conf.d/supervisor.conf
+COPY deployments/railway/start.sh         /app/start.sh
+
+RUN mkdir -p /app/logs/access /app/logs/error /app/data \
+    && chmod +x /app/start.sh /app/backend/bin/* \
+    && chmod -R 777 /app/backend
+
+EXPOSE 80
+CMD ["/app/start.sh"]
