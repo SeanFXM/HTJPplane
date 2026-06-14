@@ -20,7 +20,7 @@ import type { IIssueLabel } from "@plane/types";
 import { EUserProjectRoles } from "@plane/types";
 // components
 import { ComboDropDown } from "@plane/ui";
-import { sortBySelectedFirst } from "@plane/utils";
+import { isImeComposing, sortBySelectedFirst } from "@plane/utils";
 // hooks
 import { useLabel } from "@/hooks/store/use-label";
 import { useUserPermissions } from "@/hooks/store/user";
@@ -176,7 +176,7 @@ export function LabelDropdown(props: ILabelDropdownProps) {
       e.preventDefault();
     }
 
-    if (query !== "" && e.key === "Enter" && !e.nativeEvent.isComposing && canCreateLabel) {
+    if (query !== "" && e.key === "Enter" && !isImeComposing(e) && canCreateLabel) {
       e.preventDefault();
       await handleAddLabel(query);
     }

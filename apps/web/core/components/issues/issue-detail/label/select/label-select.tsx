@@ -17,7 +17,7 @@ import { CheckIcon, SearchIcon, PlusIcon } from "@plane/propel/icons";
 import type { IIssueLabel } from "@plane/types";
 import { EUserProjectRoles } from "@plane/types";
 // helpers
-import { getTabIndex } from "@plane/utils";
+import { getTabIndex, isImeComposing } from "@plane/utils";
 // hooks
 import { useLabel } from "@/hooks/store/use-label";
 import { useUserPermissions } from "@/hooks/store/user";
@@ -100,7 +100,7 @@ export const IssueLabelSelect = observer(function IssueLabelSelect(props: IIssue
       setQuery("");
     }
 
-    if (query !== "" && e.key === "Enter" && !e.nativeEvent.isComposing && canCreateLabel) {
+    if (query !== "" && e.key === "Enter" && !isImeComposing(e) && canCreateLabel) {
       e.stopPropagation();
       e.preventDefault();
       await handleAddLabel(query);
