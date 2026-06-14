@@ -1,0 +1,51 @@
+# Plane All-In-One reverse proxy for Railway.
+#
+# Railway terminates TLS at its edge and forwards plain HTTP to this container
+# on $PORT, so we bind to a bare port (SITE_ADDRESS=":$PORT", set in start.sh).
+# A bare-port site address tells Caddy to serve HTTP only — no ACME / no certs.
+{
+	auto_https off
+	servers {
+		max_header_size 25MB
+		client_ip_headers X-Forwarded-For X-Real-IP
+		trusted_proxies static {$TRUSTED_PROXIES:0.0.0.0/0}
+	}
+}
+
+{$SITE_ADDRESS::80} {
+	request_body {
+		max_size {$FILE_SIZE_LIMIT:5242880}
+	}
+
+	# Public share app (SSR) — websockets pass through automatically.
+	handle /spaces/* {
+		reverse_proxy localhost:3002
+	}
+
+	# Real-time collaboration (websockets).
+	handle /live/* {
+		reverse_proxy localhost:3005
+	}
+
+	# Django API + auth.
+	handle /api/* {
+		reverse_proxy localhost:3004
+	}
+	handle /auth/* {
+		reverse_proxy localhost:3004
+	}
+
+	# Admin panel (static SPA).
+	handle_path /god-mode* {
+		root * /app/admin
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+
+	# Main web app (static SPA) — everything else.
+	handle_path /* {
+		root * /app/web
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+}
