@@ -80,7 +80,6 @@ export const DateDropdown = observer(function DateDropdown(props: Props) {
     "en-US": enUS,
     ja,
     "zh-CN": zhCN,
-    "zh-TW": zhCN,
   };
   const docLang = typeof document !== "undefined" ? document.documentElement?.lang : undefined;
   const currentLocale = (docLang && localeMap[docLang]) ?? (docLang && localeMap[docLang.split("-")[0]]) ?? enUS;
