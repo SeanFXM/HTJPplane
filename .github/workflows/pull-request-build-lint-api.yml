@@ -72,6 +72,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
+      AMQP_URL: redis://127.0.0.1:6379/0
       DATABASE_URL: postgresql://plane:plane@127.0.0.1:5432/plane
       REDIS_URL: redis://127.0.0.1:6379/0
       SECRET_KEY: hotone-ci-only-secret
