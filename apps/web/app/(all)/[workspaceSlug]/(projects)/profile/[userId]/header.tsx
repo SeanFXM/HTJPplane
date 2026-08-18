@@ -4,13 +4,12 @@
  * See the LICENSE file for details.
  */
 
-// ui
-import type { FC } from "react";
 import { observer } from "mobx-react";
 import { useParams, useRouter } from "next/navigation";
 import { PanelRight } from "lucide-react";
 import { PROFILE_VIEWER_TAB, PROFILE_ADMINS_TAB, EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
+import { Button } from "@plane/propel/button";
 import { YourWorkIcon, ChevronDownIcon } from "@plane/propel/icons";
 import type { IUserProfileProjectSegregation } from "@plane/types";
 import { Breadcrumbs, Header, CustomMenu } from "@plane/ui";
@@ -21,7 +20,6 @@ import { ProfileIssuesFilter } from "@/components/profile/profile-issues-filter"
 // hooks
 import { useAppTheme } from "@/hooks/store/use-app-theme";
 import { useUser, useUserPermissions } from "@/hooks/store/user";
-import { Button } from "@plane/propel/button";
 
 type TUserProfileHeader = {
   userProjectsData: IUserProfileProjectSegregation | undefined;
@@ -54,10 +52,11 @@ export const UserProfileHeader = observer(function UserProfileHeader(props: TUse
   const isCurrentUser = currentUser?.id === userId;
 
   const breadcrumbLabel = isCurrentUser ? t("profile.page_label") : `${userName} ${t("profile.work")}`;
+  const currentTabLabel = type ? t(type) : t("profile.page_label");
 
   return (
     <Header>
-      <Header.LeftItem>
+      <Header.LeftItem className="min-w-0">
         <Breadcrumbs>
           <Breadcrumbs.Item
             component={
@@ -70,26 +69,26 @@ export const UserProfileHeader = observer(function UserProfileHeader(props: TUse
           />
         </Breadcrumbs>
       </Header.LeftItem>
-      <Header.RightItem>
+      <Header.RightItem className="min-w-0 flex-1 md:flex-none">
         <div className="hidden md:flex md:items-center">{showProfileIssuesFilter && <ProfileIssuesFilter />}</div>
-        <div className="flex gap-4 md:hidden">
+        <div className="flex min-w-0 flex-1 items-center gap-2 md:hidden">
           <CustomMenu
             maxHeight={"md"}
-            className="flex flex-grow justify-center text-13 text-secondary"
+            className="flex h-11 min-w-0 flex-1 justify-center text-13 text-secondary"
             placement="bottom-start"
+            ariaLabel={currentTabLabel}
             customButton={
-              <div className="flex items-center gap-2 rounded-md border border-subtle px-2 py-1.5">
-                <span className="flex flex-grow justify-center text-13 text-secondary">{type}</span>
-                <ChevronDownIcon className="h-4 w-4 text-placeholder" />
+              <div className="flex size-full min-w-0 items-center gap-2 rounded-md border border-subtle px-2">
+                <span className="min-w-0 flex-1 truncate text-center text-13 text-secondary">{currentTabLabel}</span>
+                <ChevronDownIcon className="size-4 shrink-0 text-placeholder" />
               </div>
             }
-            customButtonClassName="flex flex-grow justify-center text-secondary text-13"
+            customButtonClassName="flex h-11 min-w-0 w-full items-center justify-center text-13 text-secondary"
             closeOnSelect
           >
-            <></>
             {tabsList.map((tab) => (
               <CustomMenu.MenuItem
-                className="flex items-center gap-2"
+                className="flex min-h-11 items-center gap-2 py-2"
                 key={tab.route}
                 onClick={() => router.push(`/${workspaceSlug}/profile/${userId}/${tab.route}`)}
               >
@@ -101,13 +100,21 @@ export const UserProfileHeader = observer(function UserProfileHeader(props: TUse
             <Button
               variant="ghost"
               size="lg"
+              className="size-11 p-0"
+              aria-label={t(
+                profileSidebarCollapsed
+                  ? "aria_labels.projects_sidebar.expand_sidebar"
+                  : "aria_labels.projects_sidebar.collapse_sidebar"
+              )}
+              aria-expanded={!profileSidebarCollapsed}
               onClick={() => {
                 toggleProfileSidebar();
               }}
-              appendIcon={
-                <PanelRight className={!profileSidebarCollapsed ? "text-accent-primary" : "text-secondary"} />
-              }
-            ></Button>
+            >
+              <PanelRight
+                className={cn("size-4", !profileSidebarCollapsed ? "text-accent-primary" : "text-secondary")}
+              />
+            </Button>
           </div>
         </div>
       </Header.RightItem>

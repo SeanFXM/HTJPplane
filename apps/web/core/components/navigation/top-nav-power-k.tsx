@@ -9,6 +9,7 @@ import { Command } from "cmdk";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // hooks
+import { useTranslation } from "@plane/i18n";
 import { CloseIcon, SearchIcon } from "@plane/propel/icons";
 import { cn, isImeComposing } from "@plane/utils";
 // power-k
@@ -22,6 +23,7 @@ import { useAppRouter } from "@/hooks/use-app-router";
 import { useExpandableSearch } from "@/hooks/use-expandable-search";
 
 export const TopNavPowerK = observer(() => {
+  const { t } = useTranslation();
   // router
   const router = useAppRouter();
   const params = useParams();
@@ -222,7 +224,7 @@ export const TopNavPowerK = observer(() => {
           }
         )}
         onClick={handleMobileOpen}
-        aria-label="Search commands"
+        aria-label={t("power_k.page_placeholders.default")}
         aria-controls="top-nav-search-panel"
         aria-expanded={isOpen}
       >
@@ -253,17 +255,27 @@ export const TopNavPowerK = observer(() => {
             onMouseDown={handleMouseDown}
             onFocus={handleFocus}
             onKeyDown={handleKeyDown}
-            placeholder="Search commands..."
-            aria-label="Search commands"
+            placeholder={t("power_k.page_placeholders.default")}
+            aria-label={t("power_k.page_placeholders.default")}
             className="placeholder-text-placeholder min-w-0 flex-1 bg-transparent text-13 text-primary outline-none"
           />
           {searchTerm && (
-            <button type="button" onClick={handleClear} className="ml-2 shrink-0" aria-label="Clear search">
+            <button
+              type="button"
+              onClick={handleClear}
+              className="-mr-2 ml-1 flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-layer-transparent-hover md:-mr-1 md:size-6"
+              aria-label={t("power_k.search_menu.clear_search")}
+            >
               <CloseIcon className="size-3.5 text-placeholder hover:text-primary" />
             </button>
           )}
           {isOpen && !searchTerm && (
-            <button type="button" onClick={closePanel} className="ml-2 shrink-0 md:hidden" aria-label="Close search">
+            <button
+              type="button"
+              onClick={closePanel}
+              className="-mr-2 ml-1 flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-layer-transparent-hover md:hidden"
+              aria-label={t("close")}
+            >
               <CloseIcon className="size-3.5 text-placeholder hover:text-primary" />
             </button>
           )}

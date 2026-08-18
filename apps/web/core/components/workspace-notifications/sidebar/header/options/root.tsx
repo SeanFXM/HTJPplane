@@ -9,6 +9,7 @@ import { CheckCheck, RefreshCw } from "lucide-react";
 // plane imports
 import { ENotificationLoader, ENotificationQueryParamType } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
+import { IconButton } from "@plane/propel/icon-button";
 import { Tooltip } from "@plane/propel/tooltip";
 import { Spinner } from "@plane/ui";
 // hooks
@@ -17,7 +18,6 @@ import { usePlatformOS } from "@/hooks/use-platform-os";
 // local imports
 import { NotificationFilter } from "../../filters/menu";
 import { NotificationHeaderMenuOption } from "./menu-option";
-import { IconButton } from "@plane/propel/icon-button";
 
 type TNotificationSidebarHeaderOptions = {
   workspaceSlug: string;
@@ -52,13 +52,15 @@ export const NotificationSidebarHeaderOptions = observer(function NotificationSi
   };
 
   return (
-    <div className="relative flex items-center justify-center gap-2 text-body-xs-medium">
+    <div className="relative flex items-center justify-center gap-0.5 text-body-xs-medium md:gap-2">
       {/* mark all notifications as read*/}
       <Tooltip tooltipContent={t("notification.options.mark_all_as_read")} isMobile={isMobile} position="bottom">
         <IconButton
           size="base"
           variant="ghost"
           icon={loader === ENotificationLoader.MARK_ALL_AS_READY ? Spinner : CheckCheck}
+          className="size-11 md:size-6"
+          aria-label={t("notification.options.mark_all_as_read")}
           onClick={() => {
             handleMarkAllNotificationsAsRead();
           }}
@@ -71,7 +73,10 @@ export const NotificationSidebarHeaderOptions = observer(function NotificationSi
           size="base"
           variant="ghost"
           icon={RefreshCw}
-          className={loader === ENotificationLoader.MUTATION_LOADER ? "animate-spin" : ""}
+          className={
+            loader === ENotificationLoader.MUTATION_LOADER ? "size-11 animate-spin md:size-6" : "size-11 md:size-6"
+          }
+          aria-label={t("notification.options.refresh")}
           onClick={refreshNotifications}
         />
       </Tooltip>

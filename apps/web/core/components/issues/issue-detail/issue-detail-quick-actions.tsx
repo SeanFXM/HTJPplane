@@ -113,13 +113,20 @@ export const IssueDetailQuickActions = observer(function IssueDetailQuickActions
   return (
     <>
       <div className="flex flex-shrink-0 items-center justify-end">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-nowrap items-center gap-1 md:flex-wrap md:gap-2">
           {currentUser && !issue?.archived_at && (
             <IssueSubscription workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} />
           )}
-          <div className="flex flex-wrap items-center gap-2 text-tertiary">
+          <div className="flex flex-nowrap items-center gap-1 text-tertiary md:flex-wrap md:gap-2">
             <Tooltip tooltipContent={t("common.actions.copy_link")} isMobile={isMobile}>
-              <IconButton variant="secondary" size="lg" onClick={handleCopyText} icon={CopyLinkIcon} />
+              <IconButton
+                variant="secondary"
+                size="lg"
+                className="size-11 md:size-7"
+                aria-label={t("common.actions.copy_link")}
+                onClick={handleCopyText}
+                icon={CopyLinkIcon}
+              />
             </Tooltip>
             <WorkItemDetailQuickActions
               parentRef={parentRef}

@@ -8,26 +8,24 @@ import { useCallback } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane constants
-import { EIssueFilterType, ISSUE_LAYOUTS, ISSUE_DISPLAY_FILTERS_BY_PAGE } from "@plane/constants";
+import { EIssueFilterType, ISSUE_DISPLAY_FILTERS_BY_PAGE } from "@plane/constants";
 // plane i18n
 import { useTranslation } from "@plane/i18n";
 // icons
 import { ChevronDownIcon } from "@plane/propel/icons";
 // types
-import type {
-  IIssueDisplayFilterOptions,
-  IIssueDisplayProperties,
-  TIssueLayouts,
-  EIssueLayoutTypes,
-} from "@plane/types";
-import { EIssuesStoreType } from "@plane/types";
-// ui
-import { CustomMenu } from "@plane/ui";
+import type { IIssueDisplayFilterOptions, IIssueDisplayProperties } from "@plane/types";
+import { EIssueLayoutTypes, EIssuesStoreType } from "@plane/types";
 // components
-import { DisplayFiltersSelection, FiltersDropdown } from "@/components/issues/issue-layouts/filters";
-import { IssueLayoutIcon } from "@/components/issues/issue-layouts/layout-icon";
+import {
+  DisplayFiltersSelection,
+  FiltersDropdown,
+  MobileLayoutSelection,
+} from "@/components/issues/issue-layouts/filters";
 // hooks
 import { useIssues } from "@/hooks/store/use-issues";
+
+const PROFILE_ISSUE_LAYOUTS = [EIssueLayoutTypes.LIST, EIssueLayoutTypes.KANBAN];
 
 export const ProfileIssuesMobileHeader = observer(function ProfileIssuesMobileHeader() {
   // plane i18n
@@ -42,13 +40,13 @@ export const ProfileIssuesMobileHeader = observer(function ProfileIssuesMobileHe
   const activeLayout = issueFilters?.displayFilters?.layout;
 
   const handleLayoutChange = useCallback(
-    (layout: TIssueLayouts) => {
+    (layout: EIssueLayoutTypes) => {
       if (!workspaceSlug || !userId) return;
       updateFilters(
         workspaceSlug.toString(),
         undefined,
         EIssueFilterType.DISPLAY_FILTERS,
-        { layout: layout as EIssueLayoutTypes | undefined },
+        { layout },
         userId.toString()
       );
     },
@@ -84,45 +82,25 @@ export const ProfileIssuesMobileHeader = observer(function ProfileIssuesMobileHe
   );
 
   return (
-    <div className="flex justify-evenly border-b border-subtle py-2 md:hidden">
-      <CustomMenu
-        maxHeight={"md"}
-        className="flex flex-grow justify-center text-13 text-secondary"
-        placement="bottom-start"
-        customButton={
-          <div className="flex-center flex text-13 text-secondary">
-            {t("common.layout")}
-            <ChevronDownIcon className="my-auto ml-2 h-4 w-4 text-secondary" strokeWidth={2} />
-          </div>
-        }
-        customButtonClassName="flex flex-center text-secondary text-13"
-        closeOnSelect
-      >
-        {ISSUE_LAYOUTS.map((layout, index) => {
-          if (layout.key === "spreadsheet" || layout.key === "gantt_chart" || layout.key === "calendar") return;
-          return (
-            <CustomMenu.MenuItem
-              key={index}
-              onClick={() => {
-                handleLayoutChange(ISSUE_LAYOUTS[index].key);
-              }}
-              className="flex items-center gap-2"
-            >
-              <IssueLayoutIcon layout={ISSUE_LAYOUTS[index].key} className="h-3 w-3" />
-              <div className="text-tertiary">{t(layout.i18n_title)}</div>
-            </CustomMenu.MenuItem>
-          );
-        })}
-      </CustomMenu>
-      <div className="flex flex-grow items-center justify-center border-l border-subtle text-13 text-secondary">
+    <div className="z-[13] flex h-11 w-full min-w-0 border-b border-subtle bg-surface-1 md:hidden">
+      <MobileLayoutSelection
+        layouts={PROFILE_ISSUE_LAYOUTS}
+        onChange={handleLayoutChange}
+        activeLayout={activeLayout}
+        isMobile
+      />
+      <div className="flex h-11 min-w-0 flex-1 items-stretch justify-center border-l border-subtle text-13 text-secondary [&>div]:h-full [&>div]:w-full [&>div]:min-w-0 [&>div>button]:h-full [&>div>button]:w-full [&>div>button]:min-w-0">
         <FiltersDropdown
           title={t("common.display")}
           placement="bottom-end"
           menuButton={
-            <div className="flex-center flex text-13 text-secondary">
-              {t("common.display")}
-              <ChevronDownIcon className="ml-2 h-4 w-4 text-secondary" strokeWidth={2} />
-            </div>
+            <span
+              aria-label={t("common.display")}
+              className="flex size-full min-w-0 items-center justify-center text-13 text-secondary"
+            >
+              <span className="truncate">{t("common.display")}</span>
+              <ChevronDownIcon className="ml-2 size-4 shrink-0 text-secondary" strokeWidth={2} />
+            </span>
           }
         >
           <DisplayFiltersSelection

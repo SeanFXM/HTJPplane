@@ -7,16 +7,17 @@
 import type { ReactNode } from "react";
 import { observer } from "mobx-react";
 import { CheckCircle, Clock, MoreVertical } from "lucide-react";
-import { useTranslation } from "@plane/i18n";
 // plane imports
+import { useTranslation } from "@plane/i18n";
+import { getIconButtonStyling } from "@plane/propel/icon-button";
 import { ArchiveIcon, CheckIcon } from "@plane/propel/icons";
 import type { TNotificationFilter } from "@plane/types";
 import { PopoverMenu } from "@plane/ui";
+import { cn } from "@plane/utils";
 // hooks
 import { useWorkspaceNotifications } from "@/hooks/store/notifications";
 // local imports
 import { NotificationMenuOptionItem } from "./menu-item";
-import { IconButton } from "@plane/propel/icon-button";
 
 export type TPopoverMenuOptions = {
   key: string;
@@ -79,7 +80,13 @@ export const NotificationHeaderMenuOption = observer(function NotificationHeader
   return (
     <PopoverMenu
       data={popoverMenuOptions}
-      button={<IconButton size="base" variant="ghost" icon={MoreVertical} />}
+      buttonClassName={cn(getIconButtonStyling("ghost", "base"), "size-11 md:size-6")}
+      button={
+        <span className="flex size-full items-center justify-center">
+          <MoreVertical className="size-4" aria-hidden="true" />
+          <span className="sr-only">{`${t("notification.label")} ${t("common.options")}`}</span>
+        </span>
+      }
       keyExtractor={(item: TPopoverMenuOptions) => item.key}
       panelClassName="p-0 py-2 rounded-md border border-subtle bg-surface-1 space-y-1"
       render={(item: TPopoverMenuOptions) => <NotificationMenuOptionItem {...item} />}
