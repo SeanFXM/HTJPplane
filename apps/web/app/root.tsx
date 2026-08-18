@@ -127,7 +127,12 @@ export const meta: Route.MetaFunction = () => [
 export default function Root() {
   return (
     <AppProvider>
-      <div className={cn("relative flex h-screen w-full flex-col overflow-hidden bg-canvas", "desktop-app-container")}>
+      <div
+        className={cn(
+          "relative flex h-screen w-full flex-col overflow-hidden bg-canvas supports-[height:100dvh]:h-[100dvh]",
+          "desktop-app-container"
+        )}
+      >
         <main className="relative h-full w-full overflow-hidden">
           <Outlet />
         </main>
@@ -141,7 +146,7 @@ export function HydrateFallback() {
     // This fallback is rendered into the SPA shell at build time. Keep its
     // markup deterministic so a locally resolved theme cannot differ from
     // the pre-rendered HTML during hydration.
-    <div className="relative flex h-screen w-full items-center justify-center bg-white dark:bg-[#0a0a0a]">
+    <div className="relative flex h-screen w-full items-center justify-center bg-white supports-[height:100dvh]:h-[100dvh] dark:bg-[#0a0a0a]">
       <LogoSpinner />
     </div>
   );

@@ -108,6 +108,11 @@ export const TopNavPowerK = observer(() => {
     inputRef.current?.focus();
   };
 
+  const handleMobileOpen = useCallback(() => {
+    openPanel();
+    window.requestAnimationFrame(() => inputRef.current?.focus());
+  }, [inputRef, openPanel]);
+
   // Handle command selection
   const handleCommandSelect = useCallback(
     (command: TPowerKCommandConfig) => {
@@ -208,14 +213,29 @@ export const TopNavPowerK = observer(() => {
 
   return (
     <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        className={cn(
+          "focus-visible:outline-accent-primary flex size-11 items-center justify-center rounded-md text-icon-tertiary hover:bg-layer-transparent-hover hover:text-icon-secondary focus-visible:outline-2 focus-visible:outline-offset-2 md:hidden",
+          {
+            "bg-layer-transparent-selected text-icon-primary": isOpen,
+          }
+        )}
+        onClick={handleMobileOpen}
+        aria-label="Search commands"
+        aria-controls="top-nav-search-panel"
+        aria-expanded={isOpen}
+      >
+        <SearchIcon className="size-5" />
+      </button>
       <div
-        className={cn("relative z-30 flex w-[364px] items-center transition-all duration-300 ease-in-out", {
-          "w-[554px]": isOpen,
+        className={cn("relative z-30 hidden w-[364px] items-center transition-all duration-300 ease-in-out md:flex", {
+          "fixed inset-x-2 top-12 flex w-auto md:relative md:inset-auto md:top-auto md:w-[554px]": isOpen,
         })}
       >
         <div
           className={cn(
-            "flex h-7 w-full items-center rounded-lg border border-subtle-1 bg-layer-2 p-2 transition-colors duration-200",
+            "flex h-8 w-full items-center rounded-lg border border-subtle-1 bg-layer-2 p-2 transition-colors duration-200 md:h-7",
             {
               "bg-layer-1": isOpen,
             }
@@ -234,21 +254,29 @@ export const TopNavPowerK = observer(() => {
             onFocus={handleFocus}
             onKeyDown={handleKeyDown}
             placeholder="Search commands..."
+            aria-label="Search commands"
             className="placeholder-text-placeholder min-w-0 flex-1 bg-transparent text-13 text-primary outline-none"
           />
           {searchTerm && (
-            <button type="button" onClick={handleClear} className="ml-2 shrink-0">
+            <button type="button" onClick={handleClear} className="ml-2 shrink-0" aria-label="Clear search">
+              <CloseIcon className="size-3.5 text-placeholder hover:text-primary" />
+            </button>
+          )}
+          {isOpen && !searchTerm && (
+            <button type="button" onClick={closePanel} className="ml-2 shrink-0 md:hidden" aria-label="Close search">
               <CloseIcon className="size-3.5 text-placeholder hover:text-primary" />
             </button>
           )}
         </div>
       </div>
       <div
+        id="top-nav-search-panel"
         className={cn(
-          "shadow-lg absolute -top-[6px] left-1/2 z-20 flex -translate-x-1/2 flex-col overflow-hidden rounded-md border border-subtle bg-surface-1 px-0 pt-10 transition-all duration-300 ease-in-out",
+          "shadow-lg z-20 flex flex-col overflow-hidden rounded-md border border-subtle bg-surface-1 px-0 pt-10 transition-all duration-300 ease-in-out",
           {
-            "max-h-[80vh] w-[574px] opacity-100": isOpen,
-            "h-0 w-0 opacity-0": !isOpen,
+            "fixed inset-x-2 top-11 max-h-[calc(100dvh-3rem)] w-auto opacity-100 md:absolute md:inset-x-auto md:-top-[6px] md:left-1/2 md:max-h-[80vh] md:w-[574px] md:-translate-x-1/2":
+              isOpen,
+            "absolute left-1/2 h-0 w-0 -translate-x-1/2 opacity-0": !isOpen,
           }
         )}
       >
@@ -267,7 +295,7 @@ export const TopNavPowerK = observer(() => {
                      but we might need the context indicator if we want that feature.
                      For now, let's just render the list. */}
 
-            <Command.List className="vertical-scrollbar scrollbar-sm max-h-[60vh] overflow-y-auto px-2 pb-4 outline-none">
+            <Command.List className="vertical-scrollbar scrollbar-sm max-h-[calc(100dvh-8rem)] overflow-y-auto px-2 pb-4 outline-none md:max-h-[60vh]">
               <ProjectsAppPowerKCommandsList
                 activePage={activePage}
                 context={context}

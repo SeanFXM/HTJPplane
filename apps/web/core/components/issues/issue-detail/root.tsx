@@ -84,16 +84,21 @@ export const IssueDetailRoot = observer(function IssueDetailRoot(props: TIssueDe
 
   const issueOperations: TIssueOperations = useMemo(
     () => ({
-      fetch: async (workspaceSlug: string, projectId: string, issueId: string) => {
+      fetch: async (targetWorkspaceSlug: string, targetProjectId: string, targetIssueId: string) => {
         try {
-          await fetchIssue(workspaceSlug, projectId, issueId);
+          await fetchIssue(targetWorkspaceSlug, targetProjectId, targetIssueId);
         } catch (error) {
           console.error("Error fetching the parent issue:", error);
         }
       },
-      update: async (workspaceSlug: string, projectId: string, issueId: string, data: Partial<TIssue>) => {
+      update: async (
+        targetWorkspaceSlug: string,
+        targetProjectId: string,
+        targetIssueId: string,
+        data: Partial<TIssue>
+      ) => {
         try {
-          await updateIssue(workspaceSlug, projectId, issueId, data);
+          await updateIssue(targetWorkspaceSlug, targetProjectId, targetIssueId, data);
         } catch (error) {
           console.log("Error in updating issue:", error);
           setToast({
@@ -103,16 +108,21 @@ export const IssueDetailRoot = observer(function IssueDetailRoot(props: TIssueDe
           });
         }
       },
-      remove: async (workspaceSlug: string, projectId: string, issueId: string) => {
-        if (is_archived) await removeArchivedIssue(workspaceSlug, projectId, issueId);
-        else await removeIssue(workspaceSlug, projectId, issueId);
+      remove: async (targetWorkspaceSlug: string, targetProjectId: string, targetIssueId: string) => {
+        if (is_archived) await removeArchivedIssue(targetWorkspaceSlug, targetProjectId, targetIssueId);
+        else await removeIssue(targetWorkspaceSlug, targetProjectId, targetIssueId);
       },
-      archive: async (workspaceSlug: string, projectId: string, issueId: string) => {
-        await archiveIssue(workspaceSlug, projectId, issueId);
+      archive: async (targetWorkspaceSlug: string, targetProjectId: string, targetIssueId: string) => {
+        await archiveIssue(targetWorkspaceSlug, targetProjectId, targetIssueId);
       },
-      addCycleToIssue: async (workspaceSlug: string, projectId: string, cycleId: string, issueId: string) => {
+      addCycleToIssue: async (
+        targetWorkspaceSlug: string,
+        targetProjectId: string,
+        cycleId: string,
+        targetIssueId: string
+      ) => {
         try {
-          await addCycleToIssue(workspaceSlug, projectId, cycleId, issueId);
+          await addCycleToIssue(targetWorkspaceSlug, targetProjectId, cycleId, targetIssueId);
         } catch (_error) {
           setToast({
             type: TOAST_TYPE.ERROR,
@@ -121,9 +131,14 @@ export const IssueDetailRoot = observer(function IssueDetailRoot(props: TIssueDe
           });
         }
       },
-      addIssueToCycle: async (workspaceSlug: string, projectId: string, cycleId: string, issueIds: string[]) => {
+      addIssueToCycle: async (
+        targetWorkspaceSlug: string,
+        targetProjectId: string,
+        cycleId: string,
+        issueIds: string[]
+      ) => {
         try {
-          await addIssueToCycle(workspaceSlug, projectId, cycleId, issueIds);
+          await addIssueToCycle(targetWorkspaceSlug, targetProjectId, cycleId, issueIds);
         } catch (_error) {
           setToast({
             type: TOAST_TYPE.ERROR,
@@ -132,9 +147,19 @@ export const IssueDetailRoot = observer(function IssueDetailRoot(props: TIssueDe
           });
         }
       },
-      removeIssueFromCycle: async (workspaceSlug: string, projectId: string, cycleId: string, issueId: string) => {
+      removeIssueFromCycle: async (
+        targetWorkspaceSlug: string,
+        targetProjectId: string,
+        cycleId: string,
+        targetIssueId: string
+      ) => {
         try {
-          const removeFromCyclePromise = removeIssueFromCycle(workspaceSlug, projectId, cycleId, issueId);
+          const removeFromCyclePromise = removeIssueFromCycle(
+            targetWorkspaceSlug,
+            targetProjectId,
+            cycleId,
+            targetIssueId
+          );
           setPromiseToast(removeFromCyclePromise, {
             loading: t("issue.remove.cycle.loading"),
             success: {
@@ -151,9 +176,19 @@ export const IssueDetailRoot = observer(function IssueDetailRoot(props: TIssueDe
           console.log("Error in removing issue from cycle:", error);
         }
       },
-      removeIssueFromModule: async (workspaceSlug: string, projectId: string, moduleId: string, issueId: string) => {
+      removeIssueFromModule: async (
+        targetWorkspaceSlug: string,
+        targetProjectId: string,
+        moduleId: string,
+        targetIssueId: string
+      ) => {
         try {
-          const removeFromModulePromise = removeIssueFromModule(workspaceSlug, projectId, moduleId, issueId);
+          const removeFromModulePromise = removeIssueFromModule(
+            targetWorkspaceSlug,
+            targetProjectId,
+            moduleId,
+            targetIssueId
+          );
           setPromiseToast(removeFromModulePromise, {
             loading: t("issue.remove.module.loading"),
             success: {
@@ -171,13 +206,19 @@ export const IssueDetailRoot = observer(function IssueDetailRoot(props: TIssueDe
         }
       },
       changeModulesInIssue: async (
-        workspaceSlug: string,
-        projectId: string,
-        issueId: string,
+        targetWorkspaceSlug: string,
+        targetProjectId: string,
+        targetIssueId: string,
         addModuleIds: string[],
         removeModuleIds: string[]
       ) => {
-        const promise = await changeModulesInIssue(workspaceSlug, projectId, issueId, addModuleIds, removeModuleIds);
+        const promise = await changeModulesInIssue(
+          targetWorkspaceSlug,
+          targetProjectId,
+          targetIssueId,
+          addModuleIds,
+          removeModuleIds
+        );
         return promise;
       },
     }),
@@ -221,7 +262,7 @@ export const IssueDetailRoot = observer(function IssueDetailRoot(props: TIssueDe
         />
       ) : (
         <div className="flex h-full w-full overflow-hidden">
-          <div className="h-full w-full space-y-6 overflow-y-auto px-9 py-5">
+          <div className="h-full w-full space-y-6 overflow-y-auto px-4 py-4 md:px-9 md:py-5">
             <IssueMainContent
               workspaceSlug={workspaceSlug}
               projectId={projectId}
@@ -232,7 +273,7 @@ export const IssueDetailRoot = observer(function IssueDetailRoot(props: TIssueDe
             />
           </div>
           <div
-            className="fixed right-0 z-[5] h-full w-full min-w-[300px] border-l border-subtle bg-surface-1 sm:w-1/2 md:relative md:w-1/4 lg:min-w-80 xl:min-w-96"
+            className="fixed right-0 z-[5] hidden h-full w-full min-w-[300px] border-l border-subtle bg-surface-1 md:relative md:block md:w-1/4 lg:min-w-80 xl:min-w-96"
             style={issueDetailSidebarCollapsed ? { right: `-${window?.innerWidth || 0}px` } : {}}
           >
             <IssueDetailsSidebar
