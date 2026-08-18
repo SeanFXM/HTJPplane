@@ -121,4 +121,3 @@ jobs:
           plane/tests/unit/bg_tasks/test_export_task_filters.py
           plane/tests/unit/settings/test_internal_policy.py
           plane/tests/unit/test_readiness.py
-          --maxfail=1
