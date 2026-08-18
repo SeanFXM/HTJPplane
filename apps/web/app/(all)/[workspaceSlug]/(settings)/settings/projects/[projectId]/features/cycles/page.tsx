@@ -7,6 +7,7 @@
 import { observer } from "mobx-react";
 // plane imports
 import { useTranslation } from "@plane/i18n";
+import { guardProjectFeatureRoute } from "@/app/routes/guards/product-policy";
 // components
 import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { NotAuthorizedView } from "@/components/auth-screens/not-authorized-view";
@@ -20,6 +21,8 @@ import { useUserPermissions } from "@/hooks/store/user";
 import type { Route } from "./+types/page";
 import { FeaturesCyclesProjectSettingsHeader } from "./header";
 import { SettingsHeading } from "@/components/settings/heading";
+
+export const clientLoader = ({ params }: Route.ClientLoaderArgs) => guardProjectFeatureRoute(params, "cycles");
 
 function FeaturesCyclesSettingsPage({ params }: Route.ComponentProps) {
   const { workspaceSlug, projectId } = params;

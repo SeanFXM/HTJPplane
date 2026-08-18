@@ -36,6 +36,8 @@ import {
 } from "@/components/issues/issue-layouts/filters";
 import { ModuleQuickActions } from "@/components/modules";
 import { WorkItemFiltersToggle } from "@/components/work-item-filters/filters-toggle";
+// constants
+import { getVisibleIssueLayout } from "@/constants/product-policy";
 // hooks
 import { useCommandPalette } from "@/hooks/store/use-command-palette";
 import { useIssues } from "@/hooks/store/use-issues";
@@ -74,8 +76,8 @@ export const ModuleIssuesHeader = observer(function ModuleIssuesHeader() {
   // local storage
   const { setValue, storedValue } = useLocalStorage("module_sidebar_collapsed", "false");
   // derived values
-  const isSidebarCollapsed = storedValue ? (storedValue === "true" ? true : false) : false;
-  const activeLayout = issueFilters?.displayFilters?.layout;
+  const isSidebarCollapsed = storedValue === "true";
+  const activeLayout = getVisibleIssueLayout(issueFilters?.displayFilters?.layout);
   const moduleDetails = moduleId ? getModuleById(moduleId) : undefined;
   const canUserCreateIssue = allowPermissions(
     [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
@@ -181,26 +183,14 @@ export const ModuleIssuesHeader = observer(function ModuleIssuesHeader() {
           <div className="hidden gap-2 md:flex">
             <div className="hidden @4xl:flex">
               <LayoutSelection
-                layouts={[
-                  EIssueLayoutTypes.LIST,
-                  EIssueLayoutTypes.KANBAN,
-                  EIssueLayoutTypes.CALENDAR,
-                  EIssueLayoutTypes.SPREADSHEET,
-                  EIssueLayoutTypes.GANTT,
-                ]}
+                layouts={[EIssueLayoutTypes.LIST, EIssueLayoutTypes.KANBAN, EIssueLayoutTypes.CALENDAR]}
                 onChange={(layout) => handleLayoutChange(layout)}
                 selectedLayout={activeLayout}
               />
             </div>
             <div className="flex @4xl:hidden">
               <MobileLayoutSelection
-                layouts={[
-                  EIssueLayoutTypes.LIST,
-                  EIssueLayoutTypes.KANBAN,
-                  EIssueLayoutTypes.CALENDAR,
-                  EIssueLayoutTypes.SPREADSHEET,
-                  EIssueLayoutTypes.GANTT,
-                ]}
+                layouts={[EIssueLayoutTypes.LIST, EIssueLayoutTypes.KANBAN, EIssueLayoutTypes.CALENDAR]}
                 onChange={(layout) => handleLayoutChange(layout)}
                 activeLayout={activeLayout}
               />
@@ -220,7 +210,7 @@ export const ModuleIssuesHeader = observer(function ModuleIssuesHeader() {
                 displayProperties={issueFilters?.displayProperties ?? {}}
                 handleDisplayPropertiesUpdate={handleDisplayProperties}
                 ignoreGroupedFilters={["module"]}
-                cycleViewDisabled={!currentProjectDetails?.cycle_view}
+                cycleViewDisabled
                 moduleViewDisabled={!currentProjectDetails?.module_view}
               />
             </FiltersDropdown>

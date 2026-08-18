@@ -5,6 +5,7 @@
 # Python imports
 import copy
 import json
+from uuid import UUID
 
 # Django imports
 from django.contrib.postgres.aggregates import ArrayAgg
@@ -70,6 +71,7 @@ from plane.utils.grouper import (
 )
 from plane.utils.host import base_host
 from plane.utils.issue_filters import issue_filters
+from plane.utils.issue_hierarchy import soft_delete_issue_trees
 from plane.utils.order_queryset import order_issue_queryset
 from plane.utils.paginator import GroupedOffsetPaginator, SubGroupedOffsetPaginator
 from plane.utils.timezone_converter import user_timezone_converter
@@ -169,6 +171,10 @@ class IssueListEndpoint(BaseAPIView):
                 "priority",
                 "start_date",
                 "target_date",
+                "waiting_party",
+                "waiting_since",
+                "blocked_reason",
+                "next_action",
                 "sequence_id",
                 "project_id",
                 "parent_id",
@@ -187,7 +193,7 @@ class IssueListEndpoint(BaseAPIView):
                 "archived_at",
                 "deleted_at",
             )
-            datetime_fields = ["created_at", "updated_at"]
+            datetime_fields = ["created_at", "updated_at", "waiting_since"]
             issues = user_timezone_converter(issues, datetime_fields, request.user.user_timezone)
         return Response(issues, status=status.HTTP_200_OK)
 
@@ -434,6 +440,10 @@ class IssueViewSet(BaseViewSet):
                     "priority",
                     "start_date",
                     "target_date",
+                    "waiting_party",
+                    "waiting_since",
+                    "blocked_reason",
+                    "next_action",
                     "sequence_id",
                     "project_id",
                     "parent_id",
@@ -454,7 +464,7 @@ class IssueViewSet(BaseViewSet):
                 )
                 .first()
             )
-            datetime_fields = ["created_at", "updated_at"]
+            datetime_fields = ["created_at", "updated_at", "waiting_since"]
             issue = user_timezone_converter(issue, datetime_fields, request.user.user_timezone)
             # Send the model activity
             model_activity.delay(
@@ -704,12 +714,16 @@ class IssueViewSet(BaseViewSet):
     def destroy(self, request, slug, project_id, pk=None):
         issue = Issue.objects.get(workspace__slug=slug, project_id=project_id, pk=pk)
 
-        issue.delete()
+        deleted_issue_ids = soft_delete_issue_trees(
+            workspace_slug=slug,
+            project_id=project_id,
+            root_ids=[issue.id],
+        )
         # delete the issue from recent visits
         UserRecentVisit.objects.filter(
             project_id=project_id,
             workspace__slug=slug,
-            entity_identifier=pk,
+            entity_identifier__in=deleted_issue_ids,
             entity_name="issue",
         ).delete(soft=False)
         issue_activity.delay(
@@ -731,21 +745,11 @@ class ProjectUserDisplayPropertyEndpoint(BaseAPIView):
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
     def patch(self, request, slug, project_id):
         try:
-            issue_property = ProjectUserProperty.objects.get(
-                user=request.user, 
-                project_id=project_id
-            )
+            issue_property = ProjectUserProperty.objects.get(user=request.user, project_id=project_id)
         except ProjectUserProperty.DoesNotExist:
-            issue_property = ProjectUserProperty.objects.create(
-                user=request.user, 
-                project_id=project_id
-            )
+            issue_property = ProjectUserProperty.objects.create(user=request.user, project_id=project_id)
 
-        serializer = ProjectUserPropertySerializer(
-            issue_property, 
-            data=request.data,
-            partial=True
-        )
+        serializer = ProjectUserPropertySerializer(issue_property, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -762,24 +766,39 @@ class BulkDeleteIssuesEndpoint(BaseAPIView):
     def delete(self, request, slug, project_id):
         issue_ids = request.data.get("issue_ids", [])
 
-        if not len(issue_ids):
+        if not isinstance(issue_ids, list) or not issue_ids:
             return Response({"error": "Issue IDs are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        issues = Issue.issue_objects.filter(workspace__slug=slug, project_id=project_id, pk__in=issue_ids)
+        try:
+            normalized_issue_ids = set(UUID(str(issue_id)) for issue_id in issue_ids)
+        except (TypeError, ValueError, AttributeError):
+            return Response({"error": "Invalid Issue IDs"}, status=status.HTTP_400_BAD_REQUEST)
 
-        total_issues = len(issues)
+        issues = Issue.issue_objects.filter(
+            workspace__slug=slug,
+            project_id=project_id,
+            pk__in=normalized_issue_ids,
+        )
+        selected_issue_ids = set(issues.values_list("id", flat=True))
+        if len(selected_issue_ids) != len(normalized_issue_ids):
+            return Response(
+                {"error": "All work items must belong to the current project and be active"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        # First, delete all related cycle issues
-        CycleIssue.objects.filter(issue_id__in=issue_ids).delete()
-
-        # Then, delete all related module issues
-        ModuleIssue.objects.filter(issue_id__in=issue_ids).delete()
-
-        # Finally, delete the issues themselves
-        issues.delete()
+        total_issues = len(selected_issue_ids)
+        deleted_issue_ids = soft_delete_issue_trees(
+            workspace_slug=slug,
+            project_id=project_id,
+            root_ids=selected_issue_ids,
+        )
 
         return Response(
-            {"message": f"{total_issues} issues were deleted"},
+            {
+                "message": f"{total_issues} issues were deleted",
+                "selected_count": total_issues,
+                "deleted_count": len(deleted_issue_ids),
+            },
             status=status.HTTP_200_OK,
         )
 
@@ -843,7 +862,7 @@ class IssuePaginatedViewSet(BaseViewSet):
         paginated_data = results.values(*fields)
 
         # converting the datetime fields in paginated data
-        datetime_fields = ["created_at", "updated_at"]
+        datetime_fields = ["created_at", "updated_at", "waiting_since"]
         paginated_data = user_timezone_converter(paginated_data, datetime_fields, timezone)
 
         return paginated_data
@@ -866,6 +885,10 @@ class IssuePaginatedViewSet(BaseViewSet):
             "priority",
             "start_date",
             "target_date",
+            "waiting_party",
+            "waiting_since",
+            "blocked_reason",
+            "next_action",
             "sequence_id",
             "project_id",
             "parent_id",

@@ -6,7 +6,7 @@
 from django.utils import timezone
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 
 # Third Party imports
 from rest_framework import serializers
@@ -62,6 +62,10 @@ class IssueFlatSerializer(BaseSerializer):
             "priority",
             "start_date",
             "target_date",
+            "waiting_party",
+            "waiting_since",
+            "blocked_reason",
+            "next_action",
             "sequence_id",
             "sort_order",
             "is_draft",
@@ -85,7 +89,7 @@ class IssueCreateSerializer(BaseSerializer):
         source="state", queryset=State.all_state_objects.all(), required=False, allow_null=True
     )
     parent_id = serializers.PrimaryKeyRelatedField(
-        source="parent", queryset=Issue.objects.all(), required=False, allow_null=True
+        source="parent", queryset=Issue.issue_objects.all(), required=False, allow_null=True
     )
     label_ids = serializers.ListField(
         child=serializers.PrimaryKeyRelatedField(queryset=Label.objects.all()),
@@ -110,6 +114,7 @@ class IssueCreateSerializer(BaseSerializer):
             "updated_by",
             "created_at",
             "updated_at",
+            "waiting_since",
         ]
 
     def to_representation(self, instance):
@@ -147,12 +152,18 @@ class IssueCreateSerializer(BaseSerializer):
 
         # Validate assignees are from project
         if attrs.get("assignee_ids", []):
-            attrs["assignee_ids"] = ProjectMember.objects.filter(
-                project_id=self.context["project_id"],
-                role__gte=15,
-                is_active=True,
-                member_id__in=attrs["assignee_ids"],
-            ).values_list("member_id", flat=True)
+            requested_assignee_ids = {assignee.id for assignee in attrs["assignee_ids"]}
+            valid_assignee_ids = list(
+                ProjectMember.objects.filter(
+                    project_id=self.context["project_id"],
+                    role__gte=15,
+                    is_active=True,
+                    member_id__in=requested_assignee_ids,
+                ).values_list("member_id", flat=True)
+            )
+            if requested_assignee_ids != set(valid_assignee_ids):
+                raise serializers.ValidationError({"assignee_ids": "Current owner must be an active project member"})
+            attrs["assignee_ids"] = valid_assignee_ids
 
         # Validate labels are from project
         if attrs.get("label_ids"):
@@ -174,15 +185,23 @@ class IssueCreateSerializer(BaseSerializer):
         ):
             raise serializers.ValidationError("State is not valid please pass a valid state_id")
 
-        # Check parent issue is from workspace as it can be cross workspace
-        if (
-            attrs.get("parent")
-            and not Issue.objects.filter(
+        parent = attrs.get("parent")
+        if parent:
+            if not Issue.issue_objects.filter(
                 project_id=self.context.get("project_id"),
-                pk=attrs.get("parent").id,
-            ).exists()
-        ):
-            raise serializers.ValidationError("Parent is not valid issue_id please pass a valid issue_id")
+                pk=parent.id,
+            ).exists():
+                raise serializers.ValidationError("Parent is not valid issue_id please pass a valid issue_id")
+
+            if self.instance:
+                if parent.id == self.instance.id or parent.parent_id == self.instance.id:
+                    raise serializers.ValidationError("Circular work-item relationships are not allowed")
+
+                if Issue.objects.filter(parent_id=self.instance.id).exists():
+                    raise serializers.ValidationError("A parent work item cannot become a sub-work item")
+
+            if parent.parent_id is not None:
+                raise serializers.ValidationError("Work-item hierarchy is limited to one level")
 
         if (
             attrs.get("estimate_point")
@@ -194,6 +213,20 @@ class IssueCreateSerializer(BaseSerializer):
             raise serializers.ValidationError("Estimate point is not valid please pass a valid estimate_point_id")
 
         return attrs
+
+    def validate_assignee_ids(self, value):
+        if len(value) > 1:
+            raise serializers.ValidationError("A work item can have only one current owner")
+        return value
+
+    def validate_waiting_party(self, value):
+        return value.strip() or None if isinstance(value, str) else value
+
+    def validate_blocked_reason(self, value):
+        return value.strip() if isinstance(value, str) else value
+
+    def validate_next_action(self, value):
+        return value.strip() if isinstance(value, str) else value
 
     def create(self, validated_data):
         assignees = validated_data.pop("assignee_ids", None)
@@ -210,7 +243,7 @@ class IssueCreateSerializer(BaseSerializer):
         created_by_id = issue.created_by_id
         updated_by_id = issue.updated_by_id
 
-        if assignees is not None and len(assignees):
+        if assignees:
             try:
                 IssueAssignee.objects.bulk_create(
                     [
@@ -228,7 +261,7 @@ class IssueCreateSerializer(BaseSerializer):
                 )
             except IntegrityError:
                 pass
-        else:
+        elif assignees is None:
             # Then assign it to default assignee, if it is a valid assignee
             if (
                 default_assignee_id is not None
@@ -276,15 +309,18 @@ class IssueCreateSerializer(BaseSerializer):
         assignees = validated_data.pop("assignee_ids", None)
         labels = validated_data.pop("label_ids", None)
 
-        # Related models
-        project_id = instance.project_id
-        workspace_id = instance.workspace_id
-        created_by_id = instance.created_by_id
-        updated_by_id = instance.updated_by_id
+        with transaction.atomic():
+            Issue.objects.select_for_update().only("id").get(pk=instance.pk)
+            instance.refresh_from_db()
 
-        if assignees is not None:
-            IssueAssignee.objects.filter(issue=instance).delete()
-            try:
+            # Related models
+            project_id = instance.project_id
+            workspace_id = instance.workspace_id
+            created_by_id = instance.created_by_id
+            updated_by_id = instance.updated_by_id
+
+            if assignees is not None:
+                IssueAssignee.objects.filter(issue=instance).delete()
                 IssueAssignee.objects.bulk_create(
                     [
                         IssueAssignee(
@@ -298,14 +334,10 @@ class IssueCreateSerializer(BaseSerializer):
                         for assignee_id in assignees
                     ],
                     batch_size=10,
-                    ignore_conflicts=True,
                 )
-            except IntegrityError:
-                pass
 
-        if labels is not None:
-            IssueLabel.objects.filter(issue=instance).delete()
-            try:
+            if labels is not None:
+                IssueLabel.objects.filter(issue=instance).delete()
                 IssueLabel.objects.bulk_create(
                     [
                         IssueLabel(
@@ -319,14 +351,11 @@ class IssueCreateSerializer(BaseSerializer):
                         for label_id in labels
                     ],
                     batch_size=10,
-                    ignore_conflicts=True,
                 )
-            except IntegrityError:
-                pass
 
-        # Time updation occues even when other related models are updated
-        instance.updated_at = timezone.now()
-        return super().update(instance, validated_data)
+            # Time updation occues even when other related models are updated
+            instance.updated_at = timezone.now()
+            return super().update(instance, validated_data)
 
 
 class IssueActivitySerializer(BaseSerializer):
@@ -729,7 +758,8 @@ class IssueStateSerializer(DynamicBaseSerializer):
     label_details = LabelLiteSerializer(read_only=True, source="labels", many=True)
     state_detail = StateLiteSerializer(read_only=True, source="state")
     project_detail = ProjectLiteSerializer(read_only=True, source="project")
-    assignee_details = UserLiteSerializer(read_only=True, source="assignees", many=True)
+    assignees = serializers.SerializerMethodField()
+    assignee_details = serializers.SerializerMethodField()
     sub_issues_count = serializers.IntegerField(read_only=True)
     attachment_count = serializers.IntegerField(read_only=True)
     link_count = serializers.IntegerField(read_only=True)
@@ -737,6 +767,12 @@ class IssueStateSerializer(DynamicBaseSerializer):
     class Meta:
         model = Issue
         fields = "__all__"
+
+    def get_assignees(self, obj):
+        return [assignment.assignee_id for assignment in obj.issue_assignee.all()]
+
+    def get_assignee_details(self, obj):
+        return UserLiteSerializer([assignment.assignee for assignment in obj.issue_assignee.all()], many=True).data
 
 
 class IssueIntakeSerializer(DynamicBaseSerializer):
@@ -783,6 +819,10 @@ class IssueSerializer(DynamicBaseSerializer):
             "priority",
             "start_date",
             "target_date",
+            "waiting_party",
+            "waiting_since",
+            "blocked_reason",
+            "next_action",
             "sequence_id",
             "project_id",
             "parent_id",
@@ -840,6 +880,10 @@ class IssueListDetailSerializer(serializers.Serializer):
             "priority": instance.priority,
             "start_date": instance.start_date,
             "target_date": instance.target_date,
+            "waiting_party": instance.waiting_party,
+            "waiting_since": instance.waiting_since,
+            "blocked_reason": instance.blocked_reason,
+            "next_action": instance.next_action,
             "sequence_id": instance.sequence_id,
             "project_id": instance.project_id,
             "parent_id": instance.parent_id,

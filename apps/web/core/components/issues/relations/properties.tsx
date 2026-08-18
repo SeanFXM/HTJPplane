@@ -4,13 +4,11 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
-import React from "react";
 import { observer } from "mobx-react";
 // components
 import type { TIssuePriorities, TIssueServiceType } from "@plane/types";
 import { EIssueServiceType } from "@plane/types";
-import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
+import { CurrentOwnerDropdown } from "@/components/issues/current-owner-dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 // hooks
@@ -81,12 +79,11 @@ export const RelationIssueProperty = observer(function RelationIssueProperty(pro
       </div>
 
       <div className="h-5 flex-shrink-0">
-        <MemberDropdown
+        <CurrentOwnerDropdown
           value={issue.assignee_ids}
           projectId={issue.project_id ?? undefined}
           onChange={handleAssigneeChange}
           disabled={disabled}
-          multiple
           buttonVariant={(issue?.assignee_ids || []).length > 0 ? "transparent-without-text" : "border-without-text"}
           buttonClassName={(issue?.assignee_ids || []).length > 0 ? "hover:bg-transparent px-0" : ""}
         />

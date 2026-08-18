@@ -14,7 +14,7 @@ export default {
     inbox: "受信トレイ",
     workspace: "ワークスペース",
     views: "ビュー",
-    analytics: "アナリティクス",
+    analytics: "レポート",
     work_items: "作業項目",
     cycles: "サイクル",
     modules: "モジュール",
@@ -688,6 +688,76 @@ export default {
       name: "名前",
     },
   },
+  project_card: {
+    no_members: "メンバーなし",
+    no_members_yet: "まだメンバーがいません",
+    no_description: "説明なし",
+    joined: "参加済み",
+  },
+  pages_ui: {
+    create: {
+      title: "ページを作成",
+      add: "ページを追加",
+      name_too_long: "ページ名は255文字以内で入力してください。",
+      failed: "ページを作成できませんでした。もう一度お試しください。",
+    },
+    delete: {
+      title: "ページを削除",
+      confirm_message: "{page} を削除しますか？ページは完全に削除され、元に戻せません。",
+      success: "ページを削除しました。",
+      failed: "ページを削除できませんでした。もう一度お試しください。",
+    },
+    export: {
+      title: "ページをエクスポート",
+      export_format: "エクスポート形式",
+      include_content: "含める内容",
+      page_format: "用紙サイズ",
+      everything: "すべて",
+      no_images: "画像を含めない",
+      success: "ページをエクスポートしました。",
+      failed: "ページをエクスポートできませんでした。後でもう一度お試しください。",
+      formats: {
+        pdf: "PDF",
+        markdown: "Markdown",
+        a4: "A4",
+        a3: "A3",
+        a2: "A2",
+        letter: "レター",
+        legal: "リーガル",
+        tabloid: "タブロイド",
+      },
+    },
+    offline: {
+      label: "オフライン",
+      title: "オフラインです。",
+      description: "編集は続けられます。オンラインに戻ると変更が同期されます。",
+    },
+    content_limit: {
+      message:
+        "コンテンツの上限に達したため、ライブ同期が停止しました。新しいページまたはネストページを作成してください。",
+      dismiss: "コンテンツ上限の警告を閉じる",
+    },
+    editor: {
+      color: "色",
+      text_colors: "文字色",
+      background_colors: "背景色",
+    },
+    version: {
+      restore_success: "ページのバージョンを復元しました。",
+      restore_failed: "ページのバージョンを復元できませんでした。",
+      load_failed_title: "問題が発生しました",
+      load_failed_message: "バージョンを読み込めませんでした。もう一度お試しください。",
+      retry: "再試行",
+      loading: "バージョン詳細を読み込み中",
+      view_only: "閲覧のみ",
+      restoring: "復元中",
+    },
+    not_found: {
+      title: "ページが見つかりません",
+      description: "このページは存在しないか、表示する権限がありません。",
+      view_others: "他のページを表示",
+    },
+  },
   toast: {
     success: "成功！",
     error: "エラー！",
@@ -867,6 +937,8 @@ export default {
       message: "エラーが発生しました。もう一度お試しください。",
     },
     group_by: "グループ化",
+    sub_group_by: "サブグループ化",
+    custom: "カスタム",
     epic: "エピック",
     epics: "エピック",
     work_item: "作業項目",
@@ -1145,6 +1217,12 @@ export default {
     all_filters_applied: "すべてのフィルターが適用されています",
     search_placeholder: "検索",
   },
+  date_filters: {
+    one_week_from_now: "1週間後",
+    two_weeks_from_now: "2週間後",
+    one_month_from_now: "1か月後",
+    two_months_from_now: "2か月後",
+  },
   chart: {
     x_axis: "エックス アクシス",
     y_axis: "ワイ アクシス",
@@ -1392,6 +1470,8 @@ export default {
       description: "完了またはキャンセルされた\n作業項目のみアーカイブできます",
       label: "作業項目をアーカイブ",
       confirm_message: "作業項目をアーカイブしてもよろしいですか？アーカイブされた作業項目は後で復元できます。",
+      active_descendant_warning:
+        "この項目にはサブ作業項目があります。先にアクティブな下位項目をすべてアーカイブしてください。",
       success: {
         label: "アーカイブ成功",
         message: "アーカイブはプロジェクトのアーカイブで確認できます。",
@@ -1416,9 +1496,13 @@ export default {
       blocking: "ブロックしている",
     },
     copy_link: "作業項目のリンクをコピー",
+    click_to_copy_id: "クリックして作業項目IDをコピー",
     delete: {
       label: "作業項目を削除",
       error: "作業項目の削除中にエラーが発生しました",
+      confirm_message: "{entity} {identifier} を削除しますか？プロジェクトから削除され、アプリ上では元に戻せません。",
+      descendants_warning:
+        "この親項目には直下のサブ作業項目が {count} 件あります。すべての下位項目も同時に削除されます。",
     },
     subscription: {
       actions: {
@@ -1760,13 +1844,16 @@ export default {
     },
     filter_labels: {
       access: "アクセス",
-      lead: "リード",
-      members: "メンバー",
+      lead: "プロジェクト責任者",
+      lead_help: "プロジェク全体に責任を持つ人です。",
+      members: "参加メンバー",
+      members_help: "責任者に関係なく、この人が参加しているプロジェクトです。",
       created_at: "作成日",
       custom: "カスタム",
       view_less: "少なく表示",
       view_all: "すべて表示",
     },
+    filter_summary: "{total}件中{filtered}件のプロジェクトがフィルターに一致しています。",
     date_filter: {
       today: "今日",
       yesterday: "昨日",
@@ -1978,6 +2065,65 @@ export default {
           },
         },
       },
+      projects: {
+        title: "プロジェクト",
+        heading: "プロジェクト設定",
+        description: "Hotone Japan の長期プロジェクトで使用する共通ワークフローを管理します。",
+        workflow: {
+          title: "Hotone 標準ワークフロー",
+          description:
+            "すべての有効なプロジェクトに、7つの共通ステータスを安全に追加します。既存ステータスの名前変更・削除、既存タスクの移動は行いません。",
+          states_aria_label: "Hotone 標準ステータス",
+          actions: {
+            preview: "変更をプレビュー",
+            preview_again: "再プレビュー",
+            apply: "標準ワークフローを適用",
+            apply_confirm: "適用する",
+            applying: "適用中…",
+            cancel: "キャンセル",
+          },
+          errors: {
+            generic: "処理に失敗しました。時間をおいてもう一度お試しください。",
+          },
+          groups: {
+            backlog: "バックログ",
+            unstarted: "未着手",
+            started: "進行中",
+            completed: "完了",
+            cancelled: "キャンセル",
+          },
+          preview: {
+            title: "プレビュー結果",
+            summary: "{projects} プロジェクト · {states} ステータス追加 · {blocked} 件要確認",
+            no_active_projects: "有効なプロジェクトがありません。",
+            conflict_summary: "同名ステータスのグループが異なるため要確認",
+            add_states: "{count} ステータスを追加",
+            set_default: "「{state}」を初期ステータスに設定",
+            configured: "標準ワークフロー設定済み",
+            status: {
+              review: "要確認",
+              configured: "設定済み",
+              ready: "適用可能",
+            },
+            apply_scope: "{count} プロジェクトのみを適用します。要確認のプロジェクトは除外します。",
+            conflict_detail:
+              "「{name}」は現在 {existing} です。標準は {expected} のため、このプロジェクトは適用しません。",
+          },
+          result: {
+            summary: "{applied} プロジェクトに {states} ステータスを追加しました。",
+            unchanged: "{count} プロジェクトは変更ありません。",
+            applied: "{count} ステータス追加",
+            applied_with_default: "{count} ステータス追加・初期ステータス設定",
+            no_changes: "変更なし",
+            blocked: "同名ステータスの衝突により未適用",
+          },
+          confirm: {
+            title: "Hotone 標準ワークフローを適用しますか？",
+            description:
+              "{count} プロジェクトに、プレビューで表示したステータスを追加します。既存データは変更しません。",
+          },
+        },
+      },
       billing_and_plans: {
         title: "請求とプラン",
         current_plan: "現在のプラン",
@@ -2111,6 +2257,11 @@ export default {
     label: "プロフィール",
     page_label: "あなたの作業",
     work: "作業",
+    activity_feed: {
+      page_title: "プロフィール - アクティビティ",
+      commented: "コメントしました",
+      created: "作成しました",
+    },
     details: {
       joined_on: "参加日",
       time_zone: "タイムゾーン",
@@ -3089,7 +3240,7 @@ export default {
       nav_assigned_workspace_work_items: "担当している作業項目へ移動",
       nav_created_workspace_work_items: "作成した作業項目へ移動",
       nav_subscribed_workspace_work_items: "購読中の作業項目へ移動",
-      nav_workspace_analytics: "ワークスペース分析へ移動",
+      nav_workspace_analytics: "ワークスペースレポートへ移動",
       nav_workspace_drafts: "ワークスペースの下書きへ移動",
       nav_workspace_archives: "ワークスペースのアーカイブへ移動",
       open_workspace_setting: "ワークスペース設定を開く",

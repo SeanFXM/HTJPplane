@@ -61,6 +61,7 @@ import { useMember } from "@/hooks/store/use-member";
 import { useModule } from "@/hooks/store/use-module";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
+import { isProjectFeatureVisible } from "@/constants/product-policy";
 // plane web imports
 import { useFiltersOperatorConfigs } from "@/plane-web/hooks/rich-filters/use-filters-operator-configs";
 
@@ -194,28 +195,36 @@ export const useWorkItemFiltersConfig = (props: TUseWorkItemFiltersConfigProps):
   const cycleFilterConfig = useMemo(
     () =>
       getCycleFilterConfig<TWorkItemFilterProperty>("cycle_id")({
-        isEnabled: isFilterEnabled("cycle_id") && project?.cycle_view === true && cycles !== undefined,
+        isEnabled:
+          isProjectFeatureVisible("cycles", projectId) &&
+          isFilterEnabled("cycle_id") &&
+          project?.cycle_view === true &&
+          cycles !== undefined,
         filterIcon: CycleIcon,
         getOptionIcon: (cycleGroup) => <CycleGroupIcon cycleGroup={cycleGroup} className="h-3.5 w-3.5 flex-shrink-0" />,
         cycles: cycles ?? [],
         label: t("issue_filters.cycle"),
         ...operatorConfigs,
       }),
-    [isFilterEnabled, project?.cycle_view, cycles, operatorConfigs, t]
+    [isFilterEnabled, project?.cycle_view, projectId, cycles, operatorConfigs, t]
   );
 
   // module filter config
   const moduleFilterConfig = useMemo(
     () =>
       getModuleFilterConfig<TWorkItemFilterProperty>("module_id")({
-        isEnabled: isFilterEnabled("module_id") && project?.module_view === true && modules !== undefined,
+        isEnabled:
+          isProjectFeatureVisible("modules", projectId) &&
+          isFilterEnabled("module_id") &&
+          project?.module_view === true &&
+          modules !== undefined,
         filterIcon: ModuleIcon,
         getOptionIcon: () => <ModuleIcon className="h-3 w-3 flex-shrink-0" />,
         modules: modules ?? [],
         label: t("issue_filters.module"),
         ...operatorConfigs,
       }),
-    [isFilterEnabled, project?.module_view, modules, operatorConfigs, t]
+    [isFilterEnabled, project?.module_view, projectId, modules, operatorConfigs, t]
   );
 
   // assignee filter config

@@ -120,13 +120,15 @@ export const NotificationItem = observer(function NotificationItem(props: TNotif
                     ? t("home.announcements.inbox.updated")
                     : t("home.announcements.inbox.posted")}
                 </span>
-              ) : (
+              ) : projectId ? (
                 <NotificationContent
                   notification={notification}
                   workspaceId={workspace.id}
                   workspaceSlug={workspaceSlug}
                   projectId={projectId}
                 />
+              ) : (
+                <></>
               )}
             </div>
             <NotificationOption

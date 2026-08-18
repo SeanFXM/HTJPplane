@@ -20,12 +20,13 @@ import { getDate, renderFormattedPayloadDate, getTabIndex } from "@plane/utils";
 import { CycleDropdown } from "@/components/dropdowns/cycle";
 import { DateDropdown } from "@/components/dropdowns/date";
 import { EstimateDropdown } from "@/components/dropdowns/estimate";
-import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
+import { CurrentOwnerDropdown } from "@/components/issues/current-owner-dropdown";
 import { ModuleDropdown } from "@/components/dropdowns/module/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 import { ParentIssuesListModal } from "@/components/issues/parent-issues-list-modal";
 import { IssueLabelSelect } from "@/components/issues/select";
+import { isProjectFeatureVisible } from "@/constants/product-policy";
 // helpers
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
@@ -128,7 +129,7 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
         name="assignee_ids"
         render={({ field: { value, onChange } }) => (
           <div className="h-7">
-            <MemberDropdown
+            <CurrentOwnerDropdown
               projectId={projectId ?? undefined}
               value={value}
               onChange={(assigneeIds) => {
@@ -137,8 +138,6 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
               }}
               buttonVariant={value?.length > 0 ? "transparent-without-text" : "border-with-text"}
               buttonClassName={value?.length > 0 ? "hover:bg-transparent" : ""}
-              placeholder={t("assignees")}
-              multiple
               tabIndex={getIndex("assignee_ids")}
             />
           </div>
@@ -200,7 +199,7 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
           </div>
         )}
       />
-      {projectDetails?.cycle_view && (
+      {projectDetails?.cycle_view && isProjectFeatureVisible("cycles", projectId) && (
         <Controller
           control={control}
           name="cycle_id"
@@ -221,7 +220,7 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
           )}
         />
       )}
-      {projectDetails?.module_view && workspaceSlug && (
+      {projectDetails?.module_view && isProjectFeatureVisible("modules", projectId) && workspaceSlug && (
         <Controller
           control={control}
           name="module_ids"
@@ -244,7 +243,7 @@ export const IssueDefaultProperties = observer(function IssueDefaultProperties(p
           )}
         />
       )}
-      {projectId && areEstimateEnabledByProjectId(projectId) && (
+      {projectId && isProjectFeatureVisible("estimates", projectId) && areEstimateEnabledByProjectId(projectId) && (
         <Controller
           control={control}
           name="estimate_point"

@@ -13,6 +13,9 @@ from plane.license.models import InstanceConfiguration
 from plane.license.utils.encryption import decrypt_data
 
 
+INTERNAL_POLICY_KEYS = frozenset({"ENABLE_SIGNUP", "DISABLE_WORKSPACE_CREATION"})
+
+
 # Helper function to return value from the passed key
 def get_configuration_value(keys):
     environment_list = []
@@ -21,6 +24,9 @@ def get_configuration_value(keys):
         instance_configuration = InstanceConfiguration.objects.values("key", "value", "is_encrypted")
 
         for key in keys:
+            if getattr(settings, "HOTONE_INTERNAL_MODE", False) and key.get("key") in INTERNAL_POLICY_KEYS:
+                environment_list.append(os.environ.get(key.get("key"), key.get("default")))
+                continue
             for item in instance_configuration:
                 if key.get("key") == item.get("key"):
                     if item.get("is_encrypted", False):
@@ -53,7 +59,8 @@ def get_email_configuration():
             {"key": "EMAIL_USE_SSL", "default": os.environ.get("EMAIL_USE_SSL", "0")},
             {
                 "key": "EMAIL_FROM",
-                "default": os.environ.get("EMAIL_FROM", "Team Plane <team@mailer.plane.so>"),
+                "default": os.environ.get("EMAIL_FROM")
+                or f"Hotone Japan <{os.environ.get('EMAIL_HOST_USER', 'noreply@localhost')}>",
             },
         ]
     )

@@ -26,6 +26,7 @@ import darkSearchAsset from "@/app/assets/empty-state/search/search-dark.webp?ur
 import lightSearchAsset from "@/app/assets/empty-state/search/search-light.webp?url";
 // components
 import { SimpleEmptyState } from "@/components/empty-state/simple-empty-state-root";
+import { getIssueActionErrorMessage } from "@/components/issues/issue-action-error";
 // hooks
 import { useIssues } from "@/hooks/store/use-issues";
 import useDebounce from "@/hooks/use-debounce";
@@ -76,6 +77,14 @@ export const BulkDeleteIssuesModal = observer(function BulkDeleteIssuesModal(pro
         workspace_search: false,
       })
       .then((res: ISearchIssueResponse[]) => setIssues(res))
+      .catch((error) => {
+        setIssues([]);
+        setToast({
+          type: TOAST_TYPE.ERROR,
+          title: "Could not load work items",
+          message: getIssueActionErrorMessage(error, "Check your connection and try the search again."),
+        });
+      })
       .finally(() => setIsSearching(false));
   }, [debouncedSearchTerm, isOpen, projectId, workspaceSlug]);
 
@@ -111,23 +120,31 @@ export const BulkDeleteIssuesModal = observer(function BulkDeleteIssuesModal(pro
 
     if (!Array.isArray(data.delete_issue_ids)) data.delete_issue_ids = [data.delete_issue_ids];
 
-    await removeBulkIssues(workspaceSlug, projectId, data.delete_issue_ids)
-      .then(() => {
-        setToast({
-          type: TOAST_TYPE.SUCCESS,
-          title: "Success!",
-          message: "Work items deleted successfully!",
-        });
-        handleClose();
-      })
-      .catch(() =>
-        setToast({
-          type: TOAST_TYPE.ERROR,
-          title: "Error!",
-          message: "Something went wrong. Please try again.",
-        })
-      );
+    try {
+      const response = await removeBulkIssues(workspaceSlug, projectId, data.delete_issue_ids);
+      const deletedCount = response.deleted_count ?? data.delete_issue_ids.length;
+      const selectedCount = response.selected_count ?? data.delete_issue_ids.length;
+      const cascadeCount = Math.max(deletedCount - selectedCount, 0);
+
+      setToast({
+        type: TOAST_TYPE.SUCCESS,
+        title: "Work items deleted",
+        message:
+          cascadeCount > 0
+            ? `${selectedCount} selected and ${cascadeCount} nested sub-work item${cascadeCount === 1 ? "" : "s"} deleted.`
+            : `${deletedCount} work item${deletedCount === 1 ? "" : "s"} deleted.`,
+      });
+      handleClose();
+    } catch (error) {
+      setToast({
+        type: TOAST_TYPE.ERROR,
+        title: "Could not delete work items",
+        message: getIssueActionErrorMessage(error, "Nothing was deleted. Review the selection and try again."),
+      });
+    }
   };
+
+  const selectedIssueCount = watch("delete_issue_ids").length;
 
   const issueList =
     issues.length > 0 ? (
@@ -157,7 +174,7 @@ export const BulkDeleteIssuesModal = observer(function BulkDeleteIssuesModal(pro
 
   return (
     <ModalCore isOpen={isOpen} handleClose={handleClose} position={EModalPosition.CENTER} width={EModalWidth.XXL}>
-      <form>
+      <form onSubmit={handleSubmit(handleDelete)}>
         <Combobox
           onChange={(val: string) => {
             const selectedIssues = watch("delete_issue_ids");
@@ -197,13 +214,19 @@ export const BulkDeleteIssuesModal = observer(function BulkDeleteIssuesModal(pro
         </Combobox>
 
         {issues.length > 0 && (
-          <div className="flex items-center justify-end gap-2 p-3">
-            <Button variant="secondary" size="lg" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button variant="error-fill" size="lg" onClick={handleSubmit(handleDelete)} loading={isSubmitting}>
-              {isSubmitting ? "Deleting..." : "Delete selected work items"}
-            </Button>
+          <div className="flex items-end justify-between gap-4 border-t border-subtle p-3">
+            <div className="max-w-md text-11 text-secondary">
+              <p>{selectedIssueCount} selected.</p>
+              <p className="mt-1">Deleting a parent also deletes every nested sub-work item under it.</p>
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <Button type="button" variant="secondary" size="lg" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="error-fill" size="lg" loading={isSubmitting}>
+                {isSubmitting ? "Deleting..." : "Delete selected work items"}
+              </Button>
+            </div>
           </div>
         )}
       </form>

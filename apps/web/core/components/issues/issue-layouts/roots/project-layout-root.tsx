@@ -14,6 +14,7 @@ import { Spinner } from "@plane/ui";
 // components
 import { ProjectLevelWorkItemFiltersHOC } from "@/components/work-item-filters/filters-hoc/project-level";
 import { WorkItemFiltersRow } from "@/components/work-item-filters/filters-row";
+import { getVisibleIssueLayout } from "@/constants/product-policy";
 // hooks
 import { useIssues } from "@/hooks/store/use-issues";
 import { IssuesStoreContext } from "@/hooks/use-issue-layout-store";
@@ -51,7 +52,7 @@ export const ProjectLayoutRoot = observer(function ProjectLayoutRoot() {
   const { issues, issuesFilter } = useIssues(EIssuesStoreType.PROJECT);
   // derived values
   const workItemFilters = projectId ? issuesFilter?.getIssueFilters(projectId) : undefined;
-  const activeLayout = workItemFilters?.displayFilters?.layout;
+  const activeLayout = getVisibleIssueLayout(workItemFilters?.displayFilters?.layout);
 
   useSWR(
     workspaceSlug && projectId ? `PROJECT_ISSUES_${workspaceSlug}_${projectId}` : null,
@@ -67,7 +68,6 @@ export const ProjectLayoutRoot = observer(function ProjectLayoutRoot() {
   return (
     <IssuesStoreContext.Provider value={EIssuesStoreType.PROJECT}>
       <ProjectLevelWorkItemFiltersHOC
-        enableSaveView
         entityType={EIssuesStoreType.PROJECT}
         entityId={projectId}
         filtersToShowByLayout={ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters}

@@ -14,7 +14,7 @@ export default {
     inbox: "Inbox",
     workspace: "Workspace",
     views: "Views",
-    analytics: "Analytics",
+    analytics: "Reports",
     work_items: "Work items",
     cycles: "Cycles",
     modules: "Modules",
@@ -27,6 +27,11 @@ export default {
   },
 
   auth: {
+    hotone_portal: {
+      title: "Hotone Japan Operations",
+      description: "Internal work and handoff center",
+      help: "Company accounts only. If you cannot sign in, contact your workspace administrator.",
+    },
     common: {
       email: {
         label: "Email",

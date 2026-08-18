@@ -302,9 +302,9 @@ export class IssueSubIssuesStore implements IIssueSubIssuesStore {
   };
 
   deleteSubIssue = async (workspaceSlug: string, projectId: string, parentIssueId: string, issueId: string) => {
+    const issue = this.rootIssueDetailStore.issue.getIssueById(issueId);
     await this.rootIssueDetailStore.rootIssueStore.projectIssues.removeIssue(workspaceSlug, projectId, issueId);
 
-    const issue = this.rootIssueDetailStore.issue.getIssueById(issueId);
     if (issue && issue.state_id) {
       let issueStateGroup: string | undefined = undefined;
       const state = this.rootIssueDetailStore.rootIssueStore.rootStore.state.getStateById(issue.state_id);

@@ -9,6 +9,7 @@ import { observer } from "mobx-react";
 import { PageWrapper } from "@/components/common/page-wrapper";
 // hooks
 import { useInstance } from "@/hooks/store";
+import { getInternalAdminPageTitle } from "@/constants/branding";
 // local imports
 import { GeneralConfigurationForm } from "./form";
 // types
@@ -21,8 +22,7 @@ function GeneralPage() {
     <PageWrapper
       header={{
         title: "General settings",
-        description:
-          "Change the name of your instance and instance admin e-mail addresses. Enable or disable telemetry in your instance.",
+        description: "Review the internal instance identity and administrator account used by Hotone Japan.",
       }}
     >
       {instance && instanceAdmins && <GeneralConfigurationForm instance={instance} instanceAdmins={instanceAdmins} />}
@@ -30,6 +30,6 @@ function GeneralPage() {
   );
 }
 
-export const meta: Route.MetaFunction = () => [{ title: "General Settings - God Mode" }];
+export const meta: Route.MetaFunction = () => [{ title: getInternalAdminPageTitle("General settings") }];
 
 export default observer(GeneralPage);

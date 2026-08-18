@@ -80,22 +80,40 @@ class WorkspaceUserPreferenceViewSet(BaseAPIView):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
     def patch(self, request, slug):
-        for data in request.data:
+        if not isinstance(request.data, list):
+            return Response(
+                {"error": "Preferences must be provided as a list"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        for preference_data in request.data:
+            if not isinstance(preference_data, dict):
+                continue
+
+            data = preference_data.copy()
             key = data.pop("key", None)
             if not key:
                 continue
 
-            preference = WorkspaceUserPreference.objects.filter(key=key, workspace__slug=slug).first()
+            preference = WorkspaceUserPreference.objects.filter(
+                key=key,
+                user=request.user,
+                workspace__slug=slug,
+            ).first()
 
             if not preference:
                 continue
 
+            update_fields = []
             if "is_pinned" in data:
                 preference.is_pinned = data["is_pinned"]
+                update_fields.append("is_pinned")
 
             if "sort_order" in data:
                 preference.sort_order = data["sort_order"]
+                update_fields.append("sort_order")
 
-            preference.save(update_fields=["is_pinned", "sort_order"])
+            if update_fields:
+                preference.save(update_fields=update_fields)
 
         return Response({"message": "Successfully updated"}, status=status.HTTP_200_OK)

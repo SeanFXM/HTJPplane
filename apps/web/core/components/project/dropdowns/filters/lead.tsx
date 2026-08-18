@@ -47,8 +47,7 @@ export const FilterLead = observer(function FilterLead(props: Props) {
       (memberId) => memberId !== currentUser?.id,
       (memberId) => getUserDetails(memberId)?.display_name.toLowerCase(),
     ]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery]);
+  }, [appliedFilters, currentUser?.id, getUserDetails, memberIds, searchQuery]);
 
   const handleViewToggle = () => {
     if (!sortedOptions) return;
@@ -66,6 +65,7 @@ export const FilterLead = observer(function FilterLead(props: Props) {
       />
       {previewEnabled && (
         <div>
+          <p className="mb-1.5 text-11 text-tertiary">{t("workspace_projects.filter_labels.lead_help")}</p>
           {sortedOptions ? (
             sortedOptions.length > 0 ? (
               <>
@@ -76,7 +76,7 @@ export const FilterLead = observer(function FilterLead(props: Props) {
                   return (
                     <FilterOption
                       key={`lead-${member.id}`}
-                      isChecked={appliedFilters?.includes(member.id) ? true : false}
+                      isChecked={appliedFilters?.includes(member.id) ?? false}
                       onClick={() => handleUpdate(member.id)}
                       icon={
                         <Avatar

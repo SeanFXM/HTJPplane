@@ -16,16 +16,20 @@
     "check": "turbo run check",
     "check:lint": "turbo run check:lint",
     "check:format": "turbo run check:format",
+    "check:api-static": "python3 apps/api/check_syntax.py",
+    "check:i18n-critical": "pnpm --filter=@plane/i18n check:critical-keys",
     "check:types": "turbo run check:types",
+    "release:check": "pnpm check:api-static && pnpm check:i18n-critical && pnpm check:types && VITE_ADMIN_BASE_PATH=/god-mode pnpm build && node deployments/railway/verify-admin-routing.mjs",
+    "verify:admin-routing": "VITE_ADMIN_BASE_PATH=/god-mode pnpm --filter=admin build && node deployments/railway/verify-admin-routing.mjs",
     "prepare": "husky"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
     "husky": "9.1.7",
     "lint-staged": "16.2.7",
     "oxfmt": "0.35.0",
     "oxlint": "1.51.0",
-    "turbo": "2.8.12",
-    "@tailwindcss/postcss": "^4.1.17"
+    "turbo": "2.8.12"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,cjs,mjs,cts,mts,json,css,md}": [

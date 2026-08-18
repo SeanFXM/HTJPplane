@@ -5,44 +5,31 @@
  */
 
 import { observer } from "mobx-react";
-import Link from "next/link";
-import { useTheme } from "next-themes";
 // plane imports
-import { PROJECT_TRACKER_ELEMENTS } from "@plane/constants";
-import { Button, getButtonStyling } from "@plane/propel/button";
-import { cn } from "@plane/utils";
-// assets
-import ProjectDarkEmptyState from "@/app/assets/empty-state/project-settings/no-projects-dark.png?url";
-import ProjectLightEmptyState from "@/app/assets/empty-state/project-settings/no-projects-light.png?url";
-// hooks
-import { useCommandPalette } from "@/hooks/store/use-command-palette";
+import { useTranslation } from "@plane/i18n";
+// components
+import { PageHead } from "@/components/core/page-title";
+import { SettingsContentWrapper } from "@/components/settings/content-wrapper";
+import { HotoneWorkflowCard } from "@/components/settings/workspace/hotone-workflow-card";
+// local imports
+import type { Route } from "./+types/page";
+import { WorkspaceProjectsSettingsHeader } from "./header";
 
-function ProjectSettingsPage() {
-  // store hooks
-  const { resolvedTheme } = useTheme();
-  const { toggleCreateProjectModal } = useCommandPalette();
-  // derived values
-  const resolvedPath = resolvedTheme === "dark" ? ProjectDarkEmptyState : ProjectLightEmptyState;
+function ProjectSettingsPage({ params }: Route.ComponentProps) {
+  const { workspaceSlug } = params;
+  const { t } = useTranslation();
+
   return (
-    <div className="mx-auto flex h-full max-w-[480px] flex-col items-center justify-center gap-4">
-      <img src={resolvedPath} alt="No projects yet" />
-      <div className="text-16 font-semibold text-tertiary">No projects yet</div>
-      <div className="text-center text-13 text-tertiary">
-        Projects act as the foundation for goal-driven work. They let you manage your teams, tasks, and everything you
-        need to get things done.
+    <SettingsContentWrapper header={<WorkspaceProjectsSettingsHeader />}>
+      <PageHead title={t("workspace_settings.settings.projects.workflow.title")} />
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className="text-20 font-semibold text-primary">{t("workspace_settings.settings.projects.heading")}</h1>
+          <p className="mt-1 text-13 text-secondary">{t("workspace_settings.settings.projects.description")}</p>
+        </div>
+        <HotoneWorkflowCard workspaceSlug={workspaceSlug} />
       </div>
-      <div className="flex gap-2">
-        <Link href="https://plane.so/" target="_blank" className={cn(getButtonStyling("secondary", "base"))}>
-          Learn more about projects
-        </Link>
-        <Button
-          onClick={() => toggleCreateProjectModal(true)}
-          data-ph-element={PROJECT_TRACKER_ELEMENTS.EMPTY_STATE_CREATE_PROJECT_BUTTON}
-        >
-          Start your first project
-        </Button>
-      </div>
-    </div>
+    </SettingsContentWrapper>
   );
 }
 

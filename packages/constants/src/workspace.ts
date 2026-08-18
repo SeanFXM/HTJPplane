@@ -201,7 +201,7 @@ export interface IWorkspaceSidebarNavigationItem {
 export const WORKSPACE_SIDEBAR_DYNAMIC_NAVIGATION_ITEMS: Record<string, IWorkspaceSidebarNavigationItem> = {
   views: {
     key: "views",
-    labelTranslationKey: "views",
+    labelTranslationKey: "default_global_view.all_issues",
     href: `/workspace-views/all-issues/`,
     access: [EUserWorkspaceRoles.ADMIN, EUserWorkspaceRoles.MEMBER, EUserWorkspaceRoles.GUEST],
     highlight: (pathname: string, url: string) => pathname.includes(url),

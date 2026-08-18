@@ -67,6 +67,7 @@ from .workspace.invite import (
 )
 from .workspace.label import WorkspaceLabelsEndpoint
 from .workspace.state import WorkspaceStatesEndpoint
+from .workspace.hotone_workflow import HotoneWorkflowApplyEndpoint, HotoneWorkflowPreviewEndpoint
 from .workspace.user import (
     UserLastProjectWithWorkspaceEndpoint,
     WorkspaceUserProfileIssuesEndpoint,
@@ -217,6 +218,7 @@ from .analytic.project_analytics import (
     ProjectAdvanceAnalyticsStatsEndpoint,
     ProjectAdvanceAnalyticsChartEndpoint,
 )
+from .analytic.operational import OperationalReportEndpoint
 
 from .notification.base import (
     NotificationViewSet,

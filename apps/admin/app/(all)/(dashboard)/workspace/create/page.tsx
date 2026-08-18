@@ -5,14 +5,51 @@
  */
 
 import { observer } from "mobx-react";
+import Link from "next/link";
+import { getButtonStyling } from "@plane/propel/button";
+import { Loader } from "@plane/ui";
 // components
 import { PageWrapper } from "@/components/common/page-wrapper";
+import { getInternalAdminPageTitle } from "@/constants/branding";
+import { useInstance } from "@/hooks/store";
 // types
 import type { Route } from "./+types/page";
 // local
 import { WorkspaceCreateForm } from "./form";
 
 const WorkspaceCreatePage = observer(function WorkspaceCreatePage(_props: Route.ComponentProps) {
+  const { config, isLoading } = useInstance();
+
+  if (isLoading || !config) {
+    return (
+      <PageWrapper
+        header={{
+          title: "Workspace policy",
+          description: "Checking the Hotone Japan workspace policy before loading this page.",
+        }}
+      >
+        <Loader>
+          <Loader.Item height="40px" width="50%" />
+        </Loader>
+      </PageWrapper>
+    );
+  }
+
+  if (config.is_workspace_creation_disabled) {
+    return (
+      <PageWrapper
+        header={{
+          title: "Workspace creation is disabled",
+          description: "Hotone Japan uses one internal workspace. Invite teammates to the existing workspace instead.",
+        }}
+      >
+        <Link href="/workspace" className={getButtonStyling("secondary", "lg")}>
+          Back to workspace management
+        </Link>
+      </PageWrapper>
+    );
+  }
+
   return (
     <PageWrapper
       header={{
@@ -25,6 +62,6 @@ const WorkspaceCreatePage = observer(function WorkspaceCreatePage(_props: Route.
   );
 });
 
-export const meta: Route.MetaFunction = () => [{ title: "Create Workspace - God Mode" }];
+export const meta: Route.MetaFunction = () => [{ title: getInternalAdminPageTitle("Create workspace") }];
 
 export default WorkspaceCreatePage;

@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import type {
   DragLocationHistory,
@@ -26,6 +26,7 @@ import { Tooltip } from "@plane/propel/tooltip";
 import type { IFavorite } from "@plane/types";
 // helpers
 import { cn } from "@plane/utils";
+import { isFavoriteEntityVisible } from "@/constants/product-policy";
 // hooks
 import { useFavorite } from "@/hooks/store/use-favorite";
 import useLocalStorage from "@/hooks/use-local-storage";
@@ -52,6 +53,14 @@ export const SidebarFavoritesMenu = observer(function SidebarFavoritesMenu() {
   const { setValue: toggleFavoriteMenu, storedValue } = useLocalStorage<boolean>(IS_FAVORITE_MENU_OPEN, false);
   // derived values
   const isFavoriteMenuOpen = !!storedValue;
+  const visibleRootFavorites = useMemo(
+    () =>
+      orderBy(Object.values(groupedFavorites), "sequence", "desc").filter(
+        (favorite) =>
+          !favorite.parent && (favorite.is_folder || isFavoriteEntityVisible(favorite.entity_type, favorite.project_id))
+      ),
+    [groupedFavorites]
+  );
   // refs
   const containerRef = useRef<HTMLDivElement>(null);
   const elementRef = useRef<HTMLDivElement>(null);
@@ -249,35 +258,33 @@ export const SidebarFavoritesMenu = observer(function SidebarFavoritesMenu() {
           {isFavoriteMenuOpen && (
             <Disclosure.Panel as="div" className="mt-0.5 flex flex-col gap-0.5" static>
               {createNewFolder && <NewFavoriteFolder setCreateNewFolder={setCreateNewFolder} actionType="create" />}
-              {Object.keys(groupedFavorites).length === 0 ? (
+              {visibleRootFavorites.length === 0 ? (
                 <>
                   <span className="px-8 py-1.5 text-11 font-medium text-placeholder">{t("no_favorites_yet")}</span>
                 </>
               ) : (
-                orderBy(Object.values(groupedFavorites), "sequence", "desc")
-                  .filter((fav) => !fav.parent)
-                  .map((fav, index, { length }) => (
-                    <>
-                      {fav?.is_folder ? (
-                        <FavoriteFolder
-                          favorite={fav}
-                          isLastChild={index === length - 1}
-                          handleRemoveFromFavorites={handleRemoveFromFavorites}
-                          handleRemoveFromFavoritesFolder={handleRemoveFromFavoritesFolder}
-                          handleDrop={handleDrop}
-                        />
-                      ) : (
-                        <FavoriteRoot
-                          workspaceSlug={workspaceSlug.toString()}
-                          favorite={fav}
-                          isLastChild={index === length - 1}
-                          parentId={undefined}
-                          handleRemoveFromFavorites={handleRemoveFromFavorites}
-                          handleDrop={handleDrop}
-                        />
-                      )}
-                    </>
-                  ))
+                visibleRootFavorites.map((fav, index, { length }) => (
+                  <>
+                    {fav?.is_folder ? (
+                      <FavoriteFolder
+                        favorite={fav}
+                        isLastChild={index === length - 1}
+                        handleRemoveFromFavorites={handleRemoveFromFavorites}
+                        handleRemoveFromFavoritesFolder={handleRemoveFromFavoritesFolder}
+                        handleDrop={handleDrop}
+                      />
+                    ) : (
+                      <FavoriteRoot
+                        workspaceSlug={workspaceSlug.toString()}
+                        favorite={fav}
+                        isLastChild={index === length - 1}
+                        parentId={undefined}
+                        handleRemoveFromFavorites={handleRemoveFromFavorites}
+                        handleDrop={handleDrop}
+                      />
+                    )}
+                  </>
+                ))
               )}
             </Disclosure.Panel>
           )}

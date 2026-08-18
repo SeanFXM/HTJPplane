@@ -390,24 +390,24 @@ def create_issue_parent(workspace, project, user_id, issue_count):
 
 def create_issue_assignees(workspace, project, user_id, issue_count):
     # assignees
-    assignees = ProjectMember.objects.filter(project=project).values_list("member_id", flat=True)
+    assignees = list(ProjectMember.objects.filter(project=project).values_list("member_id", flat=True))
+    if not assignees:
+        return
     issues = random.sample(
         list(Issue.objects.filter(project=project).values_list("id", flat=True)),
         int(issue_count / 2),
     )
 
     # Bulk issue
-    bulk_issue_assignees = []
-    for issue in issues:
-        for assignee in random.sample(list(assignees), random.randint(0, len(assignees) - 1)):
-            bulk_issue_assignees.append(
-                IssueAssignee(
-                    issue_id=issue,
-                    assignee_id=assignee,
-                    project=project,
-                    workspace=workspace,
-                )
-            )
+    bulk_issue_assignees = [
+        IssueAssignee(
+            issue_id=issue,
+            assignee_id=random.choice(assignees),
+            project=project,
+            workspace=workspace,
+        )
+        for issue in issues
+    ]
 
     # Issue assignees
     IssueAssignee.objects.bulk_create(bulk_issue_assignees, batch_size=1000, ignore_conflicts=True)

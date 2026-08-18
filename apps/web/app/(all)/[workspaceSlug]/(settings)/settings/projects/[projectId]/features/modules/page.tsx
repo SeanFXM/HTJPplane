@@ -7,6 +7,7 @@
 import { observer } from "mobx-react";
 // plane imports
 import { useTranslation } from "@plane/i18n";
+import { guardProjectFeatureRoute } from "@/app/routes/guards/product-policy";
 // components
 import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { NotAuthorizedView } from "@/components/auth-screens/not-authorized-view";
@@ -20,6 +21,8 @@ import { useUserPermissions } from "@/hooks/store/user";
 // local imports
 import type { Route } from "./+types/page";
 import { FeaturesModulesProjectSettingsHeader } from "./header";
+
+export const clientLoader = ({ params }: Route.ClientLoaderArgs) => guardProjectFeatureRoute(params, "modules");
 
 function FeaturesModulesSettingsPage({ params }: Route.ComponentProps) {
   const { workspaceSlug, projectId } = params;

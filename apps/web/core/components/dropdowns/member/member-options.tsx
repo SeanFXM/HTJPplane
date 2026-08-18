@@ -32,6 +32,7 @@ interface Props {
   optionsClassName?: string;
   placement: Placement | undefined;
   referenceElement: HTMLButtonElement | null;
+  showUnassignedOption?: boolean;
   value?: string[] | string | null;
 }
 
@@ -44,6 +45,7 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
     optionsClassName = "",
     placement,
     referenceElement,
+    showUnassignedOption = false,
     value,
   } = props;
   // router
@@ -78,10 +80,10 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
     if (isOpen) {
       onDropdownOpen?.();
       if (!isMobile) {
-        inputRef.current && inputRef.current.focus();
+        inputRef.current?.focus();
       }
     }
-  }, [isOpen, isMobile]);
+  }, [isOpen, isMobile, onDropdownOpen]);
 
   const searchInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (query !== "" && e.key === "Escape") {
@@ -124,6 +126,9 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
     value,
     currentUser?.id
   );
+  const unassignedLabel = t("unassigned");
+  const shouldShowUnassignedOption =
+    showUnassignedOption && unassignedLabel.toLocaleLowerCase().includes(query.toLocaleLowerCase());
 
   return createPortal(
     <Combobox.Options data-prevent-outside-click static>
@@ -153,39 +158,60 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
         </div>
         <div className="mt-2 max-h-48 space-y-1 overflow-y-scroll">
           {filteredOptions ? (
-            filteredOptions.length > 0 ? (
-              filteredOptions.map(
-                (option) =>
-                  option && (
-                    <Combobox.Option
-                      key={option.value}
-                      value={option.value}
-                      className={({ active, selected }) =>
-                        cn(
-                          "flex w-full items-center justify-between gap-2 truncate rounded-sm px-1 py-1.5 select-none",
-                          active && "bg-layer-transparent-hover",
-                          selected ? "text-primary" : "text-secondary",
-                          isUserSuspended(option.value, workspaceSlug?.toString())
-                            ? "cursor-not-allowed"
-                            : "cursor-pointer"
-                        )
-                      }
-                      disabled={isUserSuspended(option.value, workspaceSlug?.toString())}
-                    >
-                      {({ selected }) => (
-                        <>
-                          <span className="flex-grow truncate">{option.content}</span>
-                          {selected && <CheckIcon className="h-3.5 w-3.5 flex-shrink-0" />}
-                          {isUserSuspended(option.value, workspaceSlug?.toString()) && (
-                            <Pill variant={EPillVariant.DEFAULT} size={EPillSize.XS} className="border-none">
-                              Suspended
-                            </Pill>
-                          )}
-                        </>
-                      )}
-                    </Combobox.Option>
-                  )
-              )
+            filteredOptions.length > 0 || shouldShowUnassignedOption ? (
+              <>
+                {shouldShowUnassignedOption && (
+                  <Combobox.Option
+                    value={null}
+                    className={({ active, selected }) =>
+                      cn(
+                        "flex w-full cursor-pointer items-center justify-between gap-2 truncate rounded-sm px-1 py-1.5 text-secondary select-none",
+                        active && "bg-layer-transparent-hover",
+                        selected && "text-primary"
+                      )
+                    }
+                  >
+                    {({ selected }) => (
+                      <>
+                        <span className="flex-grow truncate">{unassignedLabel}</span>
+                        {selected && <CheckIcon className="h-3.5 w-3.5 flex-shrink-0" />}
+                      </>
+                    )}
+                  </Combobox.Option>
+                )}
+                {filteredOptions.map(
+                  (option) =>
+                    option && (
+                      <Combobox.Option
+                        key={option.value}
+                        value={option.value}
+                        className={({ active, selected }) =>
+                          cn(
+                            "flex w-full items-center justify-between gap-2 truncate rounded-sm px-1 py-1.5 select-none",
+                            active && "bg-layer-transparent-hover",
+                            selected ? "text-primary" : "text-secondary",
+                            isUserSuspended(option.value, workspaceSlug?.toString())
+                              ? "cursor-not-allowed"
+                              : "cursor-pointer"
+                          )
+                        }
+                        disabled={isUserSuspended(option.value, workspaceSlug?.toString())}
+                      >
+                        {({ selected }) => (
+                          <>
+                            <span className="flex-grow truncate">{option.content}</span>
+                            {selected && <CheckIcon className="h-3.5 w-3.5 flex-shrink-0" />}
+                            {isUserSuspended(option.value, workspaceSlug?.toString()) && (
+                              <Pill variant={EPillVariant.DEFAULT} size={EPillSize.XS} className="border-none">
+                                Suspended
+                              </Pill>
+                            )}
+                          </>
+                        )}
+                      </Combobox.Option>
+                    )
+                )}
+              </>
             ) : (
               <p className="px-1.5 py-1 text-placeholder italic">{t("no_matching_results")}</p>
             )

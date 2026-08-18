@@ -5,14 +5,6 @@
  */
 
 export function MaintenanceMessage() {
-  const linkMap = [
-    {
-      key: "mail_to",
-      label: "サポートに連絡",
-      value: "mailto:support@plane.so",
-    },
-  ];
-
   return (
     <>
       <div className="flex flex-col gap-2.5">
@@ -22,18 +14,14 @@ export function MaintenanceMessage() {
         </span>
       </div>
       <div className="mt-1 flex items-center justify-start gap-6">
-        {linkMap.map((link) => (
-          <div key={link.key}>
-            <a
-              href={link.value}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-13 text-accent-primary hover:underline"
-            >
-              {link.label}
-            </a>
-          </div>
-        ))}
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="text-13 text-accent-primary hover:underline focus-visible:rounded focus-visible:outline"
+        >
+          再読み込み
+        </button>
+        <span className="text-13 text-secondary">改善しない場合は社内管理者へ連絡してください。</span>
       </div>
     </>
   );

@@ -15,6 +15,7 @@ import type { EUserProjectRoles } from "@plane/types";
 // plane ui
 // components
 import { SidebarNavItem } from "@/components/sidebar/sidebar-navigation";
+import { isProjectFeatureVisible } from "@/constants/product-policy";
 // hooks
 import { useAppTheme } from "@/hooks/store/use-app-theme";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
@@ -87,7 +88,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         href: `/${workspaceSlug}/projects/${projectId}/cycles`,
         icon: CycleIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
-        shouldRender: project?.cycle_view ?? false,
+        shouldRender: Boolean(project?.cycle_view && isProjectFeatureVisible("cycles", projectId)),
         sortOrder: 2,
       },
       {
@@ -97,7 +98,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         href: `/${workspaceSlug}/projects/${projectId}/modules`,
         icon: ModuleIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
-        shouldRender: project?.module_view ?? false,
+        shouldRender: Boolean(project?.module_view && isProjectFeatureVisible("modules", projectId)),
         sortOrder: 3,
       },
       {
@@ -107,7 +108,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         href: `/${workspaceSlug}/projects/${projectId}/views`,
         icon: ViewsIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
-        shouldRender: project?.issue_views_view ?? false,
+        shouldRender: Boolean(project?.issue_views_view && isProjectFeatureVisible("views", projectId)),
         sortOrder: 4,
       },
       {
@@ -127,7 +128,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         href: `/${workspaceSlug}/projects/${projectId}/intake`,
         icon: IntakeIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
-        shouldRender: project?.inbox_view ?? false,
+        shouldRender: Boolean(project?.inbox_view && isProjectFeatureVisible("intake", projectId)),
         sortOrder: 6,
       },
     ],

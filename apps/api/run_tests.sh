@@ -1,4 +1,7 @@
 #!/bin/bash
 
-# This is a simple wrapper script that calls the main test runner in the tests directory
-exec tests/run_tests.sh "$@" 
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+exec python3 "${SCRIPT_DIR}/run_tests.py" "$@"

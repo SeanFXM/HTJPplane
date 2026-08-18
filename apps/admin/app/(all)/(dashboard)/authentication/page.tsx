@@ -16,6 +16,7 @@ import { cn, resolveGeneralTheme } from "@plane/utils";
 // components
 import { PageWrapper } from "@/components/common/page-wrapper";
 import { AuthenticationMethodCard } from "@/components/authentication/authentication-method-card";
+import { getInternalAdminPageTitle } from "@/constants/branding";
 // helpers
 import { canDisableAuthMethod } from "@/helpers/authentication";
 // hooks
@@ -137,6 +138,7 @@ const InstanceAuthenticationPage = observer(function InstanceAuthenticationPage(
                       updateConfig("ENABLE_SIGNUP", "1");
                     }
                   }}
+                  label="Allow sign-up without an invitation"
                   size="sm"
                   disabled={isSubmitting}
                 />
@@ -169,6 +171,6 @@ const InstanceAuthenticationPage = observer(function InstanceAuthenticationPage(
   );
 });
 
-export const meta: Route.MetaFunction = () => [{ title: "Authentication Settings - Plane Web" }];
+export const meta: Route.MetaFunction = () => [{ title: getInternalAdminPageTitle("Authentication settings") }];
 
 export default InstanceAuthenticationPage;

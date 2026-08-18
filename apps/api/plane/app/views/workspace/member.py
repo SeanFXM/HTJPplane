@@ -3,7 +3,8 @@
 # See the LICENSE file for details.
 
 # Django imports
-from django.db.models import Count, Q, OuterRef, Subquery, IntegerField
+from django.db import transaction
+from django.db.models import Count, Exists, IntegerField, OuterRef, Subquery
 from django.utils import timezone
 from django.db.models.functions import Coalesce
 
@@ -21,10 +22,56 @@ from plane.app.serializers import (
     WorkSpaceMemberSerializer,
 )
 from plane.app.views.base import BaseAPIView
-from plane.db.models import Project, ProjectMember, WorkspaceMember, DraftIssue
+from plane.db.models import DraftIssue, ProjectMember, WorkspaceMember
 from plane.utils.cache import invalidate_cache
 
 from .. import BaseViewSet
+
+
+def is_only_active_project_admin(*, workspace_slug, member_id):
+    other_active_admin = ProjectMember.objects.filter(
+        project_id=OuterRef("project_id"),
+        role=ROLE.ADMIN.value,
+        is_active=True,
+    ).exclude(member_id=member_id)
+
+    return (
+        ProjectMember.objects.filter(
+            workspace__slug=workspace_slug,
+            member_id=member_id,
+            role=ROLE.ADMIN.value,
+            is_active=True,
+        )
+        .annotate(has_other_active_admin=Exists(other_active_admin))
+        .filter(has_other_active_admin=False)
+        .exists()
+    )
+
+
+def lock_active_memberships_for_admin_projects(*, workspace_slug, member_id):
+    admin_project_ids = list(
+        ProjectMember.objects.filter(
+            workspace__slug=workspace_slug,
+            member_id=member_id,
+            role=ROLE.ADMIN.value,
+            is_active=True,
+        ).values_list("project_id", flat=True)
+    )
+    list(
+        ProjectMember.objects.select_for_update()
+        .filter(project_id__in=admin_project_ids, is_active=True)
+        .order_by("project_id", "id")
+        .values_list("id", flat=True)
+    )
+
+
+def lock_active_workspace_memberships(*, workspace_slug):
+    list(
+        WorkspaceMember.objects.select_for_update()
+        .filter(workspace__slug=workspace_slug, is_active=True)
+        .order_by("id")
+        .values_list("id", flat=True)
+    )
 
 
 class WorkSpaceMemberViewSet(BaseViewSet):
@@ -74,38 +121,101 @@ class WorkSpaceMemberViewSet(BaseViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @allow_permission(allowed_roles=[ROLE.ADMIN], level="WORKSPACE")
+    @transaction.atomic
     def partial_update(self, request, slug, pk):
-        workspace_member = WorkspaceMember.objects.get(
-            pk=pk, workspace__slug=slug, member__is_bot=False, is_active=True
-        )
+        if "role" not in request.data or set(request.data.keys()) - {"role"}:
+            return Response(
+                {"error": "Only the workspace member role can be updated here"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            new_role = int(request.data["role"])
+        except (TypeError, ValueError):
+            return Response(
+                {"role": "Role must be a valid integer"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        lock_active_workspace_memberships(workspace_slug=slug)
+        workspace_member = WorkspaceMember.objects.filter(
+            pk=pk,
+            workspace__slug=slug,
+            member__is_bot=False,
+            is_active=True,
+        ).first()
+        if workspace_member is None:
+            return Response({"error": "Workspace member not found"}, status=status.HTTP_404_NOT_FOUND)
+        requesting_workspace_member = WorkspaceMember.objects.filter(
+            workspace__slug=slug,
+            member=request.user,
+            role=ROLE.ADMIN.value,
+            is_active=True,
+        ).first()
+        if requesting_workspace_member is None:
+            return Response(
+                {"error": "Workspace admin permission is no longer active"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         if request.user.id == workspace_member.member_id:
             return Response(
                 {"error": "You cannot update your own role"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # If a user is moved to a guest role he can't have any other role in projects
-        if "role" in request.data and int(request.data.get("role")) == 5:
-            ProjectMember.objects.filter(workspace__slug=slug, member_id=workspace_member.member_id).update(role=5)
+        moving_to_guest = new_role == ROLE.GUEST.value
+        if moving_to_guest:
+            lock_active_memberships_for_admin_projects(
+                workspace_slug=slug,
+                member_id=workspace_member.member_id,
+            )
+        if moving_to_guest and is_only_active_project_admin(
+            workspace_slug=slug,
+            member_id=workspace_member.member_id,
+        ):
+            return Response(
+                {"error": "Promote another project admin before changing this member to guest"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        serializer = WorkSpaceMemberSerializer(workspace_member, data=request.data, partial=True)
+        serializer = WorkSpaceMemberSerializer(workspace_member, data={"role": request.data["role"]}, partial=True)
 
         if serializer.is_valid():
             serializer.save()
+            # A guest cannot retain a higher role in any project. Apply the
+            # cascade only after the workspace-role payload has validated.
+            if moving_to_guest:
+                ProjectMember.objects.filter(
+                    workspace__slug=slug,
+                    member_id=workspace_member.member_id,
+                    is_active=True,
+                ).update(role=ROLE.GUEST.value, updated_at=timezone.now())
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @allow_permission(allowed_roles=[ROLE.ADMIN], level="WORKSPACE")
+    @transaction.atomic
     def destroy(self, request, slug, pk):
-        # Check the user role who is deleting the user
-        workspace_member = WorkspaceMember.objects.get(
-            workspace__slug=slug, pk=pk, member__is_bot=False, is_active=True
-        )
+        lock_active_workspace_memberships(workspace_slug=slug)
+        workspace_member = WorkspaceMember.objects.filter(
+            workspace__slug=slug,
+            pk=pk,
+            member__is_bot=False,
+            is_active=True,
+        ).first()
+        if workspace_member is None:
+            return Response({"error": "Workspace member not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # check requesting user role
-        requesting_workspace_member = WorkspaceMember.objects.get(
-            workspace__slug=slug, member=request.user, is_active=True
-        )
+        requesting_workspace_member = WorkspaceMember.objects.filter(
+            workspace__slug=slug,
+            member=request.user,
+            role=ROLE.ADMIN.value,
+            is_active=True,
+        ).first()
+        if requesting_workspace_member is None:
+            return Response(
+                {"error": "Workspace admin permission is no longer active"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         if str(workspace_member.id) == str(requesting_workspace_member.id):
             return Response(
@@ -119,20 +229,11 @@ class WorkSpaceMemberViewSet(BaseViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if (
-            Project.objects.annotate(
-                total_members=Count("project_projectmember"),
-                member_with_role=Count(
-                    "project_projectmember",
-                    filter=Q(
-                        project_projectmember__member_id=workspace_member.id,
-                        project_projectmember__role=20,
-                    ),
-                ),
-            )
-            .filter(total_members=1, member_with_role=1, workspace__slug=slug)
-            .exists()
-        ):
+        lock_active_memberships_for_admin_projects(
+            workspace_slug=slug,
+            member_id=workspace_member.member_id,
+        )
+        if is_only_active_project_admin(workspace_slug=slug, member_id=workspace_member.member_id):
             return Response(
                 {
                     "error": "User is a part of some projects where they are the only admin, they should either leave that project or promote another user to admin."  # noqa: E501
@@ -158,8 +259,16 @@ class WorkSpaceMemberViewSet(BaseViewSet):
     @invalidate_cache(path="/api/users/me/settings/")
     @invalidate_cache(path="api/users/me/workspaces/", user=False, multiple=True)
     @allow_permission(allowed_roles=[ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
+    @transaction.atomic
     def leave(self, request, slug):
-        workspace_member = WorkspaceMember.objects.get(workspace__slug=slug, member=request.user, is_active=True)
+        lock_active_workspace_memberships(workspace_slug=slug)
+        workspace_member = WorkspaceMember.objects.filter(
+            workspace__slug=slug,
+            member=request.user,
+            is_active=True,
+        ).first()
+        if workspace_member is None:
+            return Response({"error": "Workspace membership is no longer active"}, status=status.HTTP_403_FORBIDDEN)
 
         # Check if the leaving user is the only admin of the workspace
         if (
@@ -173,20 +282,11 @@ class WorkSpaceMemberViewSet(BaseViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if (
-            Project.objects.annotate(
-                total_members=Count("project_projectmember"),
-                member_with_role=Count(
-                    "project_projectmember",
-                    filter=Q(
-                        project_projectmember__member_id=request.user.id,
-                        project_projectmember__role=20,
-                    ),
-                ),
-            )
-            .filter(total_members=1, member_with_role=1, workspace__slug=slug)
-            .exists()
-        ):
+        lock_active_memberships_for_admin_projects(
+            workspace_slug=slug,
+            member_id=request.user.id,
+        )
+        if is_only_active_project_admin(workspace_slug=slug, member_id=request.user.id):
             return Response(
                 {
                     "error": "You are a part of some projects where you are the only admin, you should either leave the project or promote another user to admin."  # noqa: E501

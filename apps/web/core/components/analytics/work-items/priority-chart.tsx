@@ -32,6 +32,7 @@ import { ChartLoader } from "../loaders";
 import { generateBarColor } from "./utils";
 
 declare module "@tanstack/react-table" {
+  // oxlint-disable-next-line no-unused-vars -- must match TanStack's declaration exactly for module merging
   interface ColumnMeta<TData extends RowData, TValue> {
     export: {
       key: string;
@@ -79,11 +80,15 @@ const PriorityChart = observer(function PriorityChart(props: Props) {
       )
   );
   const parsedData = useMemo(() => {
-    const raw = priorityChartData && parseChartData(priorityChartData, props.x_axis, props.group_by, props.x_axis_date_grouping);
+    const raw =
+      priorityChartData && parseChartData(priorityChartData, props.x_axis, props.group_by, props.x_axis_date_grouping);
     if (!raw || (props.x_axis !== "PRIORITY" && props.group_by !== "PRIORITY")) return raw;
     const priorityKey = (s: string) => (typeof s === "string" ? s.toLowerCase() : s);
     return {
-      data: raw.data.map((d) => ({ ...d, name: getPriorityDisplayName(priorityKey(d.name), t) })),
+      data: raw.data.map<TChartDatum>((d) => ({
+        ...d,
+        name: getPriorityDisplayName(priorityKey(d.name), t),
+      })),
       schema: Object.fromEntries(
         Object.entries(raw.schema).map(([k, v]) => [k, getPriorityDisplayName(priorityKey(v), t)])
       ),

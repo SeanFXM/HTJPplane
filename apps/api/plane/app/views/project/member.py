@@ -5,6 +5,7 @@
 # Third Party imports
 from rest_framework.response import Response
 from rest_framework import status
+from django.db import transaction
 from django.db.models import Min
 
 # Module imports
@@ -22,6 +23,15 @@ from plane.db.models import Project, ProjectMember, ProjectUserProperty, Workspa
 from plane.bgtasks.project_add_user_email_task import project_add_user_email
 from plane.utils.host import base_host
 from plane.app.permissions.base import allow_permission, ROLE
+
+
+def lock_active_project_members(*, workspace_slug, project_id):
+    list(
+        ProjectMember.objects.select_for_update()
+        .filter(workspace__slug=workspace_slug, project_id=project_id, is_active=True)
+        .order_by("id")
+        .values_list("id", flat=True)
+    )
 
 
 class ProjectMemberViewSet(BaseViewSet):
@@ -202,47 +212,110 @@ class ProjectMemberViewSet(BaseViewSet):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
+    @allow_permission([ROLE.ADMIN])
+    @transaction.atomic
     def partial_update(self, request, slug, project_id, pk):
-        project_member = ProjectMember.objects.get(pk=pk, workspace__slug=slug, project_id=project_id, is_active=True)
+        if "role" not in request.data or set(request.data.keys()) - {"role"}:
+            return Response(
+                {"error": "Only the project member role can be updated here"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            new_role = int(request.data["role"])
+        except (TypeError, ValueError):
+            return Response(
+                {"role": "Role must be a valid integer"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        # Fetch the workspace role of the project member
-        workspace_role = WorkspaceMember.objects.get(
+        target_membership = ProjectMember.objects.filter(
+            pk=pk,
+            workspace__slug=slug,
+            project_id=project_id,
+            is_active=True,
+        ).first()
+        if target_membership is None:
+            return Response({"error": "Project member not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Use a consistent lock order across member lifecycle operations. Lock
+        # workspace memberships first, then every active membership in the
+        # project so concurrent admin downgrades cannot both pass the check.
+        list(
+            WorkspaceMember.objects.select_for_update()
+            .filter(
+                workspace__slug=slug,
+                member_id__in=[target_membership.member_id, request.user.id],
+                is_active=True,
+            )
+            .order_by("id")
+            .values_list("id", flat=True)
+        )
+        lock_active_project_members(workspace_slug=slug, project_id=project_id)
+        project_member = ProjectMember.objects.get(pk=target_membership.pk, is_active=True)
+
+        # Workspace role limits belong to the target; elevated authority belongs
+        # to the requester. Keeping them separate prevents a target admin from
+        # accidentally granting edit privileges to an ordinary project member.
+        target_workspace_role = WorkspaceMember.objects.get(
             workspace__slug=slug, member=project_member.member, is_active=True
         ).role
-        is_workspace_admin = workspace_role == ROLE.ADMIN.value
+        requesting_workspace_role = WorkspaceMember.objects.get(
+            workspace__slug=slug, member=request.user, is_active=True
+        ).role
+        is_requesting_workspace_admin = requesting_workspace_role == ROLE.ADMIN.value
 
-        # Check if the user is not editing their own role if they are not an admin
-        if request.user.id == project_member.member_id and not is_workspace_admin:
+        if request.user.id == project_member.member_id and not is_requesting_workspace_admin:
             return Response(
                 {"error": "You cannot update your own role"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         # Check while updating user roles
-        requested_project_member = ProjectMember.objects.get(
+        requested_project_member = ProjectMember.objects.filter(
             project_id=project_id,
             workspace__slug=slug,
             member=request.user,
             is_active=True,
-        )
+        ).first()
+        if requested_project_member is None:
+            return Response({"error": "Project membership is no longer active"}, status=status.HTTP_403_FORBIDDEN)
 
-        if workspace_role in [5] and int(request.data.get("role", project_member.role)) in [15, 20]:
+        if "role" in request.data and target_workspace_role == ROLE.GUEST.value and new_role > ROLE.GUEST.value:
             return Response(
                 {"error": "You cannot add a user with role higher than the workspace role"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if (
-            "role" in request.data
-            and int(request.data.get("role", project_member.role)) > requested_project_member.role
-            and not is_workspace_admin
-        ):
+        if "role" in request.data and target_workspace_role == ROLE.ADMIN.value and new_role < ROLE.ADMIN.value:
+            return Response(
+                {"error": "You cannot add a workspace admin with a lower project role"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if "role" in request.data and new_role > requested_project_member.role and not is_requesting_workspace_admin:
             return Response(
                 {"error": "You cannot update a role that is higher than your own role"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = ProjectMemberSerializer(project_member, data=request.data, partial=True)
+        if (
+            "role" in request.data
+            and project_member.role == ROLE.ADMIN.value
+            and new_role != ROLE.ADMIN.value
+            and not ProjectMember.objects.filter(
+                workspace__slug=slug,
+                project_id=project_id,
+                role=ROLE.ADMIN.value,
+                is_active=True,
+            )
+            .exclude(pk=project_member.pk)
+            .exists()
+        ):
+            return Response(
+                {"error": "Promote another project admin before changing the final admin role"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = ProjectMemberSerializer(project_member, data={"role": request.data["role"]}, partial=True)
 
         if serializer.is_valid():
             serializer.save()
@@ -250,21 +323,26 @@ class ProjectMemberViewSet(BaseViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @allow_permission([ROLE.ADMIN])
+    @transaction.atomic
     def destroy(self, request, slug, project_id, pk):
-        project_member = ProjectMember.objects.get(
+        lock_active_project_members(workspace_slug=slug, project_id=project_id)
+        project_member = ProjectMember.objects.filter(
             workspace__slug=slug,
             project_id=project_id,
             pk=pk,
             member__is_bot=False,
             is_active=True,
-        )
-        # check requesting user role
-        requesting_project_member = ProjectMember.objects.get(
+        ).first()
+        if project_member is None:
+            return Response({"error": "Project member not found"}, status=status.HTTP_404_NOT_FOUND)
+        requesting_project_member = ProjectMember.objects.filter(
             workspace__slug=slug,
             member=request.user,
             project_id=project_id,
             is_active=True,
-        )
+        ).first()
+        if requesting_project_member is None:
+            return Response({"error": "Project membership is no longer active"}, status=status.HTTP_403_FORBIDDEN)
         # User cannot remove himself
         if str(project_member.id) == str(requesting_project_member.id):
             return Response(
@@ -283,13 +361,17 @@ class ProjectMemberViewSet(BaseViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST])
+    @transaction.atomic
     def leave(self, request, slug, project_id):
-        project_member = ProjectMember.objects.get(
+        lock_active_project_members(workspace_slug=slug, project_id=project_id)
+        project_member = ProjectMember.objects.filter(
             workspace__slug=slug,
             project_id=project_id,
             member=request.user,
             is_active=True,
-        )
+        ).first()
+        if project_member is None:
+            return Response({"error": "Project membership is no longer active"}, status=status.HTTP_403_FORBIDDEN)
 
         # Check if the leaving user is the only admin of the project
         if (

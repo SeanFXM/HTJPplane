@@ -4,22 +4,30 @@
  * See the LICENSE file for details.
  */
 
+import { useEffect } from "react";
 // hooks
 import { useAppRouter } from "@/hooks/use-app-router";
 // layouts
 import { DevErrorComponent } from "./dev";
+import { createErrorReference } from "./error-reference";
 import { ProdErrorComponent } from "./prod";
+
+const reloadPage = () => window.location.reload();
 
 export function CustomErrorComponent({ error }: { error: unknown }) {
   // router
   const router = useAppRouter();
 
   const handleGoHome = () => router.push("/");
-  const handleReload = () => window.location.reload();
+  const errorReference = createErrorReference(error, "WEB");
+
+  useEffect(() => {
+    console.error(`[${errorReference}]`, error);
+  }, [error, errorReference]);
 
   if (import.meta.env.DEV) {
-    return <DevErrorComponent error={error} onGoHome={handleGoHome} onReload={handleReload} />;
+    return <DevErrorComponent error={error} onGoHome={handleGoHome} onReload={reloadPage} />;
   }
 
-  return <ProdErrorComponent onGoHome={handleGoHome} />;
+  return <ProdErrorComponent errorReference={errorReference} onGoHome={handleGoHome} onReload={reloadPage} />;
 }

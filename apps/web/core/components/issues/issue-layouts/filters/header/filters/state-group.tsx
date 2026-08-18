@@ -40,7 +40,7 @@ export const FilterStateGroup = observer(function FilterStateGroup(props: Props)
   return (
     <>
       <FilterHeader
-        title={`State group${appliedFiltersCount > 0 ? ` (${appliedFiltersCount})` : ""}`}
+        title={`${t("common.state_group")}${appliedFiltersCount > 0 ? ` (${appliedFiltersCount})` : ""}`}
         isPreviewEnabled={previewEnabled}
         handleIsPreviewEnabled={() => setPreviewEnabled(!previewEnabled)}
       />
@@ -63,12 +63,12 @@ export const FilterStateGroup = observer(function FilterStateGroup(props: Props)
                   className="ml-8 text-11 font-medium text-accent-primary"
                   onClick={handleViewToggle}
                 >
-                  {itemsToRender === filteredOptions.length ? "View less" : "View all"}
+                  {itemsToRender === filteredOptions.length ? t("common.view_less") : t("common.view_all")}
                 </button>
               )}
             </>
           ) : (
-            <p className="text-11 text-placeholder italic">No matches found</p>
+            <p className="text-11 text-placeholder italic">{t("common.search.no_matches_found")}</p>
           )}
         </div>
       )}

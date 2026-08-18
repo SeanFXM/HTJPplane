@@ -43,6 +43,8 @@ const HeaderFilters = observer(function HeaderFilters({
     currentWorkspaceFilters: filters,
     updateFilters,
     updateDisplayFilters,
+    clearAllFilters,
+    clearAllAppliedDisplayFilters,
   } = useProjectFilter();
   const {
     workspace: { workspaceMemberIds },
@@ -50,7 +52,7 @@ const HeaderFilters = observer(function HeaderFilters({
   const handleFilters = useCallback(
     (key: keyof TProjectFilters, value: string | string[]) => {
       if (!workspaceSlug) return;
-      let newValues = filters?.[key] ?? [];
+      let newValues = [...(filters?.[key] ?? [])];
       if (Array.isArray(value)) {
         if (key === "created_at" && newValues.find((v) => v.includes("custom"))) newValues = [];
         value.forEach((val) => {
@@ -99,6 +101,14 @@ const HeaderFilters = observer(function HeaderFilters({
               if (!workspaceSlug) return;
               updateDisplayFilters(workspaceSlug.toString(), val);
             }}
+            handleClearAll={() => {
+              if (!workspaceSlug) return;
+              clearAllFilters(workspaceSlug.toString());
+              clearAllAppliedDisplayFilters(workspaceSlug.toString());
+            }}
+            hasAppliedFilters={
+              isFiltersApplied || Boolean(displayFilters?.my_projects || displayFilters?.archived_projects)
+            }
             memberIds={workspaceMemberIds ?? undefined}
           />
         </FiltersDropdown>

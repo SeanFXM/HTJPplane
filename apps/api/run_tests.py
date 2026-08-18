@@ -19,7 +19,7 @@ def main():
     args = parser.parse_args()
 
     # Build command
-    cmd = ["python", "-m", "pytest"]
+    cmd = [sys.executable, "-m", "pytest"]
     markers = []
 
     # Add test markers
@@ -58,7 +58,7 @@ def main():
     # Check coverage thresholds if coverage is enabled
     if args.coverage:
         print("Checking coverage thresholds...")
-        coverage_cmd = ["python", "-m", "coverage", "report", "--fail-under=90"]
+        coverage_cmd = [sys.executable, "-m", "coverage", "report", "--fail-under=90"]
         coverage_result = subprocess.run(coverage_cmd)
         if coverage_result.returncode != 0:
             print("Coverage below threshold (90%)")

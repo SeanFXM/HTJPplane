@@ -15,6 +15,7 @@ import giteaLogo from "@/app/assets/logos/gitea-logo.svg?url";
 // components
 import { AuthenticationMethodCard } from "@/components/authentication/authentication-method-card";
 import { PageWrapper } from "@/components/common/page-wrapper";
+import { getInternalAdminPageTitle } from "@/constants/branding";
 // hooks
 import { useInstance } from "@/hooks/store";
 // types
@@ -55,6 +56,7 @@ const InstanceGiteaAuthenticationPage = observer(function InstanceGiteaAuthentic
     await updateConfigPromise
       .then(() => {
         setIsSubmitting(false);
+        return undefined;
       })
       .catch((err) => {
         console.error(err);
@@ -69,7 +71,7 @@ const InstanceGiteaAuthenticationPage = observer(function InstanceGiteaAuthentic
       customHeader={
         <AuthenticationMethodCard
           name="Gitea"
-          description="Allow members to login or sign up to plane with their Gitea accounts."
+          description="Allow Hotone Japan members to sign in with their Gitea accounts."
           icon={<img src={giteaLogo} height={24} width={24} alt="Gitea Logo" />}
           config={
             <ToggleSwitch
@@ -77,6 +79,7 @@ const InstanceGiteaAuthenticationPage = observer(function InstanceGiteaAuthentic
               onChange={() => {
                 updateConfig("IS_GITEA_ENABLED", isGiteaEnabled ? "0" : "1");
               }}
+              label="Enable Gitea authentication"
               size="sm"
               disabled={isSubmitting || !formattedConfig}
             />
@@ -100,6 +103,6 @@ const InstanceGiteaAuthenticationPage = observer(function InstanceGiteaAuthentic
     </PageWrapper>
   );
 });
-export const meta: Route.MetaFunction = () => [{ title: "Gitea Authentication - God Mode" }];
+export const meta: Route.MetaFunction = () => [{ title: getInternalAdminPageTitle("Gitea authentication") }];
 
 export default InstanceGiteaAuthenticationPage;

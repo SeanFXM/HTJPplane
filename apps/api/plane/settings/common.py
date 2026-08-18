@@ -340,6 +340,9 @@ POSTHOG_HOST = os.environ.get("POSTHOG_HOST", False)
 
 # Skip environment variable configuration
 SKIP_ENV_VAR = os.environ.get("SKIP_ENV_VAR", "1") == "1"
+# The internal distribution keeps invite-only and single-workspace policy
+# authoritative even when an older database contains public-instance values.
+HOTONE_INTERNAL_MODE = os.environ.get("HOTONE_INTERNAL_MODE", "0") == "1"
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.environ.get("FILE_SIZE_LIMIT", 5242880))
 

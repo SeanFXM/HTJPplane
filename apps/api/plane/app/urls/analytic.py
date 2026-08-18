@@ -18,10 +18,16 @@ from plane.app.views import (
     ProjectAdvanceAnalyticsEndpoint,
     ProjectAdvanceAnalyticsStatsEndpoint,
     ProjectAdvanceAnalyticsChartEndpoint,
+    OperationalReportEndpoint,
 )
 
 
 urlpatterns = [
+    path(
+        "workspaces/<str:slug>/operational-reports/",
+        OperationalReportEndpoint.as_view(),
+        name="operational-reports",
+    ),
     path(
         "workspaces/<str:slug>/analytics/",
         AnalyticsEndpoint.as_view(),

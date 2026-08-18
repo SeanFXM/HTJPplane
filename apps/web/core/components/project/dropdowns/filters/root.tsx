@@ -12,8 +12,6 @@ import type { TProjectDisplayFilters, TProjectFilters } from "@plane/types";
 import { useTranslation } from "@plane/i18n";
 // components
 import { FilterOption } from "@/components/issues/issue-layouts/filters";
-// hooks
-import { usePlatformOS } from "@/hooks/use-platform-os";
 // local imports
 import { FilterAccess } from "./access";
 import { FilterCreatedDate } from "./created-at";
@@ -25,15 +23,23 @@ type Props = {
   filters: TProjectFilters;
   handleFiltersUpdate: (key: keyof TProjectFilters, value: string | string[]) => void;
   handleDisplayFiltersUpdate: (updatedDisplayProperties: Partial<TProjectDisplayFilters>) => void;
+  handleClearAll?: () => void;
+  hasAppliedFilters?: boolean;
   memberIds?: string[] | undefined;
 };
 
 export const ProjectFiltersSelection = observer(function ProjectFiltersSelection(props: Props) {
-  const { displayFilters, filters, handleFiltersUpdate, handleDisplayFiltersUpdate, memberIds } = props;
+  const {
+    displayFilters,
+    filters,
+    handleFiltersUpdate,
+    handleDisplayFiltersUpdate,
+    handleClearAll,
+    hasAppliedFilters,
+    memberIds,
+  } = props;
   // states
   const [filtersSearchQuery, setFiltersSearchQuery] = useState("");
-  // store
-  const { isMobile } = usePlatformOS();
   const { t } = useTranslation();
 
   return (
@@ -47,7 +53,6 @@ export const ProjectFiltersSelection = observer(function ProjectFiltersSelection
             placeholder={t("common.search.label")}
             value={filtersSearchQuery}
             onChange={(e) => setFiltersSearchQuery(e.target.value)}
-            autoFocus={!isMobile}
           />
           {filtersSearchQuery !== "" && (
             <button type="button" className="grid place-items-center" onClick={() => setFiltersSearchQuery("")}>
@@ -107,6 +112,17 @@ export const ProjectFiltersSelection = observer(function ProjectFiltersSelection
           />
         </div>
       </div>
+      {hasAppliedFilters && handleClearAll && (
+        <div className="border-t border-subtle px-3 py-2">
+          <button
+            type="button"
+            className="w-full rounded-sm px-2 py-1.5 text-body-xs-medium text-accent-primary hover:bg-layer-1"
+            onClick={handleClearAll}
+          >
+            {t("common.clear_all")}
+          </button>
+        </div>
+      )}
     </div>
   );
 });

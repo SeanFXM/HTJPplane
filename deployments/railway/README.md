@@ -9,23 +9,24 @@
 
 Railway 按**每个容器**的内存/CPU 时长计费。Plane 默认是微服务全家桶,完整跑起来是 10+ 个常驻容器:
 
-| 服务 | 类型 | 常驻内存(估) |
-|------|------|------------|
-| web | **静态 SPA**(`ssr:false`) | ~80–150MB |
-| admin | **静态 SPA**(`ssr:false`) | ~80–150MB |
-| space | SSR Node | ~150–250MB |
-| live | Node 实时 | ~150–250MB |
-| api | Django/gunicorn | ~400–600MB |
-| worker | Celery | ~300–500MB |
-| beat | Celery 定时 | ~150MB |
-| rabbitmq | 队列 | ~200–400MB |
-| redis | 缓存 | ~50–100MB |
-| postgres | 数据库 | ~150–300MB |
-| minio | 对象存储 | ~150MB |
+| 服务     | 类型                      | 常驻内存(估) |
+| -------- | ------------------------- | ------------ |
+| web      | **静态 SPA**(`ssr:false`) | ~80–150MB    |
+| admin    | **静态 SPA**(`ssr:false`) | ~80–150MB    |
+| space    | SSR Node                  | ~150–250MB   |
+| live     | Node 实时                 | ~150–250MB   |
+| api      | Django/gunicorn           | ~400–600MB   |
+| worker   | Celery                    | ~300–500MB   |
+| beat     | Celery 定时               | ~150MB       |
+| rabbitmq | 队列                      | ~200–400MB   |
+| redis    | 缓存                      | ~50–100MB    |
+| postgres | 数据库                    | ~150–300MB   |
+| minio    | 对象存储                  | ~150MB       |
 
 合计 **2.5–3.5GB 常驻内存**,其中一大半是给「闲置占位」和「本可白嫖」的东西交钱。
 
 四个浪费点:
+
 1. **web / admin 是纯静态文件**,却用 24h Node 进程在伺候 —— 应该交给 CDN 或容器内的 Caddy。
 2. **worker / beat / live / space 各自独占一个 Railway 服务** —— 它们完全可以和 api 挤进同一个容器。
 3. **RabbitMQ 自托管** —— 吃内存,且有免费托管版可用。
@@ -60,11 +61,13 @@ Railway 上从 ~11 个服务降到 **3 个**(应用 + Postgres + Redis)。
 ## 3. 部署步骤
 
 ### 3.1 建库与外部服务(都在免费/便宜档)
+
 - **Postgres / Redis**:在 Railway 项目里各加一个官方插件。
 - **队列 → CloudAMQP**:注册 [cloudamqp.com](https://www.cloudamqp.com),建一个 **Little Lemur(免费)** 实例,复制它给的 `amqps://...` 作为 `AMQP_URL`。这样就不用在 Railway 跑 RabbitMQ。
 - **存储 → Cloudflare R2**:建一个 R2 bucket + API Token,拿到 `AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY`,endpoint 是 `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`。R2 免费 10GB、**零出口费**。
 
 ### 3.2 配置 Railway 服务
+
 1. 新建一个 service 指向本仓库。
 2. Settings → Build:把 **Dockerfile Path** 设为 `deployments/railway/Dockerfile.aio`
    (或把 [`railway.json`](./railway.json) 放到仓库根目录走 config-as-code)。
@@ -74,11 +77,20 @@ Railway 上从 ~11 个服务降到 **3 个**(应用 + Postgres + Redis)。
    - R2 那一组 + `USE_MINIO=0`
    - `SECRET_KEY` / `LIVE_SERVER_SECRET_KEY`(自己生成)
    - `DOMAIN_NAME` + `APP_PROTOCOL=https`
+   - 内部单工作区默认：`ENABLE_SIGNUP=0`、`DISABLE_WORKSPACE_CREATION=1`、`ENABLE_SPACE=0`
+   - Pages 仍依赖 Live 协作；确认不再使用 Pages 后才能设置 `ENABLE_LIVE=0`
+   - `VITE_MODULE_PILOT_PROJECT_IDS=`：Modules 试点项目 UUID，多个用逗号分隔；留空即全部隐藏
    - 成本旋钮:`GUNICORN_WORKERS=1`、`CELERY_WORKER_CONCURRENCY=2`
 4. 不要手动设 `PORT` / `SITE_ADDRESS` —— Railway 注入 `PORT`,`start.sh` 会让 Caddy 监听它。
-5. 健康检查路径填 `/`(Caddy 立刻能返回 web 静态页,不用等后端起来)。
+5. 健康检查路径填 `/health`；它会同时确认 Admin 产物已挂载，且 API 能完成数据库查询。
+
+> 如果现有 Railway Web 服务仍指向 `apps/web/Dockerfile.web.railway`，可以继续使用该配置；
+> 该镜像现在会同时构建 Web 和 Admin，并在同一域名的 `/god-mode/` 下为 Admin 提供独立 SPA 回退。
+>
+> `VITE_MODULE_PILOT_PROJECT_IDS` 是 Web 构建期配置；修改名单后必须重新部署，旧静态产物不会自动变化。
 
 ### 3.3 先在本地验证镜像能 build(强烈建议)
+
 这套 Dockerfile 是按本仓库现有的各 app Dockerfile 改写的,但**还没在 CI 里跑过**。
 推上 Railway 前先本地构建一次,省得浪费构建分钟:
 
@@ -92,8 +104,22 @@ docker run --rm -p 8080:8080 -e PORT=8080 \
   -e AWS_REGION=auto -e AWS_ACCESS_KEY_ID=... -e AWS_SECRET_ACCESS_KEY=... \
   -e AWS_S3_BUCKET_NAME=plane-uploads -e AWS_S3_ENDPOINT_URL=https://<acct>.r2.cloudflarestorage.com \
   -e USE_MINIO=0 -e SECRET_KEY=$(python -c "import secrets;print(secrets.token_hex(32))") \
+  -e LIVE_SERVER_SECRET_KEY=$(python -c "import secrets;print(secrets.token_hex(32))") \
   plane-aio:local
-# 打开 http://localhost:8080
+
+# 聚合就绪检查、主应用和 God Mode 深链都必须可访问
+curl -fsS http://localhost:8080/health >/dev/null
+curl -fsS http://localhost:8080/ >/dev/null
+curl -fsS http://localhost:8080/god-mode/general | grep -q '"basename":"/god-mode/"'
+```
+
+Admin 静态产物也可以脱离容器单独验证：
+
+```bash
+VITE_ADMIN_BASE_PATH=/god-mode pnpm --filter=admin build
+node apps/admin/verify-production-build.mjs apps/admin/build/client /god-mode/
+# 或一次性检查产物、Nginx、Caddy 和 Railway 健康探针：
+pnpm verify:admin-routing
 ```
 
 ---
@@ -112,6 +138,7 @@ pnpm turbo run build --filter=web --filter=admin
 ```
 
 要点:
+
 - 两个都是 SPA,在 Pages 里加 **SPA fallback**(所有未命中路径重写到 `/index.html`)。
 - 用 Cloudflare 规则把 `/api`、`/spaces`、`/live`、`/auth` 反代到 Railway 容器域名;其余走静态。
 - 这样 Railway 容器可以设 `ENABLE_SPACE`/静态部分都不再需要,只留后端 + live。
@@ -125,25 +152,25 @@ pnpm turbo run build --filter=web --filter=admin
 
 这个项目("Hotone Japan Plane")当月用量 **$17.04**,几乎全是内存费,而且**单个 api 服务就占 $14.41(85%)** —— 它常驻吃掉 ~1.44GB RAM,根因是 `RUN_EMBEDDED_CELERY_WORKER=1` 且 Celery 并发没设上限(默认按 CPU 核数起进程,每个进程加载整个 Django)。
 
-| 服务 | 实测月费 | 备注 |
-|---|---|---|
-| **HTJPplane-api** | **$14.41** | ~1.44GB,主要是 embedded celery 未限并发 |
-| Bucket(MinIO) | $0.85 | → Cloudflare R2 免费 |
-| HTJPplane-web | $0.79 | 静态,可进一步上 CDN |
-| RabbitMQ | $0.78 | → CloudAMQP 免费 |
-| Postgres | $0.17 | 留 |
-| Redis-Voxz / Redis / Redis-uGEq | $0.09 / $0.09 / $0.05 | **3 个 Redis,留 1 个** |
-| Console / RabbitMQ Web UI | $0.07 / $0.05 | 可删 |
-| Live / migrator service | $0.00 | 闲置 |
-| **合计** | **$17.04** | |
+| 服务                            | 实测月费              | 备注                                    |
+| ------------------------------- | --------------------- | --------------------------------------- |
+| **HTJPplane-api**               | **$14.41**            | ~1.44GB,主要是 embedded celery 未限并发 |
+| Bucket(MinIO)                   | $0.85                 | → Cloudflare R2 免费                    |
+| HTJPplane-web                   | $0.79                 | 静态,可进一步上 CDN                     |
+| RabbitMQ                        | $0.78                 | → CloudAMQP 免费                        |
+| Postgres                        | $0.17                 | 留                                      |
+| Redis-Voxz / Redis / Redis-uGEq | $0.09 / $0.09 / $0.05 | **3 个 Redis,留 1 个**                  |
+| Console / RabbitMQ Web UI       | $0.07 / $0.05         | 可删                                    |
+| Live / migrator service         | $0.00                 | 闲置                                    |
+| **合计**                        | **$17.04**            |                                         |
 
 两条优化路径:
 
-| | 做法 | Plane 项目月费 | 整个工作区账单 |
-|---|---|---|---|
-| 现状 | — | $17.04 | $23.73($20 Pro 固定费 + $3.73 超额) |
-| **A. 只调参(立刻可做)** | `GUNICORN_WORKERS=1` + `CELERY_WORKER_CONCURRENCY=2`,删 2 个多余 Redis / RabbitMQ Web UI | ~$8–10 | ~**$20.00**(超额归零,且留出余量) |
-| **B. 全量切换** | A + 单容器 AIO + 队列/存储外置免费 | ~$6–8 | ~$20.00(Pro 封底)/ 若降级 Hobby 可到 ~$13–14 |
+|                         | 做法                                                                                     | Plane 项目月费 | 整个工作区账单                               |
+| ----------------------- | ---------------------------------------------------------------------------------------- | -------------- | -------------------------------------------- |
+| 现状                    | —                                                                                        | $17.04         | $23.73($20 Pro 固定费 + $3.73 超额)          |
+| **A. 只调参(立刻可做)** | `GUNICORN_WORKERS=1` + `CELERY_WORKER_CONCURRENCY=2`,删 2 个多余 Redis / RabbitMQ Web UI | ~$8–10         | ~**$20.00**(超额归零,且留出余量)             |
+| **B. 全量切换**         | A + 单容器 AIO + 队列/存储外置免费                                                       | ~$6–8          | ~$20.00(Pro 封底)/ 若降级 Hobby 可到 ~$13–14 |
 
 > ⚠️ **Pro 计划有 $20/月固定封底**:无论怎么优化,只要留在 Pro,账单最低就是 $20。优化的直接作用是**消掉当前 $3.73 超额并腾出大量余量**(不会因为增长又超支)。想真正压到 $20 以下,需要在用量降下来后**降级到 Hobby**($5/月含 $5 用量),前提是能接受 Hobby 的资源上限且不需要 Pro 的功能。
 
@@ -161,11 +188,11 @@ pnpm turbo run build --filter=web --filter=admin
 
 ## 文件清单
 
-| 文件 | 作用 |
-|------|------|
-| [`Dockerfile.aio`](./Dockerfile.aio) | 从本 fork 源码构建的单容器多阶段镜像 |
-| [`supervisor.conf`](./supervisor.conf) | 容器内进程编排(api/worker/beat/space/live/caddy) |
-| [`Caddyfile`](./Caddyfile) | 单一入口:静态托管 web/admin + 反代其余 |
-| [`start.sh`](./start.sh) | 启动:校验 env、派生默认值、拉起 supervisor |
-| [`plane.env.example`](./plane.env.example) | 需要在 Railway 配的环境变量清单 |
-| [`railway.json`](./railway.json) | Railway config-as-code(指向本 Dockerfile) |
+| 文件                                       | 作用                                             |
+| ------------------------------------------ | ------------------------------------------------ |
+| [`Dockerfile.aio`](./Dockerfile.aio)       | 从本 fork 源码构建的单容器多阶段镜像             |
+| [`supervisor.conf`](./supervisor.conf)     | 容器内进程编排(api/worker/beat/space/live/caddy) |
+| [`Caddyfile`](./Caddyfile)                 | 单一入口:静态托管 web/admin + 反代其余           |
+| [`start.sh`](./start.sh)                   | 启动:校验 env、派生默认值、拉起 supervisor       |
+| [`plane.env.example`](./plane.env.example) | 需要在 Railway 配的环境变量清单                  |
+| [`railway.json`](./railway.json)           | Railway config-as-code(指向本 Dockerfile)        |

@@ -95,7 +95,7 @@ export function InstanceSignInForm() {
   }, [errorCode, errorMessage]);
 
   const isButtonDisabled = useMemo(
-    () => (!isSubmitting && formData.email && formData.password ? false : true),
+    () => isSubmitting || !formData.email || !formData.password,
     [formData.email, formData.password, isSubmitting]
   );
 
@@ -114,8 +114,8 @@ export function InstanceSignInForm() {
       <div className="mt-10 flex w-full flex-grow flex-col items-center justify-center py-6">
         <div className="relative flex w-full max-w-[22.5rem] flex-col gap-6">
           <FormHeader
-            heading="Manage your Plane instance"
-            subHeading="Configure instance-wide settings to secure your instance"
+            heading="Hotone Japan internal administration"
+            subHeading="Sign in with an authorized administrator account"
           />
           <form
             className="space-y-4"
@@ -147,7 +147,6 @@ export function InstanceSignInForm() {
                 value={formData.email}
                 onChange={(e) => handleFormChange("email", e.target.value)}
                 autoComplete="off"
-                autoFocus
               />
             </div>
 
@@ -170,6 +169,7 @@ export function InstanceSignInForm() {
                 {showPassword ? (
                   <button
                     type="button"
+                    aria-label="Hide password"
                     className="absolute top-3.5 right-3 flex items-center justify-center text-placeholder"
                     onClick={() => setShowPassword(false)}
                   >
@@ -178,6 +178,7 @@ export function InstanceSignInForm() {
                 ) : (
                   <button
                     type="button"
+                    aria-label="Show password"
                     className="absolute top-3.5 right-3 flex items-center justify-center text-placeholder"
                     onClick={() => setShowPassword(true)}
                   >

@@ -15,6 +15,7 @@ import { EModalPosition, EModalWidth, ModalCore } from "@plane/ui";
 // hooks
 import { useIssues } from "@/hooks/store/use-issues";
 import { useProject } from "@/hooks/store/use-project";
+import { getIssueActionErrorMessage } from "./issue-action-error";
 
 type Props = {
   data?: TIssue | TDeDupeIssue;
@@ -36,7 +37,10 @@ export function ArchiveIssueModal(props: Props) {
   if (!dataId && !data) return null;
 
   const issue = data ? data : issueMap[dataId!];
+  if (!issue) return null;
+
   const projectDetails = getProjectById(issue.project_id);
+  const hasSubWorkItems = "sub_issues_count" in issue && (issue.sub_issues_count ?? 0) > 0;
 
   const onClose = () => {
     setIsArchiving(false);
@@ -47,24 +51,23 @@ export function ArchiveIssueModal(props: Props) {
     if (!onSubmit) return;
 
     setIsArchiving(true);
-    await onSubmit()
-      .then(() => {
-        setToast({
-          type: TOAST_TYPE.SUCCESS,
-          title: t("issue.archive.success.label"),
-          message: t("issue.archive.success.message"),
-        });
-        onClose();
-        return;
-      })
-      .catch(() =>
-        setToast({
-          type: TOAST_TYPE.ERROR,
-          title: t("common.error.label"),
-          message: t("issue.archive.failed.message"),
-        })
-      )
-      .finally(() => setIsArchiving(false));
+    try {
+      await onSubmit();
+      setToast({
+        type: TOAST_TYPE.SUCCESS,
+        title: t("issue.archive.success.label"),
+        message: t("issue.archive.success.message"),
+      });
+      onClose();
+    } catch (error) {
+      setToast({
+        type: TOAST_TYPE.ERROR,
+        title: t("common.error.label"),
+        message: getIssueActionErrorMessage(error, t("issue.archive.failed.message")),
+      });
+    } finally {
+      setIsArchiving(false);
+    }
   };
 
   return (
@@ -73,12 +76,17 @@ export function ArchiveIssueModal(props: Props) {
         <h3 className="text-18 font-medium 2xl:text-20">
           {t("issue.archive.label")} {projectDetails?.identifier} {issue.sequence_id}
         </h3>
-        <p className="mt-3 text-13 text-secondary">{t("issue.archive.confirm_message")}</p>
+        <div className="mt-3 space-y-2 text-13 text-secondary">
+          <p>{t("issue.archive.confirm_message")}</p>
+          {hasSubWorkItems && (
+            <p className="font-medium text-primary">{t("issue.archive.active_descendant_warning")}</p>
+          )}
+        </div>
         <div className="mt-3 flex justify-end gap-2">
           <Button variant="secondary" size="lg" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button variant="primary" size="lg" tabIndex={1} onClick={handleArchiveIssue} loading={isArchiving}>
+          <Button variant="primary" size="lg" onClick={handleArchiveIssue} loading={isArchiving}>
             {isArchiving ? t("common.archiving") : t("common.archive")}
           </Button>
         </div>

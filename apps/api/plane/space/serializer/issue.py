@@ -3,6 +3,7 @@
 # See the LICENSE file for details.
 
 # Django imports
+from django.db import transaction
 from django.utils import timezone
 
 # Third Party imports
@@ -23,6 +24,7 @@ from plane.db.models import (
     IssueAssignee,
     IssueLabel,
     Label,
+    ProjectMember,
     CycleIssue,
     ModuleIssue,
     IssueLink,
@@ -166,7 +168,8 @@ class IssueSerializer(BaseSerializer):
     state_detail = StateSerializer(read_only=True, source="state")
     parent_detail = IssueStateFlatSerializer(read_only=True, source="parent")
     label_details = LabelSerializer(read_only=True, source="labels", many=True)
-    assignee_details = UserLiteSerializer(read_only=True, source="assignees", many=True)
+    assignees = serializers.SerializerMethodField()
+    assignee_details = serializers.SerializerMethodField()
     related_issues = IssueRelationSerializer(read_only=True, source="issue_relation", many=True)
     issue_relations = RelatedIssueSerializer(read_only=True, source="issue_related", many=True)
     issue_cycle = IssueCycleDetailSerializer(read_only=True)
@@ -187,6 +190,12 @@ class IssueSerializer(BaseSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_assignees(self, obj):
+        return [assignment.assignee_id for assignment in obj.issue_assignee.all()]
+
+    def get_assignee_details(self, obj):
+        return UserLiteSerializer([assignment.assignee for assignment in obj.issue_assignee.all()], many=True).data
 
 
 class IssueFlatSerializer(BaseSerializer):
@@ -268,11 +277,12 @@ class IssueCreateSerializer(BaseSerializer):
             "updated_by",
             "created_at",
             "updated_at",
+            "waiting_since",
         ]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data["assignees"] = [str(assignee.id) for assignee in instance.assignees.all()]
+        data["assignees"] = [str(assignment.assignee_id) for assignment in instance.issue_assignee.all()]
         data["labels"] = [str(label.id) for label in instance.labels.all()]
         return data
 
@@ -298,7 +308,35 @@ class IssueCreateSerializer(BaseSerializer):
             if not is_valid:
                 raise serializers.ValidationError({"description_binary": "Invalid binary data"})
 
+        if data.get("assignees", []):
+            requested_assignee_ids = {assignee.id for assignee in data["assignees"]}
+            valid_assignee_ids = list(
+                ProjectMember.objects.filter(
+                    project_id=self.context.get("project_id"),
+                    is_active=True,
+                    role__gte=15,
+                    member_id__in=requested_assignee_ids,
+                ).values_list("member_id", flat=True)
+            )
+            if requested_assignee_ids != set(valid_assignee_ids):
+                raise serializers.ValidationError({"assignees": "Current owner must be an active project member"})
+            data["assignees"] = list(User.objects.filter(id__in=valid_assignee_ids))
+
         return data
+
+    def validate_assignees(self, value):
+        if len(value) > 1:
+            raise serializers.ValidationError("A work item can have only one current owner")
+        return value
+
+    def validate_waiting_party(self, value):
+        return value.strip() or None if isinstance(value, str) else value
+
+    def validate_blocked_reason(self, value):
+        return value.strip() if isinstance(value, str) else value
+
+    def validate_next_action(self, value):
+        return value.strip() if isinstance(value, str) else value
 
     def create(self, validated_data):
         assignees = validated_data.pop("assignees", None)
@@ -314,7 +352,7 @@ class IssueCreateSerializer(BaseSerializer):
         created_by_id = issue.created_by_id
         updated_by_id = issue.updated_by_id
 
-        if assignees is not None and len(assignees):
+        if assignees:
             IssueAssignee.objects.bulk_create(
                 [
                     IssueAssignee(
@@ -329,7 +367,7 @@ class IssueCreateSerializer(BaseSerializer):
                 ],
                 batch_size=10,
             )
-        else:
+        elif assignees is None:
             # Then assign it to default assignee
             if default_assignee_id is not None:
                 IssueAssignee.objects.create(
@@ -363,49 +401,53 @@ class IssueCreateSerializer(BaseSerializer):
         assignees = validated_data.pop("assignees", None)
         labels = validated_data.pop("labels", None)
 
-        # Related models
-        project_id = instance.project_id
-        workspace_id = instance.workspace_id
-        created_by_id = instance.created_by_id
-        updated_by_id = instance.updated_by_id
+        with transaction.atomic():
+            Issue.objects.select_for_update().only("id").get(pk=instance.pk)
+            instance.refresh_from_db()
 
-        if assignees is not None:
-            IssueAssignee.objects.filter(issue=instance).delete()
-            IssueAssignee.objects.bulk_create(
-                [
-                    IssueAssignee(
-                        assignee=user,
-                        issue=instance,
-                        project_id=project_id,
-                        workspace_id=workspace_id,
-                        created_by_id=created_by_id,
-                        updated_by_id=updated_by_id,
-                    )
-                    for user in assignees
-                ],
-                batch_size=10,
-            )
+            # Related models
+            project_id = instance.project_id
+            workspace_id = instance.workspace_id
+            created_by_id = instance.created_by_id
+            updated_by_id = instance.updated_by_id
 
-        if labels is not None:
-            IssueLabel.objects.filter(issue=instance).delete()
-            IssueLabel.objects.bulk_create(
-                [
-                    IssueLabel(
-                        label=label,
-                        issue=instance,
-                        project_id=project_id,
-                        workspace_id=workspace_id,
-                        created_by_id=created_by_id,
-                        updated_by_id=updated_by_id,
-                    )
-                    for label in labels
-                ],
-                batch_size=10,
-            )
+            if assignees is not None:
+                IssueAssignee.objects.filter(issue=instance).delete()
+                IssueAssignee.objects.bulk_create(
+                    [
+                        IssueAssignee(
+                            assignee=user,
+                            issue=instance,
+                            project_id=project_id,
+                            workspace_id=workspace_id,
+                            created_by_id=created_by_id,
+                            updated_by_id=updated_by_id,
+                        )
+                        for user in assignees
+                    ],
+                    batch_size=10,
+                )
 
-        # Time updation occues even when other related models are updated
-        instance.updated_at = timezone.now()
-        return super().update(instance, validated_data)
+            if labels is not None:
+                IssueLabel.objects.filter(issue=instance).delete()
+                IssueLabel.objects.bulk_create(
+                    [
+                        IssueLabel(
+                            label=label,
+                            issue=instance,
+                            project_id=project_id,
+                            workspace_id=workspace_id,
+                            created_by_id=created_by_id,
+                            updated_by_id=updated_by_id,
+                        )
+                        for label in labels
+                    ],
+                    batch_size=10,
+                )
+
+            # Time updation occues even when other related models are updated
+            instance.updated_at = timezone.now()
+            return super().update(instance, validated_data)
 
 
 class CommentReactionSerializer(BaseSerializer):

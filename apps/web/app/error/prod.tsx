@@ -15,10 +15,12 @@ import DefaultLayout from "@/layouts/default-layout";
 
 // Production Error Component
 interface ProdErrorComponentProps {
+  errorReference: string;
   onGoHome: () => void;
+  onReload: () => void;
 }
 
-export function ProdErrorComponent({ onGoHome }: ProdErrorComponentProps) {
+export function ProdErrorComponent({ errorReference, onGoHome, onReload }: ProdErrorComponentProps) {
   // hooks
   const { resolvedTheme } = useTheme();
 
@@ -41,14 +43,18 @@ export function ProdErrorComponent({ onGoHome }: ProdErrorComponentProps) {
           <div className="flex flex-col gap-2.5">
             <h1 className="text-left text-18 font-semibold text-primary">&#x1F6A7; Looks like something went wrong!</h1>
             <span className="text-left text-14 font-medium text-secondary">
-              We track these errors automatically and working on getting things back up and running. In the meantime,
-              try refreshing.
+              The page couldn’t finish loading. Try it again, or return to the workspace home. If the problem continues,
+              share the error reference with the internal support team.
             </span>
+            <p className="text-left font-code text-12 text-tertiary">Error reference: {errorReference}</p>
           </div>
 
-          <div className="flex items-center justify-start gap-6">
-            <Button variant="primary" size="lg" onClick={onGoHome}>
-              Go to home
+          <div className="flex items-center justify-start gap-3">
+            <Button variant="primary" size="lg" onClick={onReload}>
+              Try again
+            </Button>
+            <Button variant="secondary" size="lg" onClick={onGoHome}>
+              Return home
             </Button>
           </div>
         </div>

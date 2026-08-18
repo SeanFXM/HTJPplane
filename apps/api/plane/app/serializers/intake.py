@@ -128,10 +128,17 @@ class IssueStateIntakeSerializer(BaseSerializer):
     state_detail = StateLiteSerializer(read_only=True, source="state")
     project_detail = ProjectLiteSerializer(read_only=True, source="project")
     label_details = LabelLiteSerializer(read_only=True, source="labels", many=True)
-    assignee_details = UserLiteSerializer(read_only=True, source="assignees", many=True)
+    assignees = serializers.SerializerMethodField()
+    assignee_details = serializers.SerializerMethodField()
     sub_issues_count = serializers.IntegerField(read_only=True)
     issue_intake = IntakeIssueLiteSerializer(read_only=True, many=True)
 
     class Meta:
         model = Issue
         fields = "__all__"
+
+    def get_assignees(self, obj):
+        return [assignment.assignee_id for assignment in obj.issue_assignee.all()]
+
+    def get_assignee_details(self, obj):
+        return UserLiteSerializer([assignment.assignee for assignment in obj.issue_assignee.all()], many=True).data

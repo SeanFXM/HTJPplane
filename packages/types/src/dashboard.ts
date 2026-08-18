@@ -185,3 +185,32 @@ export type THomeDashboardResponse = {
   dashboard: TDeprecatedDashboard;
   widgets: TWidget[];
 };
+
+export type TOperationalIssueSummary = {
+  id: string;
+  name: string;
+  workspace__slug: string;
+  project_id: string;
+  project__identifier: string;
+  sequence_id: number;
+  priority: TIssuePriorities;
+  state__name: string | null;
+  state__group: TStateGroups | null;
+  start_date: string | null;
+  target_date: string | null;
+  waiting_party: string | null;
+  waiting_since: string | null;
+  blocked_reason: string;
+  next_action: string;
+};
+
+export type TMyOperationalDashboardResponse = {
+  assigned_issues_count: number;
+  pending_issues_count: number;
+  completed_issues_count: number;
+  issues_due_week_count: number;
+  today_issues: TOperationalIssueSummary[];
+  overdue_issues: TOperationalIssueSummary[];
+  upcoming_issues: TOperationalIssueSummary[];
+  blocked_issues: TOperationalIssueSummary[];
+};

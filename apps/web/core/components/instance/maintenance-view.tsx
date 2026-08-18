@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { useTheme } from "next-themes";
 // assets
 import maintenanceModeDarkModeImage from "@/app/assets/instance/maintenance-mode-dark.svg?url";
@@ -27,7 +26,7 @@ export function MaintenanceView() {
             src={maintenanceModeImage}
             height="176"
             width="288"
-            alt="ProjectSettingImg"
+            alt="サービス起動エラー"
             className="h-full w-full object-fill object-center"
           />
         </div>

@@ -6,7 +6,7 @@
 from django.utils import timezone
 from django.apps import apps
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.db.models.fields.related import OneToOneRel
 
 
@@ -105,9 +105,60 @@ def soft_delete_related_objects(app_label, model_name, instance_pk, using=None):
         instance.save()
 
 
-# @shared_task
 def restore_related_objects(app_label, model_name, instance_pk, using=None):
-    pass
+    """Restore an object and relations deleted by the same soft-delete cascade.
+
+    The cascade predates explicit deletion provenance, so the parent's deletion
+    timestamp is used as the lower bound. Relations deleted before their parent
+    are treated as independent deletions and are intentionally left untouched.
+    """
+    model_class = apps.get_model(app_label, model_name)
+    manager = model_class.all_objects.using(using) if using else model_class.all_objects
+    instance = manager.filter(pk=instance_pk).first()
+    if instance is None or not getattr(instance, "deleted_at", None):
+        return
+
+    visited = set()
+
+    def restore_instance(current_instance, cascade_started_at):
+        identity = (current_instance._meta.label_lower, current_instance.pk)
+        if identity in visited:
+            return
+        visited.add(identity)
+
+        all_related = [
+            field
+            for field in current_instance._meta.get_fields()
+            if (field.one_to_many or field.one_to_one) and field.auto_created and not field.concrete
+        ]
+
+        for relation in all_related:
+            on_delete_name = relation.on_delete.__name__ if hasattr(relation.on_delete, "__name__") else ""
+            if on_delete_name in ["DO_NOTHING", "SET_NULL"]:
+                continue
+
+            related_model = relation.related_model
+            if not hasattr(related_model, "all_objects") or not hasattr(related_model, "deleted_at"):
+                continue
+
+            related_manager = (
+                related_model.all_objects.using(using) if using else related_model.all_objects
+            )
+            related_objects = related_manager.filter(
+                **{relation.field.name: current_instance},
+                deleted_at__isnull=False,
+                deleted_at__gte=cascade_started_at,
+            )
+
+            for related_object in related_objects:
+                related_deleted_at = related_object.deleted_at
+                restore_instance(related_object, related_deleted_at)
+
+        current_instance.deleted_at = None
+        current_instance.save(using=using, update_fields=["deleted_at"])
+
+    with transaction.atomic(using=using):
+        restore_instance(instance, instance.deleted_at)
 
 
 @shared_task

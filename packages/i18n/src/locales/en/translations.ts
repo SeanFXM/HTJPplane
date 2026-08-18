@@ -522,6 +522,76 @@ export default {
       name: "Name",
     },
   },
+  project_card: {
+    no_members: "No members",
+    no_members_yet: "No members yet",
+    no_description: "No description",
+    joined: "Joined",
+  },
+  pages_ui: {
+    create: {
+      title: "Create page",
+      add: "Add page",
+      name_too_long: "Page name must be 255 characters or fewer.",
+      failed: "Page could not be created. Please try again.",
+    },
+    delete: {
+      title: "Delete page",
+      confirm_message:
+        "Are you sure you want to delete {page}? The page will be permanently deleted. This cannot be undone.",
+      success: "Page deleted successfully.",
+      failed: "Page could not be deleted. Please try again.",
+    },
+    export: {
+      title: "Export page",
+      export_format: "Export format",
+      include_content: "Include content",
+      page_format: "Page format",
+      everything: "Everything",
+      no_images: "No images",
+      success: "Page exported successfully.",
+      failed: "Page could not be exported. Please try again later.",
+      formats: {
+        pdf: "PDF",
+        markdown: "Markdown",
+        a4: "A4",
+        a3: "A3",
+        a2: "A2",
+        letter: "Letter",
+        legal: "Legal",
+        tabloid: "Tabloid",
+      },
+    },
+    offline: {
+      label: "Offline",
+      title: "You are offline.",
+      description: "You can continue editing. Changes will sync when you are back online.",
+    },
+    content_limit: {
+      message: "Content limit reached and live sync is off. Create a new page or use nested pages to continue syncing.",
+      dismiss: "Dismiss content limit warning",
+    },
+    editor: {
+      color: "Color",
+      text_colors: "Text colors",
+      background_colors: "Background colors",
+    },
+    version: {
+      restore_success: "Page version restored.",
+      restore_failed: "Failed to restore page version.",
+      load_failed_title: "Something went wrong",
+      load_failed_message: "The version could not be loaded. Please try again.",
+      retry: "Try again",
+      loading: "Loading version details",
+      view_only: "View only",
+      restoring: "Restoring",
+    },
+    not_found: {
+      title: "Page not found",
+      description: "This page does not exist or you do not have permission to view it.",
+      view_others: "View other pages",
+    },
+  },
   toast: {
     success: "Success!",
     error: "Error!",
@@ -704,6 +774,8 @@ export default {
       message: "Some error occurred. Please try again.",
     },
     group_by: "Group by",
+    sub_group_by: "Sub-group by",
+    custom: "Custom",
     epic: "Epic",
     epics: "Epics",
     work_item: "Work item",
@@ -979,6 +1051,12 @@ export default {
     all_filters_applied: "All filters applied",
     search_placeholder: "Search",
   },
+  date_filters: {
+    one_week_from_now: "1 week from now",
+    two_weeks_from_now: "2 weeks from now",
+    one_month_from_now: "1 month from now",
+    two_months_from_now: "2 months from now",
+  },
   chart: {
     x_axis: "X-axis",
     y_axis: "Y-axis",
@@ -1227,6 +1305,8 @@ export default {
       label: "Archive Work item",
       confirm_message:
         "Are you sure you want to archive the work item? All your archived work items can be restored later.",
+      active_descendant_warning:
+        "This item has sub-work items. Archive every active descendant first; otherwise nothing will be archived.",
       success: {
         label: "Archive success",
         message: "Your archives can be found in project archives.",
@@ -1251,9 +1331,14 @@ export default {
       blocking: "Blocking",
     },
     copy_link: "Copy work item link",
+    click_to_copy_id: "Click to copy work item ID",
     delete: {
       label: "Delete work item",
       error: "Error deleting work item",
+      confirm_message:
+        "Are you sure you want to delete {entity} {identifier}? It will be removed from the project. This action cannot be undone in the app.",
+      descendants_warning:
+        "This parent has {count, plural, one {# direct sub-work item} other {# direct sub-work items}}. They and all nested descendants will be deleted with it.",
     },
     subscription: {
       actions: {
@@ -1588,13 +1673,16 @@ export default {
     },
     filter_labels: {
       access: "Access",
-      lead: "Lead",
-      members: "Members",
+      lead: "Project owner",
+      lead_help: "The person accountable for the whole project.",
+      members: "Participating member",
+      members_help: "Projects this person participates in, regardless of who owns them.",
       created_at: "Created date",
       custom: "Custom",
       view_less: "View less",
       view_all: "View all",
     },
+    filter_summary: "{filtered} of {total} projects match the applied filters.",
     date_filter: {
       today: "Today",
       yesterday: "Yesterday",
@@ -1805,6 +1893,69 @@ export default {
           },
         },
       },
+      projects: {
+        title: "Projects",
+        heading: "Project settings",
+        description: "Manage the shared workflow used by Hotone Japan's long-running projects.",
+        workflow: {
+          title: "Hotone standard workflow",
+          description:
+            "Safely add seven shared statuses to every active project. Existing status names are not changed or deleted, and existing work items are not moved.",
+          states_aria_label: "Hotone standard statuses",
+          actions: {
+            preview: "Preview changes",
+            preview_again: "Preview again",
+            apply: "Apply standard workflow",
+            apply_confirm: "Apply",
+            applying: "Applying…",
+            cancel: "Cancel",
+          },
+          errors: {
+            generic: "Something went wrong. Wait a moment and try again.",
+          },
+          groups: {
+            backlog: "Backlog",
+            unstarted: "Unstarted",
+            started: "Started",
+            completed: "Completed",
+            cancelled: "Cancelled",
+          },
+          preview: {
+            title: "Preview results",
+            summary:
+              "{projects, plural, one {# project} other {# projects}} · {states, plural, one {# status to add} other {# statuses to add}} · {blocked, plural, one {# needs review} other {# need review}}",
+            no_active_projects: "There are no active projects.",
+            conflict_summary: "A same-name status belongs to a different group and needs review",
+            add_states: "{count, plural, one {Add # status} other {Add # statuses}}",
+            set_default: "Set “{state}” as the default status",
+            configured: "Standard workflow configured",
+            status: {
+              review: "Needs review",
+              configured: "Configured",
+              ready: "Ready to apply",
+            },
+            apply_scope:
+              "Apply to {count, plural, one {# project} other {# projects}}. Projects that need review are excluded.",
+            conflict_detail:
+              "“{name}” currently belongs to {existing}. The standard requires {expected}, so this project will not be changed.",
+          },
+          result: {
+            summary:
+              "Applied to {applied, plural, one {# project} other {# projects}}; added {states, plural, one {# status} other {# statuses}}.",
+            unchanged: "{count, plural, one {# project was unchanged.} other {# projects were unchanged.}}",
+            applied: "{count, plural, one {# status added} other {# statuses added}}",
+            applied_with_default:
+              "{count, plural, one {# status added} other {# statuses added}} and default status set",
+            no_changes: "No changes",
+            blocked: "Not applied because of a same-name status conflict",
+          },
+          confirm: {
+            title: "Apply the Hotone standard workflow?",
+            description:
+              "Add the statuses shown in the preview to {count, plural, one {# project} other {# projects}}. Existing data will not be changed.",
+          },
+        },
+      },
       billing_and_plans: {
         heading: "Billing & Plans",
         description: "Choose your plan, manage subscriptions, and easily upgrade as your needs grow.",
@@ -1936,6 +2087,11 @@ export default {
     label: "Profile",
     page_label: "Your work",
     work: "Work",
+    activity_feed: {
+      page_title: "Profile - Activity",
+      commented: "Commented",
+      created: "created",
+    },
     details: {
       joined_on: "Joined on",
       time_zone: "Timezone",
@@ -3087,7 +3243,7 @@ export default {
       nav_assigned_workspace_work_items: "Go to assigned work items",
       nav_created_workspace_work_items: "Go to created work items",
       nav_subscribed_workspace_work_items: "Go to subscribed work items",
-      nav_workspace_analytics: "Go to workspace analytics",
+      nav_workspace_analytics: "Go to workspace reports",
       nav_workspace_drafts: "Go to workspace drafts",
       nav_workspace_archives: "Go to workspace archives",
       open_workspace_setting: "Open a workspace setting",

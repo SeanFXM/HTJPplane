@@ -21,7 +21,7 @@ import type {
 import { getDistributionPathsPostUpdate } from "@plane/utils";
 //local
 import { storage } from "@/lib/local-storage";
-import type { IBaseIssuesStore } from "../helpers/base-issues.store";
+import type { IBaseIssuesStore, TBulkDeleteIssuesResponse } from "../helpers/base-issues.store";
 import { BaseIssuesStore } from "../helpers/base-issues.store";
 //
 import type { IIssueRootStore } from "../root.store";
@@ -86,7 +86,11 @@ export interface ICycleIssues extends IBaseIssuesStore {
     data: TIssue,
     cycleId: string
   ) => Promise<TIssue | undefined>;
-  removeBulkIssues: (workspaceSlug: string, projectId: string, issueIds: string[]) => Promise<void>;
+  removeBulkIssues: (
+    workspaceSlug: string,
+    projectId: string,
+    issueIds: string[]
+  ) => Promise<TBulkDeleteIssuesResponse>;
   archiveBulkIssues: (workspaceSlug: string, projectId: string, issueIds: string[]) => Promise<void>;
   bulkUpdateProperties: (workspaceSlug: string, projectId: string, data: TBulkOperationsPayload) => Promise<void>;
 

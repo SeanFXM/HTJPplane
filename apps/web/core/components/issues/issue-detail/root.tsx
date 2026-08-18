@@ -104,29 +104,11 @@ export const IssueDetailRoot = observer(function IssueDetailRoot(props: TIssueDe
         }
       },
       remove: async (workspaceSlug: string, projectId: string, issueId: string) => {
-        try {
-          if (is_archived) await removeArchivedIssue(workspaceSlug, projectId, issueId);
-          else await removeIssue(workspaceSlug, projectId, issueId);
-          setToast({
-            title: t("common.success"),
-            type: TOAST_TYPE.SUCCESS,
-            message: t("entity.delete.success", { entity: t("issue.label") }),
-          });
-        } catch (error) {
-          console.log("Error in deleting issue:", error);
-          setToast({
-            title: t("common.error.label"),
-            type: TOAST_TYPE.ERROR,
-            message: t("entity.delete.failed", { entity: t("issue.label") }),
-          });
-        }
+        if (is_archived) await removeArchivedIssue(workspaceSlug, projectId, issueId);
+        else await removeIssue(workspaceSlug, projectId, issueId);
       },
       archive: async (workspaceSlug: string, projectId: string, issueId: string) => {
-        try {
-          await archiveIssue(workspaceSlug, projectId, issueId);
-        } catch (error) {
-          console.log("Error in archiving issue:", error);
-        }
+        await archiveIssue(workspaceSlug, projectId, issueId);
       },
       addCycleToIssue: async (workspaceSlug: string, projectId: string, cycleId: string, issueId: string) => {
         try {

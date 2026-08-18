@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane imports
@@ -17,6 +16,8 @@ import { EHeaderVariant, Header } from "@plane/ui";
 import { ArchiveTabsList } from "@/components/archives";
 import { DisplayFiltersSelection, FiltersDropdown } from "@/components/issues/issue-layouts/filters";
 import { WorkItemFiltersToggle } from "@/components/work-item-filters/filters-toggle";
+// constants
+import { isProjectFeatureVisible } from "@/constants/product-policy";
 // hooks
 import { useIssues } from "@/hooks/store/use-issues";
 import { useProject } from "@/hooks/store/use-project";
@@ -68,8 +69,8 @@ export const ArchivedIssuesHeader = observer(function ArchivedIssuesHeader() {
             layoutDisplayFiltersOptions={
               activeLayout ? ISSUE_DISPLAY_FILTERS_BY_PAGE.archived_issues.layoutOptions[activeLayout] : undefined
             }
-            cycleViewDisabled={!currentProjectDetails?.cycle_view}
-            moduleViewDisabled={!currentProjectDetails?.module_view}
+            cycleViewDisabled
+            moduleViewDisabled={!currentProjectDetails?.module_view || !isProjectFeatureVisible("modules", projectId)}
           />
         </FiltersDropdown>
       </Header.RightItem>

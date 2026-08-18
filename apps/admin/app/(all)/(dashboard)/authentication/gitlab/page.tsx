@@ -14,6 +14,7 @@ import GitlabLogo from "@/app/assets/logos/gitlab-logo.svg?url";
 // components
 import { AuthenticationMethodCard } from "@/components/authentication/authentication-method-card";
 import { PageWrapper } from "@/components/common/page-wrapper";
+import { getInternalAdminPageTitle } from "@/constants/branding";
 // hooks
 import { useInstance } from "@/hooks/store";
 // types
@@ -57,6 +58,7 @@ const InstanceGitlabAuthenticationPage = observer(function InstanceGitlabAuthent
     await updateConfigPromise
       .then(() => {
         setIsSubmitting(false);
+        return undefined;
       })
       .catch((err) => {
         console.error(err);
@@ -68,7 +70,7 @@ const InstanceGitlabAuthenticationPage = observer(function InstanceGitlabAuthent
       customHeader={
         <AuthenticationMethodCard
           name="GitLab"
-          description="Allow members to login or sign up to plane with their GitLab accounts."
+          description="Allow Hotone Japan members to sign in with their GitLab accounts."
           icon={<img src={GitlabLogo} height={24} width={24} alt="GitLab Logo" />}
           config={
             <ToggleSwitch
@@ -80,6 +82,7 @@ const InstanceGitlabAuthenticationPage = observer(function InstanceGitlabAuthent
                   updateConfig("IS_GITLAB_ENABLED", "1");
                 }
               }}
+              label="Enable GitLab authentication"
               size="sm"
               disabled={isSubmitting || !formattedConfig}
             />
@@ -104,6 +107,6 @@ const InstanceGitlabAuthenticationPage = observer(function InstanceGitlabAuthent
   );
 });
 
-export const meta: Route.MetaFunction = () => [{ title: "GitLab Authentication - God Mode" }];
+export const meta: Route.MetaFunction = () => [{ title: getInternalAdminPageTitle("GitLab authentication") }];
 
 export default InstanceGitlabAuthenticationPage;

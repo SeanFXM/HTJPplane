@@ -9,7 +9,7 @@ import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import { Disclosure, Transition } from "@headlessui/react";
 // plane imports
-import { AnalyticsIcon, CycleIcon, ProjectIcon, ViewsIcon } from "@plane/propel/icons";
+import { AnalyticsIcon, ProjectIcon, WorkItemsIcon } from "@plane/propel/icons";
 import { EUserWorkspaceRoles } from "@plane/types";
 // hooks
 import useLocalStorage from "@/hooks/use-local-storage";
@@ -34,18 +34,11 @@ export const SidebarWorkspaceMenu = observer(function SidebarWorkspaceMenu() {
       Icon: ProjectIcon,
     },
     {
-      key: "views",
-      labelTranslationKey: "sidebar.views",
+      key: "all-work-items",
+      labelTranslationKey: "default_global_view.all_issues",
       href: `/${workspaceSlug}/workspace-views/all-issues/`,
       access: [EUserWorkspaceRoles.ADMIN, EUserWorkspaceRoles.MEMBER, EUserWorkspaceRoles.GUEST],
-      Icon: ViewsIcon,
-    },
-    {
-      key: "active-cycles",
-      labelTranslationKey: "sidebar.cycles",
-      href: `/${workspaceSlug}/active-cycles/`,
-      access: [EUserWorkspaceRoles.ADMIN, EUserWorkspaceRoles.MEMBER],
-      Icon: CycleIcon,
+      Icon: WorkItemsIcon,
     },
     {
       key: "analytics",

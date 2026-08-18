@@ -13,7 +13,7 @@ import {
   InboxIcon,
   MultipleStickyIcon,
   ProjectIcon,
-  ViewsIcon,
+  WorkItemsIcon,
   YourWorkIcon,
 } from "@plane/propel/icons";
 import { cn } from "@plane/utils";
@@ -27,7 +27,7 @@ export const getSidebarNavigationItemIcon = (key: string, className: string = ""
     case "projects":
       return <ProjectIcon className={cn("size-4 flex-shrink-0", className)} />;
     case "views":
-      return <ViewsIcon className={cn("size-4 flex-shrink-0", className)} />;
+      return <WorkItemsIcon className={cn("size-4 flex-shrink-0", className)} />;
     case "active_cycles":
       return <CycleIcon className={cn("size-4 flex-shrink-0", className)} />;
     case "analytics":

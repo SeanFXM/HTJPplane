@@ -71,6 +71,8 @@ export const IssueTitleInput = observer(function IssueTitleInput(props: TIssueTi
             }}
             ref={issueTitleRef || ref}
             hasError={Boolean(errors.name)}
+            aria-describedby={errors.name ? "work-item-title-error" : undefined}
+            aria-invalid={Boolean(errors.name)}
             placeholder={t("title")}
             className="w-full text-body-sm-regular"
             autoFocus
@@ -78,7 +80,11 @@ export const IssueTitleInput = observer(function IssueTitleInput(props: TIssueTi
           />
         )}
       />
-      <span className="text-caption-sm-medium text-danger-primary">{errors?.name?.message}</span>
+      {errors.name && (
+        <span id="work-item-title-error" role="alert" className="text-caption-sm-medium text-danger-primary">
+          {errors.name.message}
+        </span>
+      )}
     </div>
   );
 });

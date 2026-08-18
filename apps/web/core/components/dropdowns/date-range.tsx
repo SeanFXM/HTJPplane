@@ -81,7 +81,7 @@ const LOCALE_MAP: Record<string, typeof enUS> = {
 export const DateRangeDropdown = observer(function DateRangeDropdown(props: Props) {
   const { t } = useTranslation();
   const docLang = typeof document !== "undefined" ? document.documentElement?.lang : undefined;
-  const currentLocale = (docLang && LOCALE_MAP[docLang]) ?? (docLang && LOCALE_MAP[docLang.split("-")[0]]) ?? enUS;
+  const currentLocale = LOCALE_MAP[docLang ?? ""] ?? LOCALE_MAP[docLang?.split("-")[0] ?? ""] ?? enUS;
   const {
     buttonClassName,
     buttonContainerClassName,

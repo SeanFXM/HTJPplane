@@ -688,7 +688,7 @@ const useGlobalIssueActions = () => {
       if (!workspaceSlug || !globalViewId) return;
       return issues.fetchNextIssues(workspaceSlug.toString(), globalViewId.toString(), groupId, subGroupId);
     },
-    [issues.fetchIssues, workspaceSlug, globalViewId]
+    [issues.fetchNextIssues, workspaceSlug, globalViewId]
   );
 
   const createIssue = useCallback(
@@ -712,6 +712,13 @@ const useGlobalIssueActions = () => {
     },
     [issues.removeIssue, workspaceSlug]
   );
+  const archiveIssue = useCallback(
+    async (projectId: string | undefined | null, issueId: string) => {
+      if (!workspaceSlug || !projectId) return;
+      return await issues.archiveIssue(workspaceSlug, projectId, issueId);
+    },
+    [issues.archiveIssue, workspaceSlug]
+  );
 
   const updateFilters = useCallback(
     async (projectId: string, filterType: TSupportedFilterTypeForUpdate, filters: TSupportedFilterForUpdate) => {
@@ -728,9 +735,10 @@ const useGlobalIssueActions = () => {
       createIssue,
       updateIssue,
       removeIssue,
+      archiveIssue,
       updateFilters,
     }),
-    [createIssue, updateIssue, removeIssue, updateFilters]
+    [fetchIssues, fetchNextIssues, createIssue, updateIssue, removeIssue, archiveIssue, updateFilters]
   );
 };
 

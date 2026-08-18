@@ -20,6 +20,7 @@ import { useIssues } from "@/hooks/store/use-issues";
 import { useProject } from "@/hooks/store/use-project";
 import { useUser, useUserPermissions } from "@/hooks/store/user";
 // plane-web
+import { getIssueActionErrorMessage } from "./issue-action-error";
 
 type Props = {
   isOpen: boolean;
@@ -63,6 +64,7 @@ export const DeleteIssueModal = observer(function DeleteIssueModal(props: Props)
   );
 
   const authorized = isIssueCreator || canPerformProjectAdminActions;
+  const directSubWorkItemCount = issue && "sub_issues_count" in issue ? (issue.sub_issues_count ?? 0) : 0;
 
   const onClose = () => {
     setIsDeleting(false);
@@ -82,32 +84,37 @@ export const DeleteIssueModal = observer(function DeleteIssueModal(props: Props)
       onClose();
       return;
     }
-    if (onSubmit)
-      await onSubmit()
-        .then(() => {
-          setToast({
-            type: TOAST_TYPE.SUCCESS,
-            title: t("common.success"),
-            message: t("entity.delete.success", {
-              entity: isSubIssue ? t("common.sub_work_item") : isEpic ? t("common.epic") : t("common.work_item"),
-            }),
-          });
-          onClose();
-        })
-        .catch((errors) => {
-          const isPermissionError =
-            errors?.error ===
-            `Only admin or creator can delete the ${isSubIssue ? "sub-work item" : isEpic ? "epic" : "work item"}`;
-          const currentError = isPermissionError
-            ? PROJECT_ERROR_MESSAGES.permissionError
-            : PROJECT_ERROR_MESSAGES.issueDeleteError;
-          setToast({
-            title: t(currentError.i18n_title),
-            type: TOAST_TYPE.ERROR,
-            message: currentError.i18n_message && t(currentError.i18n_message),
-          });
-        })
-        .finally(() => onClose());
+    if (!onSubmit) {
+      setIsDeleting(false);
+      return;
+    }
+
+    try {
+      await onSubmit();
+      setToast({
+        type: TOAST_TYPE.SUCCESS,
+        title: t("common.success"),
+        message: t("entity.delete.success", {
+          entity: isSubIssue ? t("common.sub_work_item") : isEpic ? t("common.epic") : t("common.work_item"),
+        }),
+      });
+      onClose();
+    } catch (error) {
+      const apiMessage = getIssueActionErrorMessage(error, "");
+      const isPermissionError = apiMessage.startsWith("Only admin or creator can delete");
+      const fallbackError = isPermissionError
+        ? PROJECT_ERROR_MESSAGES.permissionError
+        : PROJECT_ERROR_MESSAGES.issueDeleteError;
+      const fallbackMessage = fallbackError.i18n_message ? t(fallbackError.i18n_message) : "";
+
+      setToast({
+        title: t(fallbackError.i18n_title),
+        type: TOAST_TYPE.ERROR,
+        message: isPermissionError ? fallbackMessage : getIssueActionErrorMessage(error, fallbackMessage),
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -118,14 +125,19 @@ export const DeleteIssueModal = observer(function DeleteIssueModal(props: Props)
       isOpen={isOpen}
       title={t("entity.delete.label", { entity: isEpic ? t("common.epic") : t("common.work_item") })}
       content={
-        <>
-          {/* TODO: Translate here */}
-          {`Are you sure you want to delete ${isEpic ? "epic" : "work item"} `}
-          <span className="font-medium break-words text-primary">
-            {projectDetails?.identifier}-{issue?.sequence_id}
+        <span>
+          <span>
+            {t("issue.delete.confirm_message", {
+              entity: isEpic ? t("common.epic") : t("common.work_item"),
+              identifier: `${projectDetails?.identifier}-${issue?.sequence_id}`,
+            })}
           </span>
-          {` ? All of the data related to the ${isEpic ? "epic" : "work item"} will be permanently removed. This action cannot be undone.`}
-        </>
+          {directSubWorkItemCount > 0 && (
+            <span className="mt-2 block font-medium text-danger-primary">
+              {t("issue.delete.descendants_warning", { count: directSubWorkItemCount })}
+            </span>
+          )}
+        </span>
       }
     />
   );

@@ -20,6 +20,7 @@ import type { TProject } from "@/plane-web/types";
 // local imports
 import { WorkItemsModal } from "../analytics/work-items/modal";
 import { WorkItemFiltersToggle } from "../work-item-filters/filters-toggle";
+import { getVisibleIssueLayout, isProjectFeatureVisible } from "@/constants/product-policy";
 import {
   DisplayFiltersSelection,
   FiltersDropdown,
@@ -34,13 +35,7 @@ type Props = {
   canUserCreateIssue: boolean | undefined;
   storeType?: EIssuesStoreType.PROJECT | EIssuesStoreType.EPIC;
 };
-const LAYOUTS = [
-  EIssueLayoutTypes.LIST,
-  EIssueLayoutTypes.KANBAN,
-  EIssueLayoutTypes.CALENDAR,
-  EIssueLayoutTypes.SPREADSHEET,
-  EIssueLayoutTypes.GANTT,
-];
+const LAYOUTS = [EIssueLayoutTypes.LIST, EIssueLayoutTypes.KANBAN, EIssueLayoutTypes.CALENDAR];
 
 export const HeaderFilters = observer(function HeaderFilters(props: Props) {
   const {
@@ -59,7 +54,7 @@ export const HeaderFilters = observer(function HeaderFilters(props: Props) {
     issuesFilter: { issueFilters, updateFilters },
   } = useIssues(storeType);
   // derived values
-  const activeLayout = issueFilters?.displayFilters?.layout;
+  const activeLayout = getVisibleIssueLayout(issueFilters?.displayFilters?.layout);
   const layoutDisplayFiltersOptions = ISSUE_STORE_TO_FILTERS_MAP[storeType]?.layoutOptions[activeLayout];
 
   const handleLayoutChange = useCallback(
@@ -120,8 +115,8 @@ export const HeaderFilters = observer(function HeaderFilters(props: Props) {
           handleDisplayFiltersUpdate={handleDisplayFilters}
           displayProperties={issueFilters?.displayProperties ?? {}}
           handleDisplayPropertiesUpdate={handleDisplayProperties}
-          cycleViewDisabled={!currentProjectDetails?.cycle_view}
-          moduleViewDisabled={!currentProjectDetails?.module_view}
+          cycleViewDisabled
+          moduleViewDisabled={!currentProjectDetails?.module_view || !isProjectFeatureVisible("modules", projectId)}
           isEpic={storeType === EIssuesStoreType.EPIC}
         />
       </FiltersDropdown>

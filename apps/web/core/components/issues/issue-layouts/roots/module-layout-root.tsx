@@ -15,6 +15,7 @@ import { Row, ERowVariant } from "@plane/ui";
 // hooks
 import { ProjectLevelWorkItemFiltersHOC } from "@/components/work-item-filters/filters-hoc/project-level";
 import { WorkItemFiltersRow } from "@/components/work-item-filters/filters-row";
+import { getVisibleIssueLayout } from "@/constants/product-policy";
 import { useIssues } from "@/hooks/store/use-issues";
 import { IssuesStoreContext } from "@/hooks/use-issue-layout-store";
 // local imports
@@ -52,7 +53,7 @@ export const ModuleLayoutRoot = observer(function ModuleLayoutRoot() {
   const { issuesFilter } = useIssues(EIssuesStoreType.MODULE);
   // derived values
   const workItemFilters = moduleId ? issuesFilter?.getIssueFilters(moduleId) : undefined;
-  const activeLayout = workItemFilters?.displayFilters?.layout || undefined;
+  const activeLayout = getVisibleIssueLayout(workItemFilters?.displayFilters?.layout);
 
   useSWR(
     workspaceSlug && projectId && moduleId
@@ -70,7 +71,6 @@ export const ModuleLayoutRoot = observer(function ModuleLayoutRoot() {
   return (
     <IssuesStoreContext.Provider value={EIssuesStoreType.MODULE}>
       <ProjectLevelWorkItemFiltersHOC
-        enableSaveView
         entityType={EIssuesStoreType.MODULE}
         entityId={moduleId}
         filtersToShowByLayout={ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters}

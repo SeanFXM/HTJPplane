@@ -18,6 +18,7 @@ import { cn } from "@plane/utils";
 // components
 import { PageWrapper } from "@/components/common/page-wrapper";
 import { WorkspaceListItem } from "@/components/workspace/list-item";
+import { getInternalAdminPageTitle } from "@/constants/branding";
 // hooks
 import { useInstance, useWorkspace } from "@/hooks/store";
 // types
@@ -37,6 +38,7 @@ const WorkspaceManagementPage = observer(function WorkspaceManagementPage(_props
   } = useWorkspace();
   // derived values
   const disableWorkspaceCreation = formattedConfig?.DISABLE_WORKSPACE_CREATION ?? "";
+  const isWorkspaceCreationDisabled = disableWorkspaceCreation === "1";
   const hasNextPage = paginationInfo?.next_page_results && paginationInfo?.next_cursor !== undefined;
 
   // fetch data
@@ -67,6 +69,7 @@ const WorkspaceManagementPage = observer(function WorkspaceManagementPage(_props
     await updateConfigPromise
       .then(() => {
         setIsSubmitting(false);
+        return undefined;
       })
       .catch((err) => {
         console.error(err);
@@ -77,8 +80,8 @@ const WorkspaceManagementPage = observer(function WorkspaceManagementPage(_props
   return (
     <PageWrapper
       header={{
-        title: "Workspaces on this instance",
-        description: "See all workspaces and control who can create them.",
+        title: "Hotone Japan workspaces",
+        description: "Review the internal workspace and apply the company-wide single-workspace policy.",
       }}
     >
       <div className="space-y-3">
@@ -86,23 +89,25 @@ const WorkspaceManagementPage = observer(function WorkspaceManagementPage(_props
           <div className={cn("flex w-full items-center gap-14 rounded-sm")}>
             <div className="flex grow items-center gap-4">
               <div className="grow">
-                <div className="pb-1 text-16 font-medium">Prevent anyone else from creating a workspace.</div>
+                <div className="pb-1 text-16 font-medium">Single-workspace policy</div>
                 <div className={cn("text-11 leading-5 font-regular text-tertiary")}>
-                  Toggling this on will let only you create workspaces. You will have to invite users to new workspaces.
+                  When enabled, workspace creation is hidden in this portal. Invite teammates to the existing workspace
+                  instead of creating another one.
                 </div>
               </div>
             </div>
             <div className={`shrink-0 pr-4 ${isSubmitting && "opacity-70"}`}>
               <div className="flex items-center gap-4">
                 <ToggleSwitch
-                  value={Boolean(parseInt(disableWorkspaceCreation))}
+                  value={isWorkspaceCreationDisabled}
                   onChange={() => {
-                    if (Boolean(parseInt(disableWorkspaceCreation)) === true) {
+                    if (isWorkspaceCreationDisabled) {
                       updateConfig("DISABLE_WORKSPACE_CREATION", "0");
                     } else {
                       updateConfig("DISABLE_WORKSPACE_CREATION", "1");
                     }
                   }}
+                  label="Use the single-workspace policy"
                   size="sm"
                   disabled={isSubmitting}
                 />
@@ -125,15 +130,16 @@ const WorkspaceManagementPage = observer(function WorkspaceManagementPage(_props
                   )}
                 </div>
                 <div className={cn("text-11 leading-5 font-regular text-tertiary")}>
-                  You can&apos;t yet delete workspaces and you can only go to the workspace if you are an Admin or a
-                  Member.
+                  Workspace access depends on your membership. Creation follows the single-workspace policy above.
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Link href="/workspace/create" className={getButtonStyling("primary", "base")}>
-                  Create workspace
-                </Link>
-              </div>
+              {!isWorkspaceCreationDisabled && (
+                <div className="flex items-center gap-2">
+                  <Link href="/workspace/create" className={getButtonStyling("primary", "base")}>
+                    Create workspace
+                  </Link>
+                </div>
+              )}
             </div>
             <div className="flex flex-col gap-4 py-2">
               {workspaceIds.map((workspaceId) => (
@@ -167,6 +173,6 @@ const WorkspaceManagementPage = observer(function WorkspaceManagementPage(_props
   );
 });
 
-export const meta: Route.MetaFunction = () => [{ title: "Workspace Management - God Mode" }];
+export const meta: Route.MetaFunction = () => [{ title: getInternalAdminPageTitle("Workspace management") }];
 
 export default WorkspaceManagementPage;

@@ -6,15 +6,15 @@
 import csv
 import io
 import os
-from datetime import date
+from datetime import timedelta
 import uuid
 
 from dateutil.relativedelta import relativedelta
 from django.db import IntegrityError
-from django.db.models import Count, F, Func, OuterRef, Prefetch, Q
+from django.db.models import Count, Exists, F, Func, OuterRef, Prefetch, Q
 
 from django.db.models.fields import DateField
-from django.db.models.functions import Cast, ExtractDay, ExtractWeek
+from django.db.models.functions import Cast, ExtractDay
 
 
 # Django imports
@@ -37,6 +37,7 @@ from plane.app.views.base import BaseAPIView, BaseViewSet
 from plane.db.models import (
     Issue,
     IssueActivity,
+    IssueAssignee,
     Workspace,
     WorkspaceMember,
     WorkspaceTheme,
@@ -260,12 +261,14 @@ class WeekInMonth(Func):
 
 
 class UserWorkspaceDashboardEndpoint(BaseAPIView):
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
     def get(self, request, slug):
+        today = timezone.localdate()
         issue_activities = (
             IssueActivity.objects.filter(
                 actor=request.user,
                 workspace__slug=slug,
-                created_at__date__gte=date.today() + relativedelta(months=-3),
+                created_at__date__gte=today + relativedelta(months=-3),
             )
             .annotate(created_date=Cast("created_at", DateField()))
             .values("created_date")
@@ -273,13 +276,33 @@ class UserWorkspaceDashboardEndpoint(BaseAPIView):
             .order_by("created_date")
         )
 
-        month = request.GET.get("month", 1)
+        try:
+            month = int(request.GET.get("month", today.month))
+            year = int(request.GET.get("year", today.year))
+        except (TypeError, ValueError):
+            return Response(
+                {"error": "Month and year must be integers"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if month < 1 or month > 12 or year < 2000 or year > 2100:
+            return Response(
+                {"error": "Month or year is outside the supported range"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        current_user_assignment = IssueAssignee.objects.filter(
+            issue_id=OuterRef("pk"),
+            assignee=request.user,
+        )
+        assigned_user_issues = Issue.issue_objects.filter(workspace__slug=slug).filter(
+            Exists(current_user_assignment)
+        )
 
         completed_issues = (
-            Issue.issue_objects.filter(
-                assignees__in=[request.user],
-                workspace__slug=slug,
+            assigned_user_issues.filter(
                 completed_at__month=month,
+                completed_at__year=year,
                 completed_at__isnull=False,
             )
             .annotate(day_of_month=ExtractDay("completed_at"))
@@ -289,48 +312,74 @@ class UserWorkspaceDashboardEndpoint(BaseAPIView):
             .order_by("week_in_month")
         )
 
-        assigned_issues = Issue.issue_objects.filter(workspace__slug=slug, assignees__in=[request.user]).count()
+        assigned_issues = assigned_user_issues.count()
 
-        pending_issues_count = Issue.issue_objects.filter(
+        pending_issues_count = assigned_user_issues.filter(
             ~Q(state__group__in=["completed", "cancelled"]),
-            workspace__slug=slug,
-            assignees__in=[request.user],
         ).count()
 
-        completed_issues_count = Issue.issue_objects.filter(
-            workspace__slug=slug, assignees__in=[request.user], state__group="completed"
-        ).count()
+        completed_issues_count = assigned_user_issues.filter(state__group="completed").count()
 
-        issues_due_week = (
-            Issue.issue_objects.filter(workspace__slug=slug, assignees__in=[request.user])
-            .annotate(target_week=ExtractWeek("target_date"))
-            .filter(target_week=timezone.now().date().isocalendar()[1])
-            .count()
-        )
+        active_user_issues = assigned_user_issues.filter(
+            ~Q(state__group__in=["completed", "cancelled"]),
+        ).distinct()
+
+        due_week_end = today + timedelta(days=6)
+        issues_due_week = active_user_issues.filter(target_date__range=(today, due_week_end)).count()
 
         state_distribution = (
-            Issue.issue_objects.filter(workspace__slug=slug, assignees__in=[request.user])
+            assigned_user_issues
             .annotate(state_group=F("state__group"))
             .values("state_group")
             .annotate(state_count=Count("state_group"))
             .order_by("state_group")
         )
 
-        overdue_issues = Issue.issue_objects.filter(
-            ~Q(state__group__in=["completed", "cancelled"]),
-            workspace__slug=slug,
-            assignees__in=[request.user],
-            target_date__lt=timezone.now(),
-            completed_at__isnull=True,
-        ).values("id", "name", "workspace__slug", "project_id", "target_date")
+        issue_summary_fields = (
+            "id",
+            "name",
+            "workspace__slug",
+            "project_id",
+            "project__identifier",
+            "sequence_id",
+            "priority",
+            "state__name",
+            "state__group",
+            "start_date",
+            "target_date",
+            "waiting_party",
+            "waiting_since",
+            "blocked_reason",
+            "next_action",
+        )
 
-        upcoming_issues = Issue.issue_objects.filter(
-            ~Q(state__group__in=["completed", "cancelled"]),
-            start_date__gte=timezone.now(),
-            workspace__slug=slug,
-            assignees__in=[request.user],
+        overdue_issues = active_user_issues.filter(
+            target_date__lt=today,
             completed_at__isnull=True,
-        ).values("id", "name", "workspace__slug", "project_id", "start_date")
+        ).order_by("target_date", "-priority", "created_at")
+
+        today_issues = active_user_issues.filter(
+            target_date=today,
+            completed_at__isnull=True,
+        ).order_by("-priority", "created_at")
+
+        upcoming_issues = active_user_issues.filter(
+            target_date__gt=today,
+            target_date__lte=due_week_end,
+            completed_at__isnull=True,
+        ).order_by("target_date", "-priority", "created_at")
+
+        blocked_issues = (
+            active_user_issues.filter(
+                Q(blocked_reason__regex=r"\S")
+                | Q(
+                    issue_relation__relation_type="blocked_by",
+                    issue_relation__deleted_at__isnull=True,
+                )
+            )
+            .distinct()
+            .order_by("target_date", "-priority", "created_at")
+        )
 
         return Response(
             {
@@ -341,8 +390,10 @@ class UserWorkspaceDashboardEndpoint(BaseAPIView):
                 "completed_issues_count": completed_issues_count,
                 "issues_due_week_count": issues_due_week,
                 "state_distribution": state_distribution,
-                "overdue_issues": overdue_issues,
-                "upcoming_issues": upcoming_issues,
+                "today_issues": today_issues.values(*issue_summary_fields),
+                "overdue_issues": overdue_issues.values(*issue_summary_fields),
+                "upcoming_issues": upcoming_issues.values(*issue_summary_fields),
+                "blocked_issues": blocked_issues.values(*issue_summary_fields),
             },
             status=status.HTTP_200_OK,
         )

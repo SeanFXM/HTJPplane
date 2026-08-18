@@ -26,10 +26,11 @@ import { cn, getDate, renderFormattedPayloadDate, shouldHighlightIssueDueDate } 
 import { DateDropdown } from "@/components/dropdowns/date";
 import { EstimateDropdown } from "@/components/dropdowns/estimate";
 import { ButtonAvatars } from "@/components/dropdowns/member/avatar";
-import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
+// constants
+import { isProjectFeatureVisible } from "@/constants/product-policy";
 // helpers
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useMember } from "@/hooks/store/use-member";
@@ -42,6 +43,7 @@ import { DateAlert } from "@/plane-web/components/issues/issue-details/sidebar/d
 import { TransferHopInfo } from "@/plane-web/components/issues/issue-details/sidebar/transfer-hop-info";
 import { IssueWorklogProperty } from "@/plane-web/components/issues/worklog/property";
 import type { TIssueOperations } from "../issue-detail";
+import { CURRENT_OWNER_COPY, CurrentOwnerDropdown } from "../current-owner-dropdown";
 import { IssueCycleSelect } from "../issue-detail/cycle-select";
 import { IssueLabel } from "../issue-detail/label";
 import { IssueModuleSelect } from "../issue-detail/module-select";
@@ -56,7 +58,7 @@ interface IPeekOverviewProperties {
 
 export const PeekOverviewProperties = observer(function PeekOverviewProperties(props: IPeekOverviewProperties) {
   const { workspaceSlug, projectId, issueId, issueOperations, disabled } = props;
-  const { t } = useTranslation();
+  const { t, currentLocale } = useTranslation();
   // store hooks
   const { getProjectById } = useProject();
   const {
@@ -67,9 +69,11 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
   // derived values
   const issue = getIssueById(issueId);
   if (!issue) return <></>;
+  const currentOwnerLabel =
+    CURRENT_OWNER_COPY[currentLocale as keyof typeof CURRENT_OWNER_COPY] ?? CURRENT_OWNER_COPY.en;
   const createdByDetails = getUserDetails(issue?.created_by);
   const projectDetails = getProjectById(issue.project_id);
-  const isEstimateEnabled = projectDetails?.estimate;
+  const isEstimateEnabled = projectDetails?.estimate && isProjectFeatureVisible("estimates", projectId);
   const stateDetails = getStateById(issue.state_id);
 
   const minDate = getDate(issue.start_date);
@@ -97,14 +101,12 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           />
         </SidebarPropertyListItem>
 
-        <SidebarPropertyListItem icon={MembersPropertyIcon} label={t("common.assignees")}>
-          <MemberDropdown
+        <SidebarPropertyListItem icon={MembersPropertyIcon} label={currentOwnerLabel}>
+          <CurrentOwnerDropdown
             value={issue?.assignee_ids ?? undefined}
             onChange={(val) => issueOperations.update(workspaceSlug, projectId, issueId, { assignee_ids: val })}
             disabled={disabled}
             projectId={projectId}
-            placeholder={t("issue.add.assignee")}
-            multiple
             buttonVariant={issue?.assignee_ids?.length > 1 ? "transparent-without-text" : "transparent-with-text"}
             className="group w-full grow"
             buttonContainerClassName="w-full text-left h-7.5"
@@ -138,7 +140,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
               userIds={createdByDetails?.display_name.includes("-intake") ? null : createdByDetails?.id}
             />
             <span className="grow truncate text-body-xs-medium leading-5 text-secondary">
-              {createdByDetails?.display_name.includes("-intake") ? "Plane" : createdByDetails?.display_name}
+              {createdByDetails?.display_name.includes("-intake") ? "Hotone" : createdByDetails?.display_name}
             </span>
           </SidebarPropertyListItem>
         )}
@@ -208,7 +210,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           </SidebarPropertyListItem>
         )}
 
-        {projectDetails?.module_view && (
+        {projectDetails?.module_view && isProjectFeatureVisible("modules", projectId) && (
           <SidebarPropertyListItem icon={ModuleIcon} label={t("common.modules")}>
             <IssueModuleSelect
               className="w-full grow"
@@ -221,7 +223,7 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
           </SidebarPropertyListItem>
         )}
 
-        {projectDetails?.cycle_view && (
+        {projectDetails?.cycle_view && isProjectFeatureVisible("cycles", projectId) && (
           <SidebarPropertyListItem
             icon={CycleIcon}
             label={t("common.cycle")}

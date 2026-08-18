@@ -7,6 +7,7 @@
 import { useMemo, useState } from "react";
 import { sortBy } from "lodash-es";
 import { observer } from "mobx-react";
+import { useTranslation } from "@plane/i18n";
 // plane ui
 import { Loader, Avatar } from "@plane/ui";
 // components
@@ -32,6 +33,7 @@ export const FilterMentions = observer(function FilterMentions(props: Props) {
   // store hooks
   const { getUserDetails } = useMember();
   const { data: currentUser } = useUser();
+  const { t } = useTranslation();
 
   const appliedFiltersCount = appliedFilters?.length ?? 0;
 
@@ -58,7 +60,7 @@ export const FilterMentions = observer(function FilterMentions(props: Props) {
   return (
     <>
       <FilterHeader
-        title={`Mention${appliedFiltersCount > 0 ? ` (${appliedFiltersCount})` : ""}`}
+        title={`${t("issue_filters.mentions")}${appliedFiltersCount > 0 ? ` (${appliedFiltersCount})` : ""}`}
         isPreviewEnabled={previewEnabled}
         handleIsPreviewEnabled={() => setPreviewEnabled(!previewEnabled)}
       />
@@ -84,7 +86,7 @@ export const FilterMentions = observer(function FilterMentions(props: Props) {
                           size={"md"}
                         />
                       }
-                      title={currentUser?.id === member.id ? "You" : member?.display_name}
+                      title={currentUser?.id === member.id ? t("common.you") : member?.display_name}
                     />
                   );
                 })}
@@ -94,12 +96,12 @@ export const FilterMentions = observer(function FilterMentions(props: Props) {
                     className="ml-8 text-11 font-medium text-accent-primary"
                     onClick={handleViewToggle}
                   >
-                    {itemsToRender === sortedOptions.length ? "View less" : "View all"}
+                    {itemsToRender === sortedOptions.length ? t("common.view_less") : t("common.view_all")}
                   </button>
                 )}
               </>
             ) : (
-              <p className="text-11 text-placeholder italic">No matches found</p>
+              <p className="text-11 text-placeholder italic">{t("common.search.no_matches_found")}</p>
             )
           ) : (
             <Loader className="space-y-2">

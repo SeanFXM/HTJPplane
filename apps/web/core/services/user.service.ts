@@ -18,6 +18,7 @@ import type {
   TIssuesResponse,
   TUserProfile,
   IEmailCheckResponse,
+  TMyOperationalDashboardResponse,
 } from "@plane/types";
 import { APIService } from "@/services/api.service";
 // types
@@ -46,6 +47,14 @@ export class UserService extends APIService {
     return this.get(`/api/workspaces/${workspaceSlug}/my-issues/`, {
       params,
     })
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async getMyOperationalDashboard(workspaceSlug: string): Promise<TMyOperationalDashboardResponse> {
+    return this.get(`/api/users/me/workspaces/${workspaceSlug}/dashboard/`)
       .then((response) => response?.data)
       .catch((error) => {
         throw error?.response?.data;

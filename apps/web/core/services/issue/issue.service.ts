@@ -350,7 +350,11 @@ export class IssueService extends APIService {
     data: {
       issue_ids: string[];
     }
-  ): Promise<any> {
+  ): Promise<{
+    message: string;
+    selected_count?: number;
+    deleted_count?: number;
+  }> {
     return this.delete(`/api/workspaces/${workspaceSlug}/projects/${projectId}/bulk-delete-issues/`, data)
       .then(async (response) => response?.data)
       .catch((error) => {

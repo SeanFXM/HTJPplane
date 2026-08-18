@@ -19,10 +19,35 @@ from django.utils import timezone
 from django.db.models import Prefetch
 
 # Module imports
-from plane.db.models import ExporterHistory, Issue, IssueComment, IssueRelation, IssueSubscriber
+from plane.db.models import (
+    ExporterHistory,
+    Issue,
+    IssueAssignee,
+    IssueComment,
+    IssueRelation,
+    IssueSubscriber,
+)
 from plane.utils.exception_logger import log_exception
+from plane.utils.filters import ComplexFilterBackend, IssueFilterSet
 from plane.utils.porters.exporter import DataExporter
 from plane.utils.porters.serializers.issue import IssueExportSerializer
+
+
+class ExportIssueFilterConfiguration:
+    filterset_class = IssueFilterSet
+
+
+def apply_export_rich_filters(queryset, rich_filters):
+    """Apply the same validated work-item filters used by interactive lists."""
+    if not rich_filters:
+        return queryset
+
+    return ComplexFilterBackend().filter_queryset(
+        request=None,
+        queryset=queryset,
+        view=ExportIssueFilterConfiguration(),
+        filter_data=rich_filters,
+    )
 
 
 def create_zip_file(files: List[tuple[str, str | bytes]]) -> io.BytesIO:
@@ -149,8 +174,6 @@ def issue_export_task(
             Issue.objects.filter(
                 workspace__id=workspace_id,
                 project_id__in=project_ids,
-                project__project_projectmember__member=exporter_instance.initiated_by_id,
-                project__project_projectmember__is_active=True,
                 project__archived_at__isnull=True,
             )
             .select_related(
@@ -164,8 +187,12 @@ def issue_export_task(
                 "labels",
                 "issue_cycle__cycle",
                 "issue_module__module",
-                "assignees",
                 "issue_link",
+                Prefetch(
+                    "issue_assignee",
+                    queryset=IssueAssignee.objects.select_related("assignee"),
+                    to_attr="current_assignee_links",
+                ),
                 Prefetch(
                     "issue_subscribers",
                     queryset=IssueSubscriber.objects.select_related("subscriber"),
@@ -188,6 +215,10 @@ def issue_export_task(
                 ),
             )
         )
+        workspace_issues = apply_export_rich_filters(
+            workspace_issues,
+            exporter_instance.rich_filters,
+        ).distinct()
 
         # Create exporter for the specified format
         try:
@@ -218,9 +249,9 @@ def issue_export_task(
         upload_to_s3(zip_buffer, workspace_id, token_id, slug)
 
     except Exception as e:
-        exporter_instance = ExporterHistory.objects.get(token=token_id)
-        exporter_instance.status = "failed"
-        exporter_instance.reason = str(e)
-        exporter_instance.save(update_fields=["status", "reason"])
+        ExporterHistory.objects.filter(token=token_id).update(
+            status="failed",
+            reason=str(e),
+        )
         log_exception(e)
         return

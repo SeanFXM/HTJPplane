@@ -14,7 +14,7 @@ import { observer } from "mobx-react";
 import { useParams, useRouter } from "next/navigation";
 import { createRoot } from "react-dom/client";
 import scrollIntoView from "smooth-scroll-into-view-if-needed";
-import { Settings, Share2, LogOut, MoreHorizontal } from "lucide-react";
+import { Settings, LogOut, MoreHorizontal } from "lucide-react";
 import { Disclosure, Transition } from "@headlessui/react";
 // plane imports
 import { EUserPermissions, EUserPermissionsLevel, MEMBER_TRACKER_ELEMENTS } from "@plane/constants";
@@ -54,7 +54,6 @@ type Props = {
   isLastChild: boolean;
   renderInExtendedSidebar?: boolean;
   onLeaveProject?: (projectId: string) => void;
-  onPublishProject?: (projectId: string) => void;
 };
 
 export const SidebarProjectsListItem = observer(function SidebarProjectsListItem(props: Props) {
@@ -68,7 +67,6 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
     projectListType,
     renderInExtendedSidebar = false,
     onLeaveProject,
-    onPublishProject,
   } = props;
   // store hooks
   const { t } = useTranslation();
@@ -86,7 +84,7 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
   // refs
   const actionSectionRef = useRef<HTMLButtonElement | null>(null);
   const projectRef = useRef<HTMLDivElement | null>(null);
-  const dragHandleRef = useRef<HTMLButtonElement | null>(null);
+  const dragHandleRef = useRef<HTMLDivElement | null>(null);
   // router
   const { workspaceSlug, projectId: URLProjectId } = useParams();
   const router = useRouter();
@@ -116,12 +114,6 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
     [projectId, toggleProjectListOpen]
   );
   // auth
-  const isAdmin = allowPermissions(
-    [EUserPermissions.ADMIN],
-    EUserPermissionsLevel.PROJECT,
-    workspaceSlug.toString(),
-    project?.id
-  );
   const isAuthorized = allowPermissions(
     [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
     EUserPermissionsLevel.PROJECT,
@@ -403,17 +395,6 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
                     </CustomMenu.MenuItem>
                   )} */}
 
-                  {/* publish project settings */}
-                  {isAdmin && (
-                    <CustomMenu.MenuItem onClick={() => onPublishProject?.(projectId)}>
-                      <div className="relative flex flex-shrink-0 items-center justify-start gap-2">
-                        <div className="flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm text-secondary transition-all duration-300 hover:bg-layer-1">
-                          <Share2 className="h-3.5 w-3.5 stroke-[1.5]" />
-                        </div>
-                        <div>{t("publish_project")}</div>
-                      </div>
-                    </CustomMenu.MenuItem>
-                  )}
                   <CustomMenu.MenuItem onClick={handleCopyText}>
                     <span className="flex items-center justify-start gap-2">
                       <LinkIcon className="h-3.5 w-3.5 stroke-[1.5]" />
@@ -432,16 +413,18 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
                       </div>
                     </CustomMenu.MenuItem>
                   )}
-                  <CustomMenu.MenuItem
-                    onClick={() => {
-                      router.push(`/${workspaceSlug}/settings/projects/${project?.id}`);
-                    }}
-                  >
-                    <div className="flex cursor-pointer items-center justify-start gap-2">
-                      <Settings className="h-3.5 w-3.5 stroke-[1.5]" />
-                      <span>{t("settings")}</span>
-                    </div>
-                  </CustomMenu.MenuItem>
+                  {isAuthorized && (
+                    <CustomMenu.MenuItem
+                      onClick={() => {
+                        router.push(`/${workspaceSlug}/settings/projects/${project?.id}`);
+                      }}
+                    >
+                      <div className="flex cursor-pointer items-center justify-start gap-2">
+                        <Settings className="h-3.5 w-3.5 stroke-[1.5]" />
+                        <span>{t("settings")}</span>
+                      </div>
+                    </CustomMenu.MenuItem>
+                  )}
                   {/* leave project */}
                   {!isAuthorized && (
                     <CustomMenu.MenuItem

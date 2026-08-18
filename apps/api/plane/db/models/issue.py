@@ -144,6 +144,10 @@ class Issue(ProjectBaseModel):
     )
     start_date = models.DateField(null=True, blank=True)
     target_date = models.DateField(null=True, blank=True)
+    waiting_party = models.CharField(max_length=255, null=True, blank=True)
+    waiting_since = models.DateTimeField(null=True, blank=True, editable=False)
+    blocked_reason = models.TextField(max_length=2000, blank=True, default="")
+    next_action = models.TextField(max_length=1000, blank=True, default="")
     assignees = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         blank=True,
@@ -176,6 +180,28 @@ class Issue(ProjectBaseModel):
         ordering = ("-created_at",)
 
     def save(self, *args, **kwargs):
+        # Keep the waiting timestamp derived from the structured waiting party.
+        # Existing timestamps are retained while the party is unchanged, reset
+        # when the party changes, and cleared together with the party.
+        normalized_waiting_party = (
+            self.waiting_party.strip() if isinstance(self.waiting_party, str) else self.waiting_party
+        )
+        self.waiting_party = normalized_waiting_party or None
+        update_fields = kwargs.get("update_fields")
+        tracks_waiting_party = self._state.adding or update_fields is None or "waiting_party" in update_fields
+        if tracks_waiting_party:
+            if self._state.adding:
+                self.waiting_since = timezone.now() if self.waiting_party else None
+            else:
+                previous_waiting_party = (
+                    Issue.all_objects.filter(pk=self.pk).values_list("waiting_party", flat=True).first()
+                )
+                if previous_waiting_party != self.waiting_party:
+                    self.waiting_since = timezone.now() if self.waiting_party else None
+
+            if update_fields is not None:
+                kwargs["update_fields"] = list(set(update_fields) | {"waiting_party", "waiting_since"})
+
         if self.state is None:
             try:
                 from plane.db.models import State
@@ -348,7 +374,12 @@ class IssueAssignee(ProjectBaseModel):
                 fields=["issue", "assignee"],
                 condition=Q(deleted_at__isnull=True),
                 name="issue_assignee_unique_issue_assignee_when_deleted_at_null",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["issue"],
+                condition=Q(deleted_at__isnull=True),
+                name="issue_assignee_unique_current_owner",
+            ),
         ]
         verbose_name = "Issue Assignee"
         verbose_name_plural = "Issue Assignees"

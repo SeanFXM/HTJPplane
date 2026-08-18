@@ -18,6 +18,7 @@ import githubDarkModeImage from "@/app/assets/logos/github-white.png?url";
 // components
 import { AuthenticationMethodCard } from "@/components/authentication/authentication-method-card";
 import { PageWrapper } from "@/components/common/page-wrapper";
+import { getInternalAdminPageTitle } from "@/constants/branding";
 // hooks
 import { useInstance } from "@/hooks/store";
 // types
@@ -63,6 +64,7 @@ const InstanceGithubAuthenticationPage = observer(function InstanceGithubAuthent
     await updateConfigPromise
       .then(() => {
         setIsSubmitting(false);
+        return undefined;
       })
       .catch((err) => {
         console.error(err);
@@ -77,7 +79,7 @@ const InstanceGithubAuthenticationPage = observer(function InstanceGithubAuthent
       customHeader={
         <AuthenticationMethodCard
           name="GitHub"
-          description="Allow members to login or sign up to plane with their GitHub accounts."
+          description="Allow Hotone Japan members to sign in with their GitHub accounts."
           icon={
             <img
               src={resolveGeneralTheme(resolvedTheme) === "dark" ? githubDarkModeImage : githubLightModeImage}
@@ -92,6 +94,7 @@ const InstanceGithubAuthenticationPage = observer(function InstanceGithubAuthent
               onChange={() => {
                 updateConfig("IS_GITHUB_ENABLED", isGithubEnabled ? "0" : "1");
               }}
+              label="Enable GitHub authentication"
               size="sm"
               disabled={isSubmitting || !formattedConfig}
             />
@@ -116,6 +119,6 @@ const InstanceGithubAuthenticationPage = observer(function InstanceGithubAuthent
   );
 });
 
-export const meta: Route.MetaFunction = () => [{ title: "GitHub Authentication - God Mode" }];
+export const meta: Route.MetaFunction = () => [{ title: getInternalAdminPageTitle("GitHub authentication") }];
 
 export default InstanceGithubAuthenticationPage;

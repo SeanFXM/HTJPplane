@@ -8,13 +8,14 @@ import { observer } from "mobx-react";
 import Link from "next/link";
 // ui
 import { Button, getButtonStyling } from "@plane/propel/button";
-import { useTheme } from "@/hooks/store";
+import { useInstance, useTheme } from "@/hooks/store";
 
 export const NewUserPopup = observer(function NewUserPopup() {
   // hooks
   const { isNewUserPopup, toggleNewUserPopup } = useTheme();
+  const { config } = useInstance();
 
-  if (!isNewUserPopup) return <></>;
+  if (!isNewUserPopup || config?.is_workspace_creation_disabled) return <></>;
   return (
     <div className="shadow-md absolute right-8 bottom-8 w-96 rounded-lg border border-subtle bg-surface-1 p-6">
       <div className="flex gap-4">

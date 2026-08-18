@@ -160,11 +160,12 @@ export class WorkspaceNotificationStore implements IWorkspaceNotificationStore {
    */
   notificationLiteByNotificationId = computedFn((notificationId: string | undefined) => {
     if (!notificationId) return {} as TNotificationLite;
-    const { workspaceSlug } = this.store.router;
+    const currentWorkspace = this.store.workspaceRoot.currentWorkspace;
     const notification = this.notifications[notificationId];
-    if (!notification || !workspaceSlug) return {} as TNotificationLite;
+    if (!notification || !currentWorkspace || notification.workspace !== currentWorkspace.id)
+      return {} as TNotificationLite;
     return {
-      workspace_slug: workspaceSlug,
+      workspace_slug: currentWorkspace.slug,
       project_id: notification.project,
       notification_id: notification.id,
       issue_id: notification.data?.issue?.id,
@@ -263,6 +264,7 @@ export class WorkspaceNotificationStore implements IWorkspaceNotificationStore {
    */
   setCurrentNotificationTab = (tab: TNotificationTab): void => {
     set(this, "currentNotificationTab", tab);
+    set(this, "currentSelectedNotificationId", undefined);
 
     const { workspaceSlug } = this.store.router;
     if (!workspaceSlug) return;
@@ -277,7 +279,11 @@ export class WorkspaceNotificationStore implements IWorkspaceNotificationStore {
    * @returns { void }
    */
   setCurrentSelectedNotificationId = (notificationId: string | undefined): void => {
-    set(this, "currentSelectedNotificationId", notificationId);
+    const currentWorkspace = this.store.workspaceRoot.currentWorkspace;
+    const notification = notificationId ? this.notifications[notificationId] : undefined;
+    const validNotificationId =
+      notification && currentWorkspace && notification.workspace === currentWorkspace.id ? notificationId : undefined;
+    set(this, "currentSelectedNotificationId", validNotificationId);
   };
 
   /**

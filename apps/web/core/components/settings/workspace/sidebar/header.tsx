@@ -45,7 +45,7 @@ export const WorkspaceSettingsSidebarHeader = observer(function WorkspaceSetting
           icon={ArrowLeft}
           onClick={() => router.push(`/${currentWorkspace?.slug}/`)}
         />
-        <p>Workspace settings</p>
+        <p>{t("workspace_settings.label")}</p>
       </div>
       <div className="mt-1.5 flex items-center justify-between gap-2 px-5 py-0.5">
         <Link href={workspaceHomeHref} className="flex min-w-0 items-center gap-2 truncate rounded-sm">

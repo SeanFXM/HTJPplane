@@ -14,6 +14,7 @@ import { CycleIcon, IntakeIcon, ModuleIcon, PageIcon, ViewsIcon } from "@plane/p
 // components
 import { SettingsBoxedControlItem } from "@/components/settings/boxed-control-item";
 import { SettingsHeading } from "@/components/settings/heading";
+import { isProjectFeatureVisible } from "@/constants/product-policy";
 // hooks
 import { useProject } from "@/hooks/store/use-project";
 // plane web imports
@@ -113,36 +114,38 @@ export const ProjectFeaturesList = observer(function ProjectFeaturesList(props: 
       <div>
         <SettingsHeading title={t("projects_and_issues")} description={t("projects_and_issues_description")} />
         <div className="mt-6 flex flex-col gap-y-4">
-          {Object.entries(PROJECT_FEATURES_LIST).map(([featureItemKey, featureItem]) => (
-            <div key={featureItemKey}>
-              <SettingsBoxedControlItem
-                title={
-                  <span className="flex items-center gap-2">
-                    {t(featureItem.key)}
-                    {featureItem.isPro && (
-                      <Tooltip tooltipContent="Pro feature" position="top">
-                        <UpgradeBadge className="rounded-sm" />
-                      </Tooltip>
-                    )}
-                  </span>
-                }
-                description={t(`${featureItem.key}_description`)}
-                control={
-                  <ProjectFeatureToggle
-                    workspaceSlug={workspaceSlug}
-                    projectId={projectId}
-                    featureItem={featureItem}
-                    value={Boolean(currentProjectDetails?.[featureItem.property as keyof IProject])}
-                    handleSubmit={handleSubmit}
-                    disabled={!isAdmin}
-                  />
-                }
-              />
-              {/* {currentProjectDetails?.[featureItem.property as keyof IProject] && (
+          {Object.entries(PROJECT_FEATURES_LIST)
+            .filter(([featureItemKey]) => isProjectFeatureVisible(featureItemKey, projectId))
+            .map(([featureItemKey, featureItem]) => (
+              <div key={featureItemKey}>
+                <SettingsBoxedControlItem
+                  title={
+                    <span className="flex items-center gap-2">
+                      {t(featureItem.key)}
+                      {featureItem.isPro && (
+                        <Tooltip tooltipContent="Pro feature" position="top">
+                          <UpgradeBadge className="rounded-sm" />
+                        </Tooltip>
+                      )}
+                    </span>
+                  }
+                  description={t(`${featureItem.key}_description`)}
+                  control={
+                    <ProjectFeatureToggle
+                      workspaceSlug={workspaceSlug}
+                      projectId={projectId}
+                      featureItem={featureItem}
+                      value={Boolean(currentProjectDetails?.[featureItem.property as keyof IProject])}
+                      handleSubmit={handleSubmit}
+                      disabled={!isAdmin}
+                    />
+                  }
+                />
+                {/* {currentProjectDetails?.[featureItem.property as keyof IProject] && (
                 <div className="pl-14">{featureItem.renderChildren?.(currentProjectDetails, workspaceSlug)}</div>
               )} */}
-            </div>
-          ))}
+              </div>
+            ))}
         </div>
       </div>
     </>

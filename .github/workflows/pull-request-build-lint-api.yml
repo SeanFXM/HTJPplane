@@ -24,19 +24,101 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     if: |
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.requested_reviewers != null
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.draft == false && github.event.pull_request.requested_reviewers != null)
     steps:
       - uses: actions/checkout@v6
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12.x"
-          cache: 'pip'
-          cache-dependency-path: 'apps/api/requirements.txt'
+          cache: "pip"
+          cache-dependency-path: "apps/api/requirements.txt"
       - name: Install Pylint
         run: python -m pip install ruff
       - name: Install API Dependencies
         run: cd apps/api && pip install -r requirements.txt
       - name: Lint apps/api
-        run: ruff check --fix apps/api
+        run: ruff check apps/api
+
+  hotone-regression:
+    name: Hotone API regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.draft == false && github.event.pull_request.requested_reviewers != null)
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: plane
+          POSTGRES_USER: plane
+          POSTGRES_PASSWORD: plane
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U plane -d plane"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://plane:plane@127.0.0.1:5432/plane
+      REDIS_URL: redis://127.0.0.1:6379/0
+      SECRET_KEY: hotone-ci-only-secret
+      APP_BASE_URL: http://localhost:3000
+      ADMIN_BASE_URL: http://localhost:3001
+      WEB_URL: http://localhost:8000
+      USE_MINIO: "0"
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12.x"
+          cache: pip
+          cache-dependency-path: apps/api/requirements/*.txt
+      - name: Install API test dependencies
+        working-directory: apps/api
+        run: python -m pip install -r requirements/test.txt
+      - name: Apply API migrations
+        working-directory: apps/api
+        run: python manage.py migrate --noinput
+      - name: Check for missing API migrations
+        working-directory: apps/api
+        run: python manage.py makemigrations --check --dry-run
+      - name: Verify current-owner data migration
+        working-directory: apps/api
+        run: >-
+          python -m pytest
+          plane/tests/migrations/test_single_current_owner_migration.py
+          --create-db
+          -o addopts="--strict-markers -vs"
+      - name: Run Hotone critical API tests
+        working-directory: apps/api
+        run: >-
+          python -m pytest
+          plane/tests/contract/api/test_work_item_hierarchy.py
+          plane/tests/contract/app/test_workspace_user_preference.py
+          plane/tests/contract/app/test_issue_hierarchy.py
+          plane/tests/contract/app/test_issue_export.py
+          plane/tests/contract/app/test_internal_admin_permissions.py
+          plane/tests/contract/app/test_operational_report.py
+          plane/tests/contract/app/test_user_operational_dashboard.py
+          plane/tests/contract/app/test_user_profile_current_owner.py
+          plane/tests/contract/app/test_hotone_workflow.py
+          plane/tests/contract/app/test_issue_operational_fields.py
+          plane/tests/unit/bg_tasks/test_deletion_task_restore.py
+          plane/tests/unit/bg_tasks/test_export_task_filters.py
+          plane/tests/unit/settings/test_internal_policy.py
+          plane/tests/unit/test_readiness.py
+          --maxfail=1

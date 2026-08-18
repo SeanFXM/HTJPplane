@@ -5,7 +5,7 @@
  */
 
 import { API_BASE_URL } from "@plane/constants";
-import type { TWorkItemFilterExpression } from "@plane/types";
+import type { IExportServiceResponse, TWorkItemFilterExpression } from "@plane/types";
 import { APIService } from "@/services/api.service";
 // helpers
 
@@ -24,6 +24,23 @@ export class ProjectExportService extends APIService {
     }
   ): Promise<any> {
     return this.post(`/api/workspaces/${workspaceSlug}/export-issues/`, data)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async getExportsServicesList(
+    workspaceSlug: string,
+    cursor: string,
+    perPage: number
+  ): Promise<IExportServiceResponse> {
+    return this.get(`/api/workspaces/${workspaceSlug}/export-issues/`, {
+      params: {
+        per_page: perPage,
+        cursor,
+      },
+    })
       .then((response) => response?.data)
       .catch((error) => {
         throw error?.response?.data;

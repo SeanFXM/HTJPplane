@@ -25,7 +25,11 @@ export default defineConfig(({ mode }) => {
       return acc;
     }, {});
   const viteEnv = { ...fileEnv, ...processEnv };
-  const basePath = joinUrlPath(viteEnv.VITE_ADMIN_BASE_PATH ?? "", "/") || "/";
+  const normalizedBasePath = joinUrlPath(viteEnv.VITE_ADMIN_BASE_PATH ?? "", "/") || "/";
+  // Vite concatenates `base` and `assetsDir` directly. A sub-path without a
+  // trailing slash would therefore emit `/god-modeassets/*` instead of
+  // `/god-mode/assets/*` and make the admin SPA impossible to boot.
+  const basePath = normalizedBasePath === "/" ? "/" : `${normalizedBasePath}/`;
 
   return {
     base: basePath,

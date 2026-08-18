@@ -9,12 +9,13 @@ import { observer } from "mobx-react";
 import useSWR from "swr";
 import { EyeIcon, TriangleAlert } from "lucide-react";
 // plane imports
+import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { TPageVersion } from "@plane/types";
-import { renderFormattedDate, renderFormattedTime } from "@plane/utils";
 // helpers
 import type { EPageStoreType } from "@/plane-web/hooks/store";
+import { useUser } from "@/hooks/store/user";
 // local imports
 import type { TVersionEditorProps } from "./editor";
 
@@ -43,6 +44,18 @@ export const PageVersionsMainContent = observer(function PageVersionsMainContent
   // states
   const [isRestoring, setIsRestoring] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const { currentLocale, t } = useTranslation();
+  const { data: currentUser } = useUser();
+
+  const formatVersionTimestamp = (value: string | Date) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat(currentLocale, {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: currentUser?.user_timezone || "Asia/Tokyo",
+    }).format(date);
+  };
 
   const {
     data: versionDetails,
@@ -60,14 +73,14 @@ export const PageVersionsMainContent = observer(function PageVersionsMainContent
       .then(() => {
         setToast({
           type: TOAST_TYPE.SUCCESS,
-          title: "Page version restored.",
+          title: t("pages_ui.version.restore_success"),
         });
         handleClose();
       })
       .catch(() =>
         setToast({
           type: TOAST_TYPE.ERROR,
-          title: "Failed to restore page version.",
+          title: t("pages_ui.version.restore_failed"),
         })
       )
       .finally(() => setIsRestoring(false));
@@ -90,11 +103,11 @@ export const PageVersionsMainContent = observer(function PageVersionsMainContent
               <TriangleAlert className="size-10" />
             </span>
             <div>
-              <h6 className="text-16 font-semibold">Something went wrong!</h6>
-              <p className="text-13 text-tertiary">The version could not be loaded, please try again.</p>
+              <h6 className="text-16 font-semibold">{t("pages_ui.version.load_failed_title")}</h6>
+              <p className="text-13 text-tertiary">{t("pages_ui.version.load_failed_message")}</p>
             </div>
             <Button variant="link" onClick={handleRetry} loading={isRetrying}>
-              Try again
+              {t("pages_ui.version.retry")}
             </Button>
           </div>
         </div>
@@ -103,18 +116,16 @@ export const PageVersionsMainContent = observer(function PageVersionsMainContent
           <div className="flex min-h-14 items-center justify-between gap-2 border-b border-subtle px-5 py-3">
             <div className="flex items-center gap-4">
               <h6 className="text-14 font-medium">
-                {versionDetails
-                  ? `${renderFormattedDate(versionDetails.last_saved_at)} ${renderFormattedTime(versionDetails.last_saved_at)}`
-                  : "Loading version details"}
+                {versionDetails ? formatVersionTimestamp(versionDetails.last_saved_at) : t("pages_ui.version.loading")}
               </h6>
               <span className="flex flex-shrink-0 items-center gap-1 rounded-sm bg-accent-primary/20 px-1.5 py-1 text-11 font-medium text-accent-primary">
                 <EyeIcon className="size-3 flex-shrink-0" />
-                View only
+                {t("pages_ui.version.view_only")}
               </span>
             </div>
             {restoreEnabled && (
               <Button variant="primary" className="flex-shrink-0" onClick={handleRestoreVersion} loading={isRestoring}>
-                {isRestoring ? "Restoring" : "Restore"}
+                {isRestoring ? t("pages_ui.version.restoring") : t("common.actions.restore")}
               </Button>
             )}
           </div>

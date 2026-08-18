@@ -7,6 +7,8 @@
 import { useEffect, useState } from "react";
 // constants
 import type { EPageAccess } from "@plane/constants";
+import { useTranslation } from "@plane/i18n";
+import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { TPage } from "@plane/types";
 // ui
 import { EModalPosition, EModalWidth, ModalCore } from "@plane/ui";
@@ -16,6 +18,8 @@ import { useAppRouter } from "@/hooks/use-app-router";
 import type { EPageStoreType } from "@/plane-web/hooks/store";
 import { usePageStore } from "@/plane-web/hooks/store";
 // local imports
+import { getPageTemplatePayload } from "../page-template-data";
+import type { TPageTemplateId } from "../page-template-data";
 import { PageForm } from "./page-form";
 
 type Props = {
@@ -38,12 +42,15 @@ export function CreatePageModal(props: Props) {
     redirectionEnabled = false,
     storeType,
   } = props;
+  // hooks
+  const { currentLocale, t } = useTranslation();
   // states
-  const [pageFormData, setPageFormData] = useState<Partial<TPage>>({
+  const [selectedTemplateId, setSelectedTemplateId] = useState<TPageTemplateId>("blank");
+  const [pageFormData, setPageFormData] = useState<Partial<TPage>>(() => ({
+    ...getPageTemplatePayload(currentLocale, "blank"),
     id: undefined,
-    name: "",
     logo_props: undefined,
-  });
+  }));
   // router
   const router = useAppRouter();
   // store hooks
@@ -57,36 +64,59 @@ export function CreatePageModal(props: Props) {
   }, [pageAccess]);
 
   const handleStateClear = () => {
-    setPageFormData({ id: undefined, name: "", access: pageAccess });
+    setSelectedTemplateId("blank");
+    setPageFormData({
+      ...getPageTemplatePayload(currentLocale, "blank"),
+      id: undefined,
+      logo_props: undefined,
+      access: pageAccess,
+    });
     handleModalClose();
   };
 
+  const handleTemplateSelect = (templateId: TPageTemplateId) => {
+    setSelectedTemplateId(templateId);
+    setPageFormData((prev) => ({
+      ...prev,
+      ...getPageTemplatePayload(currentLocale, templateId),
+    }));
+  };
+
   const handleFormSubmit = async () => {
-    if (!workspaceSlug || !projectId) return;
+    const trimmedName = pageFormData.name?.trim();
+    if (!workspaceSlug || !projectId || !trimmedName) return;
 
     try {
-      const pageData = await createPage(pageFormData);
-      if (pageData) {
-        handleStateClear();
-        if (redirectionEnabled) router.push(`/${workspaceSlug}/projects/${projectId}/pages/${pageData.id}`);
-      }
+      const pageData = await createPage({ ...pageFormData, name: trimmedName });
+      if (!pageData?.id) throw new Error("Page creation returned no page identifier");
+
+      handleStateClear();
+      if (redirectionEnabled) router.push(`/${workspaceSlug}/projects/${projectId}/pages/${pageData.id}`);
     } catch (error) {
       console.error(error);
+      setToast({
+        type: TOAST_TYPE.ERROR,
+        title: t("common.error.label"),
+        message: t("pages_ui.create.failed"),
+      });
     }
   };
 
   return (
     <ModalCore
       isOpen={isModalOpen}
-      handleClose={handleModalClose}
+      handleClose={handleStateClear}
       position={EModalPosition.TOP}
       width={EModalWidth.XXL}
     >
       <PageForm
+        currentLocale={currentLocale}
         formData={pageFormData}
         handleFormData={handlePageFormData}
         handleModalClose={handleStateClear}
         handleFormSubmit={handleFormSubmit}
+        handleTemplateSelect={handleTemplateSelect}
+        selectedTemplateId={selectedTemplateId}
       />
     </ModalCore>
   );

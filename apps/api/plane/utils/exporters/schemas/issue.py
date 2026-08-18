@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from django.db.models import F, QuerySet
 
-from plane.db.models import CycleIssue, FileAsset
+from plane.db.models import CycleIssue, FileAsset, IssueAssignee
 
 from .base import (
     DateField,
@@ -151,7 +151,11 @@ class IssueExportSchema(ExportSchema):
         return [link.url for link in i.issue_link.all()]
 
     def prepare_assignees(self, i):
-        return [f"{u.first_name} {u.last_name}" for u in i.assignees.all()]
+        return [
+            assignment.assignee.full_name
+            for assignment in IssueAssignee.objects.filter(issue=i).select_related("assignee")
+            if assignment.assignee.is_active
+        ]
 
     def prepare_subscribers_count(self, i):
         return i.issue_subscribers.count()

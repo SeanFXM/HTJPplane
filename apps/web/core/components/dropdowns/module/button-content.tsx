@@ -56,7 +56,7 @@ export function ModuleButtonContent(props: ModuleButtonContentProps) {
               <div className="max-w-40 truncate">
                 {value.length > 0
                   ? value.length === 1
-                    ? getModuleById(value[0])?.name ?? t("common.module")
+                    ? (getModuleById(value[0])?.name ?? t("common.module"))
                     : t("common.modules_count", { count: value.length })
                   : placeholder}
               </div>

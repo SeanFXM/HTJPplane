@@ -11,6 +11,7 @@ import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Loader, ToggleSwitch } from "@plane/ui";
 // components
 import { PageWrapper } from "@/components/common/page-wrapper";
+import { getInternalAdminPageTitle } from "@/constants/branding";
 // hooks
 import { useInstance } from "@/hooks/store";
 // types
@@ -63,7 +64,7 @@ const InstanceEmailPage = observer(function InstanceEmailPage(_props: Route.Comp
         title: "Secure emails from your own instance",
         description: (
           <>
-            Plane can send useful emails to you and your users from your own instance without talking to the Internet.
+            Hotone Japan can send workspace notifications through the SMTP service configured for this instance.
             <div className="text-13 font-regular text-tertiary">
               Set it up below and please test your settings before you save them.&nbsp;
               <span className="text-danger-primary">Misconfigs can lead to email bounces and errors.</span>
@@ -75,7 +76,13 @@ const InstanceEmailPage = observer(function InstanceEmailPage(_props: Route.Comp
             <Loader.Item width="24px" height="16px" className="rounded-full" />
           </Loader>
         ) : (
-          <ToggleSwitch value={isSMTPEnabled} onChange={handleToggle} size="sm" disabled={isSubmitting} />
+          <ToggleSwitch
+            value={isSMTPEnabled}
+            onChange={handleToggle}
+            label="Enable instance email"
+            size="sm"
+            disabled={isSubmitting}
+          />
         ),
       }}
     >
@@ -98,6 +105,6 @@ const InstanceEmailPage = observer(function InstanceEmailPage(_props: Route.Comp
   );
 });
 
-export const meta: Route.MetaFunction = () => [{ title: "Email Settings - God Mode" }];
+export const meta: Route.MetaFunction = () => [{ title: getInternalAdminPageTitle("Email settings") }];
 
 export default InstanceEmailPage;

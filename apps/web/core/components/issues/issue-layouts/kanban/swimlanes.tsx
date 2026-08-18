@@ -87,8 +87,7 @@ const SubGroupSwimlaneHeader = observer(function SubGroupSwimlaneHeader({
           if (subGroupByVisibilityToggle === false) return <></>;
 
           const isStateGroup = group_by === "state_detail.group" && _list.id in STATE_GROUPS;
-          const isStateWithGroup =
-            group_by === "state" && _list.stateGroupKey && _list.stateGroupKey in STATE_GROUPS;
+          const isStateWithGroup = group_by === "state" && _list.stateGroupKey && _list.stateGroupKey in STATE_GROUPS;
           const title = isStateGroup
             ? t(`workspace_projects.state.${_list.id}`)
             : isStateWithGroup
