@@ -16,38 +16,40 @@ def test_single_current_owner_migration_keeps_latest_assignment():
     migrate_to = [("db", "0125_single_current_issue_owner")]
 
     executor = MigrationExecutor(connection)
-    executor.migrate(migrate_from)
-    old_apps = executor.loader.project_state(migrate_from).apps
-
-    User = old_apps.get_model("db", "User")
-    Workspace = old_apps.get_model("db", "Workspace")
-    Project = old_apps.get_model("db", "Project")
-    Issue = old_apps.get_model("db", "Issue")
-    IssueAssignee = old_apps.get_model("db", "IssueAssignee")
-
-    owner = User.objects.create(username="migration-owner", email="migration-owner@example.com")
-    latest_owner = User.objects.create(username="migration-latest", email="migration-latest@example.com")
-    workspace = Workspace.objects.create(name="Migration workspace", slug="migration-workspace", owner=owner)
-    project = Project.objects.create(name="Migration project", identifier="MIG", workspace=workspace)
-    issue = Issue.objects.create(name="Duplicate owner issue", workspace=workspace, project=project)
-
-    previous_assignment = IssueAssignee.objects.create(
-        issue=issue,
-        assignee=owner,
-        workspace=workspace,
-        project=project,
-    )
-    latest_assignment = IssueAssignee.objects.create(
-        issue=issue,
-        assignee=latest_owner,
-        workspace=workspace,
-        project=project,
-    )
-    now = timezone.now()
-    IssueAssignee.objects.filter(pk=previous_assignment.pk).update(updated_at=now - timedelta(minutes=1))
-    IssueAssignee.objects.filter(pk=latest_assignment.pk).update(updated_at=now)
+    latest_targets = executor.loader.graph.leaf_nodes("db")
 
     try:
+        executor.migrate(migrate_from)
+        old_apps = executor.loader.project_state(migrate_from).apps
+
+        User = old_apps.get_model("db", "User")
+        Workspace = old_apps.get_model("db", "Workspace")
+        Project = old_apps.get_model("db", "Project")
+        Issue = old_apps.get_model("db", "Issue")
+        IssueAssignee = old_apps.get_model("db", "IssueAssignee")
+
+        owner = User.objects.create(username="migration-owner", email="migration-owner@example.com")
+        latest_owner = User.objects.create(username="migration-latest", email="migration-latest@example.com")
+        workspace = Workspace.objects.create(name="Migration workspace", slug="migration-workspace", owner=owner)
+        project = Project.objects.create(name="Migration project", identifier="MIG", workspace=workspace)
+        issue = Issue._base_manager.create(name="Duplicate owner issue", workspace=workspace, project=project)
+
+        previous_assignment = IssueAssignee.objects.create(
+            issue=issue,
+            assignee=owner,
+            workspace=workspace,
+            project=project,
+        )
+        latest_assignment = IssueAssignee.objects.create(
+            issue=issue,
+            assignee=latest_owner,
+            workspace=workspace,
+            project=project,
+        )
+        now = timezone.now()
+        IssueAssignee.objects.filter(pk=previous_assignment.pk).update(updated_at=now - timedelta(minutes=1))
+        IssueAssignee.objects.filter(pk=latest_assignment.pk).update(updated_at=now)
+
         executor = MigrationExecutor(connection)
         executor.migrate(migrate_to)
         new_apps = executor.loader.project_state(migrate_to).apps
@@ -66,4 +68,4 @@ def test_single_current_owner_migration_keeps_latest_assignment():
         assert previous_deleted_at is not None
     finally:
         # Leave the schema at the current leaf even if an assertion above fails.
-        MigrationExecutor(connection).migrate(migrate_to)
+        MigrationExecutor(connection).migrate(latest_targets)
