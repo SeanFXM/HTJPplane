@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { useState } from "react";
 import { isNil } from "lodash-es";
 import { observer } from "mobx-react";
@@ -85,19 +84,22 @@ export const IssueSubscription = observer(function IssueSubscription(props: TIss
       <Button
         prependIcon={isSubscribed ? <BellOff /> : <Bell className="h-3 w-3" />}
         variant="secondary"
-        className="hover:!bg-accent-primary/20"
+        className="h-11 w-11 px-0 hover:!bg-accent-primary/20 md:h-7 md:w-auto md:px-2"
+        aria-label={
+          loading ? t("common.loading") : isSubscribed ? t("common.actions.unsubscribe") : t("common.actions.subscribe")
+        }
         onClick={handleSubscription}
         disabled={!isEditable || loading}
         size="lg"
       >
         {loading ? (
           <span>
-            <span className="hidden sm:block">{t("common.loading")}</span>
+            <span className="hidden md:block">{t("common.loading")}</span>
           </span>
         ) : isSubscribed ? (
-          <div className="hidden sm:block">{t("common.actions.unsubscribe")}</div>
+          <div className="hidden md:block">{t("common.actions.unsubscribe")}</div>
         ) : (
-          <div className="hidden sm:block">{t("common.actions.subscribe")}</div>
+          <div className="hidden md:block">{t("common.actions.subscribe")}</div>
         )}
       </Button>
     </div>
