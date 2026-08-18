@@ -177,7 +177,10 @@ class TestHotoneWorkflowEndpoint:
 
     @pytest.mark.django_db
     def test_member_cannot_preview_or_apply(self, workspace, project):
-        member = User.objects.create(email="hotone-member@plane.so")
+        member = User.objects.create(
+            email="hotone-member@plane.so",
+            username="hotone-member",
+        )
         WorkspaceMember.objects.create(workspace=workspace, member=member, role=15)
         member_client = APIClient()
         member_client.force_authenticate(user=member)

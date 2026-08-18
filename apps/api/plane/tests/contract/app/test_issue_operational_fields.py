@@ -42,7 +42,12 @@ class TestIssueOperationalFields:
 
     @pytest.fixture
     def second_member(self, project):
-        user = User.objects.create(email="second-owner@example.com", first_name="Second", last_name="Owner")
+        user = User.objects.create(
+            email="second-owner@example.com",
+            username="second-owner",
+            first_name="Second",
+            last_name="Owner",
+        )
         ProjectMember.objects.create(project=project, member=user, role=15)
         return user
 

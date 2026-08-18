@@ -17,7 +17,10 @@ class TestWorkspaceUserPreferenceEndpoint:
         workspace,
         create_user,
     ):
-        other_user = User.objects.create(email="other-user@plane.so")
+        other_user = User.objects.create(
+            email="other-user@plane.so",
+            username="other-user",
+        )
         WorkspaceMember.objects.create(
             workspace=workspace,
             member=other_user,

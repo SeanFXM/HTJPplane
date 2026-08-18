@@ -26,6 +26,7 @@ class TestUserProfileCurrentOwner:
         ProjectMember.objects.create(project=project, member=create_user, role=20)
         next_owner = User.objects.create(
             email="profile-next-owner@example.com",
+            username="profile-next-owner",
             first_name="Next",
             last_name="Owner",
         )

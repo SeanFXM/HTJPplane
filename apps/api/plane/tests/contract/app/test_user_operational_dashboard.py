@@ -154,7 +154,12 @@ class TestUserOperationalDashboard:
             name="Transferred task",
             target_date=date.today(),
         )
-        next_owner = User.objects.create(email="next-owner@example.com", first_name="Next", last_name="Owner")
+        next_owner = User.objects.create(
+            email="next-owner@example.com",
+            username="next-owner",
+            first_name="Next",
+            last_name="Owner",
+        )
         ProjectMember.objects.create(project=project, member=next_owner, role=15)
 
         IssueAssignee.objects.filter(issue=issue, assignee=create_user).update(deleted_at=timezone.now())

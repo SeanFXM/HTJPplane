@@ -64,6 +64,7 @@ class TestExportTaskFilters:
         )
         next_owner = User.objects.create(
             email="export-next-owner@example.com",
+            username="export-next-owner",
             first_name="Next",
             last_name="Owner",
         )

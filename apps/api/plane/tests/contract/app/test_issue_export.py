@@ -95,7 +95,10 @@ class TestExportIssuesEndpoint:
 
     @pytest.mark.django_db
     def test_member_cannot_export_or_read_export_history(self, workspace, project):
-        member = User.objects.create(email="export-member@plane.so")
+        member = User.objects.create(
+            email="export-member@plane.so",
+            username="export-member",
+        )
         WorkspaceMember.objects.create(workspace=workspace, member=member, role=15)
         member_client = APIClient()
         member_client.force_authenticate(user=member)
