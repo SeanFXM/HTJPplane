@@ -205,7 +205,7 @@ class SubIssuesEndpoint(BaseAPIView):
 
         with transaction.atomic():
             parent_issue = (
-                Issue.issue_objects.select_for_update()
+                Issue.issue_objects.select_for_update(of=("self",))
                 .filter(
                     pk=issue_id,
                     workspace__slug=slug,
@@ -220,7 +220,7 @@ class SubIssuesEndpoint(BaseAPIView):
                 )
 
             sub_issues = list(
-                Issue.issue_objects.select_for_update()
+                Issue.issue_objects.select_for_update(of=("self",))
                 .filter(
                     id__in=normalized_sub_issue_ids,
                     workspace__slug=slug,

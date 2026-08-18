@@ -259,7 +259,7 @@ class IssueArchiveViewSet(BaseViewSet):
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def archive(self, request, slug, project_id, pk=None):
         with transaction.atomic():
-            issue = Issue.issue_objects.select_for_update().get(
+            issue = Issue.issue_objects.select_for_update(of=("self",)).get(
                 workspace__slug=slug,
                 project_id=project_id,
                 pk=pk,
@@ -363,7 +363,7 @@ class BulkArchiveIssuesEndpoint(BaseAPIView):
 
         with transaction.atomic():
             issues = list(
-                Issue.issue_objects.select_for_update()
+                Issue.issue_objects.select_for_update(of=("self",))
                 .filter(
                     workspace__slug=slug,
                     project_id=project_id,
