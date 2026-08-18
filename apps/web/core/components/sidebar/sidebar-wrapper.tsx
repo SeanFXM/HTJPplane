@@ -34,17 +34,26 @@ export const SidebarWrapper = observer(function SidebarWrapper(props: TSidebarWr
   const windowSize = useSize();
   // refs
   const ref = useRef<HTMLDivElement>(null);
+  const previousIsMobileViewportRef = useRef<boolean | null>(null);
 
   useOutsideClickDetector(ref, () => {
     if (sidebarCollapsed === false && window.innerWidth < 768) {
-      toggleSidebar();
+      toggleSidebar(true);
     }
   });
 
   useEffect(() => {
-    if (windowSize[0] < 768 && !sidebarCollapsed) toggleSidebar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [windowSize]);
+    const windowWidth = windowSize[0];
+    if (windowWidth === 0 || sidebarCollapsed === undefined) return;
+
+    const isMobileViewport = windowWidth < 768;
+    const wasMobileViewport = previousIsMobileViewportRef.current;
+    previousIsMobileViewportRef.current = isMobileViewport;
+
+    if (isMobileViewport && wasMobileViewport !== true && !sidebarCollapsed) {
+      toggleSidebar(true);
+    }
+  }, [windowSize, sidebarCollapsed, toggleSidebar]);
 
   return (
     <>

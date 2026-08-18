@@ -16,6 +16,7 @@ export function MobileLayoutSelection({
   layouts,
   onChange,
   activeLayout,
+  isMobile = false,
 }: {
   layouts: EIssueLayoutTypes[];
   onChange: (layout: EIssueLayoutTypes) => void;
@@ -26,22 +27,28 @@ export function MobileLayoutSelection({
   return (
     <CustomMenu
       maxHeight={"md"}
-      className="flex flex-grow justify-center text-13 text-secondary"
+      className={`flex flex-grow justify-center text-13 text-secondary ${isMobile ? "h-11 w-full min-w-0 flex-1" : ""}`}
       placement="bottom-start"
+      ariaLabel={t("common.layout")}
       customButton={
-        <Button variant="secondary" className="relative px-2">
-          {activeLayout && (
-            <IssueLayoutIcon layout={activeLayout} size={14} strokeWidth={2} className={`h-3.5 w-3.5`} />
-          )}
-          <ChevronDownIcon className="my-auto size-3 text-secondary" strokeWidth={2} />
-        </Button>
+        isMobile ? (
+          <span className="flex size-full items-center justify-center gap-1">
+            {activeLayout && <IssueLayoutIcon layout={activeLayout} size={14} strokeWidth={2} className="size-3.5" />}
+            <ChevronDownIcon className="my-auto size-3 text-secondary" strokeWidth={2} />
+          </span>
+        ) : (
+          <Button variant="secondary" className="relative px-2">
+            {activeLayout && <IssueLayoutIcon layout={activeLayout} size={14} strokeWidth={2} className="size-3.5" />}
+            <ChevronDownIcon className="my-auto size-3 text-secondary" strokeWidth={2} />
+          </Button>
+        )
       }
-      customButtonClassName="flex flex-grow justify-center text-secondary text-13"
+      customButtonClassName={`flex flex-grow justify-center text-secondary text-13 ${isMobile ? "h-11 w-full items-center" : ""}`}
       closeOnSelect
     >
-      {ISSUE_LAYOUTS.filter((l) => layouts.includes(l.key)).map((layout, index) => (
+      {ISSUE_LAYOUTS.filter((l) => layouts.includes(l.key)).map((layout) => (
         <CustomMenu.MenuItem
-          key={index}
+          key={layout.key}
           onClick={() => {
             onChange(layout.key);
           }}

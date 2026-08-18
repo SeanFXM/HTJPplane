@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { useState } from "react";
 import { observer } from "mobx-react";
 // plane imports
@@ -27,6 +26,7 @@ export const ProjectAppSidebar = observer(function ProjectAppSidebar() {
     sidebarPeek,
     toggleSidebarPeek,
     isExtendedSidebarOpened,
+    isExtendedProjectSidebarOpened,
     isAnySidebarDropdownOpen,
   } = useAppTheme();
   const { storedValue, setValue } = useLocalStorage("sidebarWidth", SIDEBAR_WIDTH);
@@ -36,7 +36,7 @@ export const ProjectAppSidebar = observer(function ProjectAppSidebar() {
   const { workspaceSlug } = useParams();
   const pathname = usePathname();
   // derived values
-  const isAnyExtendedSidebarOpen = isExtendedSidebarOpened;
+  const isAnyExtendedSidebarOpen = isExtendedSidebarOpened || isExtendedProjectSidebarOpened;
 
   const isNotificationsPath = pathname.includes(`/${workspaceSlug}/notifications`);
 

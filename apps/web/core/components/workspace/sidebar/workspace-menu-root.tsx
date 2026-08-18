@@ -115,18 +115,20 @@ export const WorkspaceMenuRoot = observer(function WorkspaceMenuRoot(props: Work
               <div className="flex flex-grow items-center gap-1 truncate">
                 <Link
                   href={workspaceHomeHref}
-                  className="group/home-link flex min-w-0 flex-grow items-center gap-2 truncate rounded-sm p-1 text-13 font-medium text-secondary hover:bg-layer-1"
+                  className="group/home-link flex min-h-11 min-w-0 flex-grow items-center gap-2 truncate rounded-sm p-1 text-13 font-medium text-secondary hover:bg-layer-1 md:min-h-0"
                 >
                   <WorkspaceLogo
                     logo={activeWorkspace?.logo_url}
                     name={activeWorkspace?.name}
                     classNames="border border-subtle rounded-md size-7"
                   />
-                  <h4 className="truncate text-14 font-medium text-primary">{activeWorkspace?.name ?? t("loading")}</h4>
+                  <h4 className="hidden truncate text-14 font-medium text-primary sm:block">
+                    {activeWorkspace?.name ?? t("loading")}
+                  </h4>
                 </Link>
                 <Menu.Button
                   className={cn(
-                    "flex size-7 flex-shrink-0 items-center justify-center rounded-sm text-secondary hover:bg-layer-1 focus:outline-none",
+                    "flex size-11 flex-shrink-0 items-center justify-center rounded-sm text-secondary hover:bg-layer-1 focus:outline-none md:size-7",
                     {
                       "bg-layer-1": open,
                     }
@@ -153,10 +155,10 @@ export const WorkspaceMenuRoot = observer(function WorkspaceMenuRoot(props: Work
               <Menu.Items as={Fragment}>
                 <div
                   className={cn(
-                    "fixed z-21 mt-1 flex w-[19rem] origin-top-left flex-col divide-y divide-subtle rounded-md border-[0.5px] border-strong bg-surface-1 shadow-raised-200 outline-none",
+                    "fixed z-21 mt-1 flex w-[calc(100vw-2rem)] max-w-[19rem] origin-top-left flex-col divide-y divide-subtle rounded-md border-[0.5px] border-strong bg-surface-1 shadow-raised-200 outline-none",
                     {
                       "top-11 left-14": variant === "sidebar",
-                      "top-10 left-4": variant === "top-navigation",
+                      "top-11 left-4 md:top-10": variant === "top-navigation",
                     }
                   )}
                 >

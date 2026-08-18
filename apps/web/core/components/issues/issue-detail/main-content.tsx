@@ -214,15 +214,6 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
         </div>
       </div>
 
-      <IssueDetailWidgets
-        workspaceSlug={workspaceSlug}
-        projectId={projectId}
-        issueId={issueId}
-        disabled={!isEditable || isArchived}
-        renderWidgetModals={!isPeekModeActive}
-        issueServiceType={EIssueServiceType.ISSUES}
-      />
-
       {windowSize[0] < 768 && (
         <PeekOverviewProperties
           workspaceSlug={workspaceSlug}
@@ -232,6 +223,15 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
           disabled={!isEditable || isArchived}
         />
       )}
+
+      <IssueDetailWidgets
+        workspaceSlug={workspaceSlug}
+        projectId={projectId}
+        issueId={issueId}
+        disabled={!isEditable || isArchived}
+        renderWidgetModals={!isPeekModeActive}
+        issueServiceType={EIssueServiceType.ISSUES}
+      />
 
       <IssueActivity workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={isArchived} />
     </>

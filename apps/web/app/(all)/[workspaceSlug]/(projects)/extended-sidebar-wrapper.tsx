@@ -39,22 +39,35 @@ export const ExtendedSidebarWrapper = observer(function ExtendedSidebarWrapper(p
     }
   }, [sidebarCollapsed, handleClose]);
 
+  useEffect(() => {
+    if (!isExtendedSidebarOpened) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") handleClose();
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [handleClose, isExtendedSidebarOpened]);
+
   return (
     <div
       id={excludedElementId}
       ref={extendedSidebarRef}
       className={cn(
-        "shadow-sm absolute z-[21] flex h-full transform flex-col border-r border-subtle bg-surface-1 p-4 py-2 transition-all duration-300 ease-in-out",
+        "shadow-sm absolute left-0 z-[21] flex h-full w-[min(calc(100vw-3rem),300px)] transform flex-col border-r border-subtle bg-surface-1 p-4 py-2 transition-all duration-300 ease-in-out md:left-[var(--sidebar-left)] md:w-[var(--extended-sidebar-width)]",
         {
           "opacity-100": isExtendedSidebarOpened,
           "hidden opacity-0": !isExtendedSidebarOpened,
         },
         className
       )}
-      style={{
-        left: `${storedValue ?? SIDEBAR_WIDTH}px`,
-        width: `${EXTENDED_SIDEBAR_WIDTH}px`,
-      }}
+      style={
+        {
+          "--sidebar-left": `${storedValue ?? SIDEBAR_WIDTH}px`,
+          "--extended-sidebar-width": `${EXTENDED_SIDEBAR_WIDTH}px`,
+        } as React.CSSProperties
+      }
     >
       {children}
     </div>

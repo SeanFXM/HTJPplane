@@ -43,12 +43,15 @@ export const TopNavigationRoot = observer(function TopNavigationRoot() {
 
   return (
     <div
-      className={cn("z-[27] flex min-h-10 w-full items-center bg-canvas px-3.5 transition-all duration-300", {
-        "px-2": !showLabel,
-      })}
+      className={cn(
+        "z-[27] flex min-h-11 w-full items-center gap-1 bg-canvas px-2 transition-all duration-300 md:min-h-10 md:px-3.5",
+        {
+          "md:px-2": !showLabel,
+        }
+      )}
     >
       {/* Workspace Menu */}
-      <div className="flex-1 shrink-0">
+      <div className="min-w-0 flex-1 md:shrink-0">
         <WorkspaceMenuRoot variant="top-navigation" />
       </div>
       {/* Power K Search */}
@@ -56,25 +59,31 @@ export const TopNavigationRoot = observer(function TopNavigationRoot() {
         <TopNavPowerK />
       </div>
       {/* Additional Actions */}
-      <div className="flex flex-1 shrink-0 items-center justify-end gap-1">
-        <Tooltip tooltipContent="Inbox" position="bottom">
-          <AppSidebarItem
-            variant="link"
-            item={{
-              href: `/${workspaceSlug?.toString()}/notifications/`,
-              icon: (
-                <div className="relative">
-                  <InboxIcon className="size-5" />
-                  {totalNotifications > 0 && (
-                    <span className="absolute top-0 right-0 size-2 rounded-full bg-danger-primary" />
-                  )}
-                </div>
-              ),
-              isActive: pathname?.includes("/notifications/"),
-            }}
-          />
-        </Tooltip>
-        <div className="flex size-8 items-center justify-center rounded-md hover:bg-layer-1-hover">
+      <div className="flex shrink-0 items-center justify-end gap-1 md:flex-1">
+        <div className="max-md:[&_a]:size-11 max-md:[&_a]:items-center max-md:[&_a]:justify-center">
+          <Tooltip tooltipContent="Inbox" position="bottom">
+            <AppSidebarItem
+              variant="link"
+              item={{
+                href: `/${workspaceSlug?.toString()}/notifications/`,
+                icon: (
+                  <div className="relative">
+                    <InboxIcon
+                      className="size-5"
+                      role="img"
+                      aria-label={totalNotifications > 0 ? `Inbox, ${totalNotifications} unread` : "Inbox"}
+                    />
+                    {totalNotifications > 0 && (
+                      <span className="absolute top-0 right-0 size-2 rounded-full bg-danger-primary" />
+                    )}
+                  </div>
+                ),
+                isActive: pathname?.includes("/notifications/"),
+              }}
+            />
+          </Tooltip>
+        </div>
+        <div className="flex size-11 items-center justify-center rounded-md hover:bg-layer-1-hover md:size-8 max-md:[&>div>button]:size-11 max-md:[&>div>button>button]:size-11">
           <UserMenuRoot />
         </div>
       </div>

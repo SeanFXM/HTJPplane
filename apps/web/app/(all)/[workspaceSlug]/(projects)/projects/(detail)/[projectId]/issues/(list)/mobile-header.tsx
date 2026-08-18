@@ -68,17 +68,22 @@ export const ProjectIssuesMobileHeader = observer(function ProjectIssuesMobileHe
         onClose={() => setAnalyticsModal(false)}
         projectDetails={currentProjectDetails ?? undefined}
       />
-      <div className="z-[13] flex justify-evenly border-b border-subtle bg-surface-1 py-2 md:hidden">
+      <div className="z-[13] flex h-11 border-b border-subtle bg-surface-1 md:hidden">
         <MobileLayoutSelection
           layouts={[EIssueLayoutTypes.LIST, EIssueLayoutTypes.KANBAN, EIssueLayoutTypes.CALENDAR]}
           onChange={handleLayoutChange}
+          activeLayout={activeLayout}
+          isMobile
         />
-        <div className="flex flex-grow items-center justify-center border-l border-subtle text-13 text-secondary">
+        <div className="flex h-11 min-w-0 flex-1 items-stretch justify-center border-l border-subtle text-13 text-secondary [&>div]:h-full [&>div]:w-full [&>div>button]:h-full [&>div>button]:w-full">
           <FiltersDropdown
             title={t("common.display")}
             placement="bottom-end"
             menuButton={
-              <span className="flex items-center text-13 text-secondary">
+              <span
+                aria-label={t("common.display")}
+                className="flex size-full items-center justify-center text-13 text-secondary"
+              >
                 {t("common.display")}
                 <ChevronDownIcon className="ml-2 h-4 w-4 text-secondary" />
               </span>
@@ -99,8 +104,10 @@ export const ProjectIssuesMobileHeader = observer(function ProjectIssuesMobileHe
         </div>
 
         <button
+          type="button"
+          aria-label={t("common.analytics")}
           onClick={() => setAnalyticsModal(true)}
-          className="flex flex-grow justify-center border-l border-subtle text-13 text-secondary"
+          className="flex h-11 min-w-0 flex-1 items-center justify-center border-l border-subtle text-13 text-secondary"
         >
           {t("common.analytics")}
         </button>

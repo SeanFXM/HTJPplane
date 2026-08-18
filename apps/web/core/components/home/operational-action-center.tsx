@@ -126,19 +126,22 @@ export const OperationalActionCenter = observer(function OperationalActionCenter
       : copy.noDate;
 
   return (
-    <section className="mb-2 rounded-lg border border-subtle bg-surface-1 p-4" aria-labelledby="action-center-title">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+    <section
+      className="mb-2 rounded-lg border border-subtle bg-surface-1 p-3 sm:p-4"
+      aria-labelledby="action-center-title"
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
           <h2 id="action-center-title" className="text-16 font-semibold text-primary">
             {copy.title}
           </h2>
           <p className="mt-0.5 text-12 text-secondary">{copy.description}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex w-full items-center gap-2 sm:w-auto sm:shrink-0">
           {currentUser?.id && (
             <Link
               href={`/${workspaceSlug}/profile/${currentUser.id}`}
-              className="rounded-md border border-subtle px-3 py-1.5 text-12 font-medium text-secondary hover:bg-surface-2"
+              className="flex min-h-11 min-w-0 flex-1 items-center justify-center rounded-md border border-subtle px-2.5 py-1.5 text-center text-12 font-medium whitespace-nowrap text-secondary hover:bg-surface-2 sm:min-h-9 sm:flex-none sm:px-3"
             >
               {copy.myWork}
             </Link>
@@ -149,7 +152,7 @@ export const OperationalActionCenter = observer(function OperationalActionCenter
             disabled={!canPerformAnyCreateAction}
             title={!canPerformAnyCreateAction ? copy.noCreateAccess : undefined}
             className={cn(
-              "rounded-md px-3 py-1.5 text-12 font-medium",
+              "flex min-h-11 min-w-0 flex-1 items-center justify-center rounded-md px-2.5 py-1.5 text-center text-12 font-medium whitespace-nowrap sm:min-h-9 sm:flex-none sm:px-3",
               canPerformAnyCreateAction
                 ? "bg-accent-primary text-on-color hover:bg-accent-primary/90"
                 : "cursor-not-allowed bg-layer-3 text-placeholder"
@@ -161,7 +164,7 @@ export const OperationalActionCenter = observer(function OperationalActionCenter
       </div>
 
       {isLoading ? (
-        <div className="mt-4 grid grid-cols-4 gap-2" aria-label="Loading action center">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Loading action center">
           {["overdue", "today", "upcoming", "blocked"].map((key) => (
             <div key={key} className="h-20 animate-pulse rounded-md bg-surface-2" />
           ))}
@@ -175,9 +178,9 @@ export const OperationalActionCenter = observer(function OperationalActionCenter
         </div>
       ) : (
         <>
-          <div className="mt-4 grid grid-cols-4 gap-2">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {cards.map((card) => (
-              <div key={card.key} className={cn("rounded-md border p-3", CARD_STYLES[card.key])}>
+              <div key={card.key} className={cn("min-h-20 rounded-md border p-2.5 sm:p-3", CARD_STYLES[card.key])}>
                 <div className="text-24 leading-none font-semibold tabular-nums">{card.issues.length}</div>
                 <div className="mt-2 text-12 font-medium">{card.label}</div>
               </div>
@@ -194,16 +197,23 @@ export const OperationalActionCenter = observer(function OperationalActionCenter
                   <li key={issue.id}>
                     <Link
                       href={getIssueLink(workspaceSlug, issue)}
-                      className="flex items-center gap-3 rounded-sm px-1 py-2.5 hover:bg-surface-2"
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 rounded-sm px-1 py-2.5 hover:bg-surface-2 sm:flex sm:gap-3"
                     >
-                      <span className={cn("w-16 shrink-0 text-11 font-medium", CARD_STYLES[kind].split(" ").at(-1))}>
+                      <span
+                        className={cn(
+                          "col-start-1 row-start-2 truncate text-11 font-medium sm:col-auto sm:row-auto sm:w-16 sm:shrink-0",
+                          CARD_STYLES[kind].split(" ").at(-1)
+                        )}
+                      >
                         {label}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-13 text-primary">{issue.name}</span>
-                      <span className="shrink-0 text-11 text-placeholder">
+                      <span className="col-start-1 row-start-1 min-w-0 truncate text-13 text-primary sm:col-auto sm:row-auto sm:flex-1">
+                        {issue.name}
+                      </span>
+                      <span className="col-start-2 row-start-1 shrink-0 justify-self-end text-11 text-placeholder sm:col-auto sm:row-auto sm:justify-self-auto">
                         {issue.project__identifier}-{issue.sequence_id}
                       </span>
-                      <span className="w-16 shrink-0 text-right text-11 text-secondary">
+                      <span className="col-start-2 row-start-2 shrink-0 justify-self-end text-right text-11 text-secondary sm:col-auto sm:row-auto sm:w-16 sm:justify-self-auto">
                         {formatDate(issue.target_date)}
                       </span>
                     </Link>
