@@ -30,13 +30,18 @@ export const SidebarWrapper = observer(function SidebarWrapper(props: TSidebarWr
   // state
   const [isCustomizeNavDialogOpen, setIsCustomizeNavDialogOpen] = useState(false);
   // store hooks
-  const { toggleSidebar, sidebarCollapsed } = useAppTheme();
+  const { toggleSidebar, sidebarCollapsed, isExtendedSidebarOpened, isExtendedProjectSidebarOpened } = useAppTheme();
   const windowSize = useSize();
   // refs
   const ref = useRef<HTMLDivElement>(null);
   const previousIsMobileViewportRef = useRef<boolean | null>(null);
 
   useOutsideClickDetector(ref, () => {
+    // ResizableSidebar also mounts a CSS-hidden peek copy; only the visible copy should react.
+    if (ref.current?.getClientRects().length === 0) return;
+    // Extended sidebars own their outside-click lifecycle and should close before the main drawer.
+    if (isExtendedSidebarOpened || isExtendedProjectSidebarOpened) return;
+
     if (sidebarCollapsed === false && window.innerWidth < 768) {
       toggleSidebar(true);
     }
