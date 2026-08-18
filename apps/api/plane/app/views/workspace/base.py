@@ -383,17 +383,17 @@ class UserWorkspaceDashboardEndpoint(BaseAPIView):
 
         return Response(
             {
-                "issue_activities": issue_activities,
-                "completed_issues": completed_issues,
+                "issue_activities": list(issue_activities),
+                "completed_issues": list(completed_issues),
                 "assigned_issues_count": assigned_issues,
                 "pending_issues_count": pending_issues_count,
                 "completed_issues_count": completed_issues_count,
                 "issues_due_week_count": issues_due_week,
-                "state_distribution": state_distribution,
-                "today_issues": today_issues.values(*issue_summary_fields),
-                "overdue_issues": overdue_issues.values(*issue_summary_fields),
-                "upcoming_issues": upcoming_issues.values(*issue_summary_fields),
-                "blocked_issues": blocked_issues.values(*issue_summary_fields),
+                "state_distribution": list(state_distribution),
+                "today_issues": list(today_issues.values(*issue_summary_fields)),
+                "overdue_issues": list(overdue_issues.values(*issue_summary_fields)),
+                "upcoming_issues": list(upcoming_issues.values(*issue_summary_fields)),
+                "blocked_issues": list(blocked_issues.values(*issue_summary_fields)),
             },
             status=status.HTTP_200_OK,
         )

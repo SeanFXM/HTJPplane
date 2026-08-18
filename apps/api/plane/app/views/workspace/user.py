@@ -495,15 +495,15 @@ class WorkspaceUserProfileStatsEndpoint(BaseAPIView):
 
         return Response(
             {
-                "state_distribution": state_distribution,
-                "priority_distribution": priority_distribution,
+                "state_distribution": list(state_distribution),
+                "priority_distribution": list(priority_distribution),
                 "created_issues": created_issues,
                 "assigned_issues": assigned_issues_count,
                 "completed_issues": completed_issues_count,
                 "pending_issues": pending_issues_count,
                 "subscribed_issues": subscribed_issues_count,
-                "present_cycles": present_cycle,
-                "upcoming_cycles": upcoming_cycles,
+                "present_cycles": list(present_cycle),
+                "upcoming_cycles": list(upcoming_cycles),
             }
         )
 
