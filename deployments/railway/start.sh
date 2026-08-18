@@ -36,6 +36,9 @@ export SITE_ADDRESS=":${PORT:-80}"
 export USE_MINIO="${USE_MINIO:-0}"
 export GUNICORN_WORKERS="${GUNICORN_WORKERS:-1}"
 export CELERY_WORKER_CONCURRENCY="${CELERY_WORKER_CONCURRENCY:-2}"
+export ENABLE_MIGRATOR="${ENABLE_MIGRATOR:-1}"
+export ENABLE_WORKER="${ENABLE_WORKER:-1}"
+export ENABLE_BEAT="${ENABLE_BEAT:-1}"
 export FILE_SIZE_LIMIT="${FILE_SIZE_LIMIT:-5242880}"
 # SECRET_KEY / LIVE_SERVER_SECRET_KEY are validated as required above — no default.
 export API_KEY_RATE_LIMIT="${API_KEY_RATE_LIMIT:-60/minute}"
@@ -48,10 +51,16 @@ if [ -n "$DOMAIN_NAME" ]; then
 	proto="${APP_PROTOCOL:-https}"
 	export WEB_URL="${WEB_URL:-$proto://$DOMAIN_NAME}"
 	export APP_DOMAIN="${APP_DOMAIN:-$DOMAIN_NAME}"
-	export CORS_ALLOWED_ORIGINS="${CORS_ALLOWED_ORIGINS:-http://$DOMAIN_NAME,https://$DOMAIN_NAME}"
+	export LIVE_BASE_URL="${LIVE_BASE_URL:-$proto://$DOMAIN_NAME}"
+	export CORS_ALLOWED_ORIGINS="${CORS_ALLOWED_ORIGINS:-$proto://$DOMAIN_NAME}"
 fi
 
-echo "✅ Booting: SITE_ADDRESS=$SITE_ADDRESS  GUNICORN_WORKERS=$GUNICORN_WORKERS  CELERY_WORKER_CONCURRENCY=$CELERY_WORKER_CONCURRENCY  ENABLE_SPACE=${ENABLE_SPACE:-1}  ENABLE_LIVE=${ENABLE_LIVE:-1}"
+# Live calls the API server-to-server. In AIO both processes share the same
+# container, so keep this traffic on loopback and avoid a public round-trip.
+export API_BASE_URL="${API_BASE_URL:-http://127.0.0.1:3004}"
+export LIVE_BASE_PATH="${LIVE_BASE_PATH:-/live}"
+
+echo "✅ Booting: SITE_ADDRESS=$SITE_ADDRESS  GUNICORN_WORKERS=$GUNICORN_WORKERS  CELERY_WORKER_CONCURRENCY=$CELERY_WORKER_CONCURRENCY  ENABLE_MIGRATOR=$ENABLE_MIGRATOR  ENABLE_WORKER=$ENABLE_WORKER  ENABLE_BEAT=$ENABLE_BEAT  ENABLE_SPACE=${ENABLE_SPACE:-1}  ENABLE_LIVE=${ENABLE_LIVE:-1}"
 echo "------------------------------------------------"
 
 exec /usr/local/bin/supervisord -c /etc/supervisor/conf.d/supervisor.conf
