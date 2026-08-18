@@ -12,7 +12,7 @@ from django.db import IntegrityError, close_old_connections, transaction
 from rest_framework import status
 
 from plane.api.serializers.issue import IssueSerializer as ExternalIssueSerializer
-from plane.app.serializers.issue import IssueSerializer as AppIssueSerializer
+from plane.app.serializers.issue import IssueCreateSerializer as AppIssueSerializer
 from plane.app.serializers.draft import DraftIssueCreateSerializer
 from plane.db.models import Issue, IssueAssignee, Project, ProjectMember, State, User
 
