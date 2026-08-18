@@ -69,12 +69,12 @@ export const UserProfileHeader = observer(function UserProfileHeader(props: TUse
           />
         </Breadcrumbs>
       </Header.LeftItem>
-      <Header.RightItem className="min-w-0 flex-1 md:flex-none">
+      <Header.RightItem className="w-[148px] shrink-0 md:w-auto">
         <div className="hidden md:flex md:items-center">{showProfileIssuesFilter && <ProfileIssuesFilter />}</div>
         <div className="flex min-w-0 flex-1 items-center gap-2 md:hidden">
           <CustomMenu
             maxHeight={"md"}
-            className="flex h-11 min-w-0 flex-1 justify-center text-13 text-secondary"
+            className="flex h-11 w-24 shrink-0 justify-center text-13 text-secondary"
             placement="bottom-start"
             ariaLabel={currentTabLabel}
             customButton={
@@ -83,7 +83,7 @@ export const UserProfileHeader = observer(function UserProfileHeader(props: TUse
                 <ChevronDownIcon className="size-4 shrink-0 text-placeholder" />
               </div>
             }
-            customButtonClassName="flex h-11 min-w-0 w-full items-center justify-center text-13 text-secondary"
+            customButtonClassName="flex h-11 min-w-11 w-full items-center justify-center text-13 text-secondary"
             closeOnSelect
           >
             {tabsList.map((tab) => (
