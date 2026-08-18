@@ -544,4 +544,4 @@ class UserIssueCompletedGraphEndpoint(BaseAPIView):
             .order_by("week")
         )
 
-        return Response(issues, status=status.HTTP_200_OK)
+        return Response(list(issues), status=status.HTTP_200_OK)
