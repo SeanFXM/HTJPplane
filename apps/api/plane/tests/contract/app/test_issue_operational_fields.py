@@ -88,7 +88,7 @@ class TestIssueOperationalFields:
         assert response.data["waiting_since"] is not None
         assert response.data["blocked_reason"] == "Missing approved images"
         assert response.data["next_action"] == "Ask the partner for approval"
-        assert response.data["assignee_ids"] == [str(create_user.id)]
+        assert response.json()["assignee_ids"] == [str(create_user.id)]
 
         issue = Issue.objects.get(pk=response.data["id"])
         detail_response = session_client.get(self.issue_detail_url(workspace, project, issue))
@@ -138,7 +138,7 @@ class TestIssueOperationalFields:
         assert not IssueAssignee.objects.filter(issue_id=explicit_unassigned.data["id"]).exists()
 
         assert omitted_owner.status_code == status.HTTP_201_CREATED
-        assert omitted_owner.data["assignee_ids"] == [str(create_user.id)]
+        assert omitted_owner.json()["assignee_ids"] == [str(create_user.id)]
         assert IssueAssignee.objects.filter(
             issue_id=omitted_owner.data["id"],
             assignee=create_user,
