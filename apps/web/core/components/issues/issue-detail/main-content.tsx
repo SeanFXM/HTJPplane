@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react";
 // plane imports
 import type { EditorRefApi } from "@plane/editor";
+import { useTranslation } from "@plane/i18n";
 import type { TNameDescriptionLoader } from "@plane/types";
 import { EFileAssetType, EIssueServiceType } from "@plane/types";
 import { getTextContent } from "@plane/utils";
@@ -54,6 +55,7 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
   const editorRef = useRef<EditorRefApi>(null);
   // states
   const [isSubmitting, setIsSubmitting] = useState<TNameDescriptionLoader>("saved");
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   // hooks
   const windowSize = useSize();
   const { data: currentUser } = useUser();
@@ -64,9 +66,11 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
   } = useIssueDetail();
   const { getProjectById } = useProject();
   const { setShowAlert } = useReloadConfirmations(isSubmitting === "submitting");
+  const { t } = useTranslation();
   // derived values
   const projectDetails = getProjectById(projectId);
   const issue = issueId ? getIssueById(issueId) : undefined;
+  const isDescriptionEmpty = getTextContent(issue?.description_html ?? "").trim().length === 0;
   // debounced duplicate issues swr
   const { duplicateIssues } = useDebouncedDuplicateIssues(
     workspaceSlug,
@@ -85,6 +89,16 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
       setTimeout(async () => setIsSubmitting("saved"), 2000);
     } else if (isSubmitting === "submitting") setShowAlert(true);
   }, [isSubmitting, setShowAlert, setIsSubmitting]);
+
+  useEffect(() => {
+    setIsDescriptionExpanded(!isDescriptionEmpty);
+  }, [issueId, isDescriptionEmpty]);
+
+  useEffect(() => {
+    if (!isDescriptionExpanded || !isDescriptionEmpty) return;
+    const animationFrame = window.requestAnimationFrame(() => editorRef.current?.focus("end"));
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [isDescriptionEmpty, isDescriptionExpanded]);
 
   if (!issue || !issue.project_id) return <></>;
 
@@ -132,26 +146,39 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
           containerClassName="-ml-3"
         />
 
-        <DescriptionInput
-          issueSequenceId={issue.sequence_id}
-          containerClassName="p-0 border-none"
-          disabled={isArchived || !isEditable}
-          editorRef={editorRef}
-          entityId={issue.id}
-          fileAssetType={EFileAssetType.ISSUE_DESCRIPTION}
-          initialValue={issue.description_html}
-          key={issue.id}
-          onSubmit={async (value, isMigrationUpdate) => {
-            if (!issue.id || !issue.project_id) return;
-            await issueOperations.update(workspaceSlug, issue.project_id, issue.id, {
-              description_html: value,
-              ...(isMigrationUpdate ? { skip_activity: "true" } : {}),
-            });
-          }}
-          projectId={issue.project_id}
-          setIsSubmitting={(value) => setIsSubmitting(value)}
-          workspaceSlug={workspaceSlug}
-        />
+        {isDescriptionExpanded || !isDescriptionEmpty ? (
+          <DescriptionInput
+            issueSequenceId={issue.sequence_id}
+            containerClassName="border-none p-0"
+            disabled={isArchived || !isEditable}
+            editorRef={editorRef}
+            entityId={issue.id}
+            fileAssetType={EFileAssetType.ISSUE_DESCRIPTION}
+            initialValue={issue.description_html}
+            key={issue.id}
+            onSubmit={async (value, isMigrationUpdate) => {
+              if (!issue.id || !issue.project_id) return;
+              await issueOperations.update(workspaceSlug, issue.project_id, issue.id, {
+                description_html: value,
+                ...(isMigrationUpdate ? { skip_activity: "true" } : {}),
+              });
+            }}
+            projectId={issue.project_id}
+            setIsSubmitting={(value) => setIsSubmitting(value)}
+            workspaceSlug={workspaceSlug}
+          />
+        ) : (
+          isEditable &&
+          !isArchived && (
+            <button
+              type="button"
+              className="w-full rounded-md border border-dashed border-subtle px-3 py-2 text-left text-body-sm-regular text-placeholder hover:border-strong hover:bg-layer-1 hover:text-secondary focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:outline-none"
+              onClick={() => setIsDescriptionExpanded(true)}
+            >
+              {t("common.click_to_add_description")}
+            </button>
+          )
+        )}
 
         <div className="flex items-center justify-between gap-2">
           {currentUser && (
@@ -174,10 +201,10 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
                 isRestoreDisabled: !isEditable || isArchived,
               }}
               fetchHandlers={{
-                listDescriptionVersions: (issueId) =>
-                  workItemVersionService.listDescriptionVersions(workspaceSlug, projectId, issueId),
-                retrieveDescriptionVersion: (issueId, versionId) =>
-                  workItemVersionService.retrieveDescriptionVersion(workspaceSlug, projectId, issueId, versionId),
+                listDescriptionVersions: (targetIssueId) =>
+                  workItemVersionService.listDescriptionVersions(workspaceSlug, projectId, targetIssueId),
+                retrieveDescriptionVersion: (targetIssueId, versionId) =>
+                  workItemVersionService.retrieveDescriptionVersion(workspaceSlug, projectId, targetIssueId, versionId),
               }}
               handleRestore={(descriptionHTML) => editorRef.current?.setEditorValue(descriptionHTML, true)}
               projectId={projectId}

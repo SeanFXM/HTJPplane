@@ -12,6 +12,7 @@ import { useTranslation } from "@plane/i18n";
 import type { TPowerKContext } from "@/components/power-k/core/types";
 import { PowerKSettingsMenu } from "@/components/power-k/menus/settings";
 import { PROJECT_SETTINGS_ICONS } from "@/components/settings/project/sidebar/item-icon";
+import { isProjectSettingsItemVisible } from "@/constants/product-policy";
 // hooks
 import { useUserPermissions } from "@/hooks/store/user";
 
@@ -31,6 +32,7 @@ export const PowerKOpenProjectSettingsMenu = observer(function PowerKOpenProject
     (setting) =>
       context.params.workspaceSlug &&
       context.params.projectId &&
+      isProjectSettingsItemVisible(setting.key, context.params.projectId.toString()) &&
       allowPermissions(
         setting.access,
         EUserPermissionsLevel.PROJECT,

@@ -10,7 +10,6 @@ import { CloseIcon } from "@plane/propel/icons";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { TProjectAppliedDisplayFilterKeys, TProjectFilters } from "@plane/types";
 import { EHeaderVariant, Header, Tag } from "@plane/ui";
-import { replaceUnderscoreIfSnakeCase } from "@plane/utils";
 // local imports
 import { AppliedAccessFilters } from "./access";
 import { AppliedDateFilters } from "./date";
@@ -29,7 +28,7 @@ type Props = {
 };
 
 const MEMBERS_FILTERS = new Set(["lead", "members"]);
-const DATE_FILTERS = ["created_at"];
+const DATE_FILTERS = new Set(["created_at"]);
 
 export function ProjectAppliedFiltersList(props: Props) {
   const { t } = useTranslation();
@@ -48,6 +47,12 @@ export function ProjectAppliedFiltersList(props: Props) {
   if (Object.keys(appliedFilters).length === 0 && appliedDisplayFilters.length === 0) return null;
 
   const isEditingAllowed = alwaysAllowEditing;
+  const filterLabels: Partial<Record<keyof TProjectFilters, string>> = {
+    access: t("workspace_projects.filter_labels.access"),
+    lead: t("workspace_projects.filter_labels.lead"),
+    members: t("workspace_projects.filter_labels.members"),
+    created_at: t("workspace_projects.filter_labels.created_at"),
+  };
 
   return (
     <Header variant={EHeaderVariant.TERNARY}>
@@ -61,7 +66,7 @@ export function ProjectAppliedFiltersList(props: Props) {
 
           return (
             <Tag key={filterKey}>
-              <span className="text-11 text-tertiary">{replaceUnderscoreIfSnakeCase(filterKey)}</span>
+              <span className="text-11 text-tertiary">{filterLabels[filterKey] ?? filterKey}</span>
               {filterKey === "access" && (
                 <AppliedAccessFilters
                   editable={isEditingAllowed}
@@ -69,7 +74,7 @@ export function ProjectAppliedFiltersList(props: Props) {
                   values={value}
                 />
               )}
-              {DATE_FILTERS.includes(filterKey) && (
+              {DATE_FILTERS.has(filterKey) && (
                 <AppliedDateFilters
                   editable={isEditingAllowed}
                   handleRemove={(val) => handleRemoveFilter(filterKey, val)}
@@ -98,7 +103,7 @@ export function ProjectAppliedFiltersList(props: Props) {
         {/* Applied display filters */}
         {appliedDisplayFilters.length > 0 && (
           <Tag key="project_display_filters">
-            <span className="text-11 text-tertiary">{t("projects.label", { count: 2 })}</span>
+            <span className="text-11 text-tertiary">{t("sidebar.projects")}</span>
             <AppliedProjectDisplayFilters
               editable={isEditingAllowed}
               values={appliedDisplayFilters}
@@ -118,10 +123,7 @@ export function ProjectAppliedFiltersList(props: Props) {
       <Header.RightItem>
         <Tooltip
           tooltipContent={
-            <p>
-              <span className="font-semibold">{filteredProjects}</span> of{" "}
-              <span className="font-semibold">{totalProjects}</span> projects match the applied filters.
-            </p>
+            <p>{t("workspace_projects.filter_summary", { filtered: filteredProjects, total: totalProjects })}</p>
           }
         >
           <span className="rounded-full bg-layer-1 px-2.5 py-1 text-13 font-medium">

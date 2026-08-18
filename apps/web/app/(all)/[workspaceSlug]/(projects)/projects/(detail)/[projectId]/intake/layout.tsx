@@ -6,9 +6,13 @@
 
 import { Outlet } from "react-router";
 // components
+import { guardProjectFeatureRoute } from "@/app/routes/guards/product-policy";
 import { AppHeader } from "@/components/core/app-header";
 import { ContentWrapper } from "@/components/core/content-wrapper";
 import { ProjectInboxHeader } from "@/plane-web/components/projects/settings/intake/header";
+import type { Route } from "./+types/layout";
+
+export const clientLoader = ({ params }: Route.ClientLoaderArgs) => guardProjectFeatureRoute(params, "intake");
 
 export default function ProjectInboxIssuesLayout() {
   return (

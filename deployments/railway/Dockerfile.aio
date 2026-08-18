@@ -45,8 +45,8 @@ COPY --from=web-builder /app/out/json/ .
 COPY --from=web-builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=web-builder /app/out/full/ .
 COPY turbo.json turbo.json
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm fetch --store-dir=/pnpm/store
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --offline --frozen-lockfile --store-dir=/pnpm/store
+RUN pnpm fetch --store-dir=/pnpm/store
+RUN pnpm install --offline --frozen-lockfile --store-dir=/pnpm/store
 ARG VITE_API_BASE_URL=""
 ARG VITE_ADMIN_BASE_URL=""
 ARG VITE_ADMIN_BASE_PATH="/god-mode"
@@ -55,8 +55,10 @@ ARG VITE_LIVE_BASE_PATH="/live"
 ARG VITE_SPACE_BASE_URL=""
 ARG VITE_SPACE_BASE_PATH="/spaces"
 ARG VITE_WEB_BASE_URL=""
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL VITE_ADMIN_BASE_URL=$VITE_ADMIN_BASE_URL VITE_ADMIN_BASE_PATH=$VITE_ADMIN_BASE_PATH VITE_LIVE_BASE_URL=$VITE_LIVE_BASE_URL VITE_LIVE_BASE_PATH=$VITE_LIVE_BASE_PATH VITE_SPACE_BASE_URL=$VITE_SPACE_BASE_URL VITE_SPACE_BASE_PATH=$VITE_SPACE_BASE_PATH VITE_WEB_BASE_URL=$VITE_WEB_BASE_URL
-RUN pnpm turbo run build --filter=web
+ARG VITE_MODULE_PILOT_PROJECT_IDS=""
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL VITE_ADMIN_BASE_URL=$VITE_ADMIN_BASE_URL VITE_ADMIN_BASE_PATH=$VITE_ADMIN_BASE_PATH VITE_LIVE_BASE_URL=$VITE_LIVE_BASE_URL VITE_LIVE_BASE_PATH=$VITE_LIVE_BASE_PATH VITE_SPACE_BASE_URL=$VITE_SPACE_BASE_URL VITE_SPACE_BASE_PATH=$VITE_SPACE_BASE_PATH VITE_WEB_BASE_URL=$VITE_WEB_BASE_URL VITE_MODULE_PILOT_PROJECT_IDS=$VITE_MODULE_PILOT_PROJECT_IDS
+RUN pnpm --filter=@plane/i18n check:critical-keys \
+  && pnpm turbo run build --filter=web
 
 # ---- admin (static SPA, served under /god-mode) -----------------------------
 FROM node-base AS admin-builder
@@ -73,8 +75,8 @@ COPY --from=admin-builder /app/out/json/ .
 COPY --from=admin-builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=admin-builder /app/out/full/ .
 COPY turbo.json turbo.json
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm fetch --store-dir=/pnpm/store
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --offline --frozen-lockfile --store-dir=/pnpm/store --prod=false
+RUN pnpm fetch --store-dir=/pnpm/store
+RUN pnpm install --offline --frozen-lockfile --store-dir=/pnpm/store --prod=false
 ARG VITE_API_BASE_URL=""
 ARG VITE_API_BASE_PATH="/api"
 ARG VITE_ADMIN_BASE_URL=""
@@ -89,6 +91,7 @@ ARG VITE_WEBSITE_URL="https://plane.so"
 ARG VITE_SUPPORT_EMAIL="support@plane.so"
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL VITE_API_BASE_PATH=$VITE_API_BASE_PATH VITE_ADMIN_BASE_URL=$VITE_ADMIN_BASE_URL VITE_ADMIN_BASE_PATH=$VITE_ADMIN_BASE_PATH VITE_SPACE_BASE_URL=$VITE_SPACE_BASE_URL VITE_SPACE_BASE_PATH=$VITE_SPACE_BASE_PATH VITE_LIVE_BASE_URL=$VITE_LIVE_BASE_URL VITE_LIVE_BASE_PATH=$VITE_LIVE_BASE_PATH VITE_WEB_BASE_URL=$VITE_WEB_BASE_URL VITE_WEB_BASE_PATH=$VITE_WEB_BASE_PATH VITE_WEBSITE_URL=$VITE_WEBSITE_URL VITE_SUPPORT_EMAIL=$VITE_SUPPORT_EMAIL
 RUN pnpm turbo run build --filter=admin
+RUN node apps/admin/verify-production-build.mjs apps/admin/build/client /god-mode/
 
 # ---- space (SSR, needs node at runtime) -------------------------------------
 FROM node-base AS space-builder
@@ -105,8 +108,8 @@ COPY --from=space-builder /app/out/json/ .
 COPY --from=space-builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=space-builder /app/out/full/ .
 COPY turbo.json turbo.json
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm fetch --store-dir=/pnpm/store
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --offline --frozen-lockfile --store-dir=/pnpm/store --prod=false
+RUN pnpm fetch --store-dir=/pnpm/store
+RUN pnpm install --offline --frozen-lockfile --store-dir=/pnpm/store --prod=false
 ARG VITE_API_BASE_URL=""
 ARG VITE_API_BASE_PATH="/api"
 ARG VITE_ADMIN_BASE_URL=""
@@ -136,8 +139,8 @@ COPY --from=live-builder /app/out/json/ .
 COPY --from=live-builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=live-builder /app/out/full/ .
 COPY turbo.json turbo.json
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm fetch --store-dir=/pnpm/store
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --offline --frozen-lockfile --store-dir=/pnpm/store
+RUN pnpm fetch --store-dir=/pnpm/store
+RUN pnpm install --offline --frozen-lockfile --store-dir=/pnpm/store
 RUN pnpm turbo run build --filter=live
 
 # ---- backend (Django + celery) ----------------------------------------------
@@ -172,6 +175,12 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV NODE_ENV=production
+# Hotone Japan is an invite-only, single-workspace internal installation.
+# Set HOTONE_INTERNAL_MODE=0 only if this deployment stops being internal.
+ENV HOTONE_INTERNAL_MODE=1
+ENV ENABLE_SIGNUP=0
+ENV DISABLE_WORKSPACE_CREATION=1
+ENV ENABLE_SPACE=0
 
 # Runtime libs: Django C deps, node musl runtime (libstdc++), tooling.
 RUN apk add --no-cache \
@@ -216,6 +225,9 @@ COPY deployments/railway/Caddyfile        /app/proxy/Caddyfile
 COPY deployments/railway/supervisor.conf  /etc/supervisor/conf.d/supervisor.conf
 COPY deployments/railway/start.sh         /app/start.sh
 
+# Fail the image build when the reverse-proxy configuration is invalid.
+RUN caddy validate --config /app/proxy/Caddyfile --adapter caddyfile
+
 # Non-root runtime user; Caddy/Node caches live under /app/data (writable).
 ENV HOME=/app/data XDG_DATA_HOME=/app/data XDG_CONFIG_HOME=/app/data
 RUN addgroup -g 1001 plane \
@@ -225,10 +237,10 @@ RUN addgroup -g 1001 plane \
     && chown -R plane:plane /app
 USER plane
 
-# Liveness of the API process behind Caddy (Railway's own probe only hits Caddy,
-# so a dead api/worker would otherwise still look "healthy").
+# Use the same aggregate readiness contract as Railway: Caddy first verifies
+# the mounted Admin index, then Django confirms it can query the database.
 HEALTHCHECK --interval=30s --timeout=6s --start-period=120s --retries=3 \
-  CMD curl -s -o /dev/null --max-time 5 http://127.0.0.1:3004/ || exit 1
+  CMD curl -fsS -o /dev/null --max-time 5 "http://127.0.0.1:${PORT:-80}/health" || exit 1
 
 EXPOSE 80
 CMD ["/app/start.sh"]

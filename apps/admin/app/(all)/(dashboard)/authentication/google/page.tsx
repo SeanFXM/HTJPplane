@@ -14,6 +14,7 @@ import GoogleLogo from "@/app/assets/logos/google-logo.svg?url";
 // components
 import { AuthenticationMethodCard } from "@/components/authentication/authentication-method-card";
 import { PageWrapper } from "@/components/common/page-wrapper";
+import { getInternalAdminPageTitle } from "@/constants/branding";
 // hooks
 import { useInstance } from "@/hooks/store";
 // types
@@ -57,6 +58,7 @@ const InstanceGoogleAuthenticationPage = observer(function InstanceGoogleAuthent
     await updateConfigPromise
       .then(() => {
         setIsSubmitting(false);
+        return undefined;
       })
       .catch((err) => {
         console.error(err);
@@ -68,8 +70,7 @@ const InstanceGoogleAuthenticationPage = observer(function InstanceGoogleAuthent
       customHeader={
         <AuthenticationMethodCard
           name="Google"
-          description="Allow members to login or sign up to plane with their Google
-            accounts."
+          description="Allow Hotone Japan members to sign in with their Google accounts."
           icon={<img src={GoogleLogo} height={24} width={24} alt="Google Logo" />}
           config={
             <ToggleSwitch
@@ -81,6 +82,7 @@ const InstanceGoogleAuthenticationPage = observer(function InstanceGoogleAuthent
                   updateConfig("IS_GOOGLE_ENABLED", "1");
                 }
               }}
+              label="Enable Google authentication"
               size="sm"
               disabled={isSubmitting || !formattedConfig}
             />
@@ -105,6 +107,6 @@ const InstanceGoogleAuthenticationPage = observer(function InstanceGoogleAuthent
   );
 });
 
-export const meta: Route.MetaFunction = () => [{ title: "Google Authentication - God Mode" }];
+export const meta: Route.MetaFunction = () => [{ title: getInternalAdminPageTitle("Google authentication") }];
 
 export default InstanceGoogleAuthenticationPage;

@@ -14,9 +14,13 @@ import { SettingsContentWrapper } from "@/components/settings/content-wrapper";
 // hooks
 import { useProject } from "@/hooks/store/use-project";
 import { useUserPermissions } from "@/hooks/store/user";
+import { redirectUnavailableProductArea } from "@/app/routes/guards/product-policy";
 // local imports
 import type { Route } from "./+types/page";
 import { EstimatesProjectSettingsHeader } from "./header";
+
+export const clientLoader = ({ params }: Route.ClientLoaderArgs) =>
+  redirectUnavailableProductArea(params, "estimates", `/${params.workspaceSlug}/settings/projects/${params.projectId}`);
 
 function EstimatesSettingsPage({ params }: Route.ComponentProps) {
   const { workspaceSlug, projectId } = params;

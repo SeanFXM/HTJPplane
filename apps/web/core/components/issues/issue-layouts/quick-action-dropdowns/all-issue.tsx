@@ -138,6 +138,7 @@ export const AllIssueQuickActions = observer(function AllIssueQuickActions(props
       <ContextMenu parentRef={parentRef} items={CONTEXT_MENU_ITEMS} />
       <CustomMenu
         ellipsis
+        ariaLabel={`Actions for ${issue.name}`}
         customButton={customActionButton}
         portalElement={portalElement}
         placement={placements}

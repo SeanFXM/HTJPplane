@@ -5,25 +5,24 @@
  */
 
 import { useState } from "react";
-import { intersection } from "lodash-es";
 import { observer } from "mobx-react";
 import { Controller, useForm } from "react-hook-form";
-// import { Info } from "lucide-react";
+import { Info } from "lucide-react";
 import {
   EUserPermissions,
   EUserPermissionsLevel,
   EXPORTERS_LIST,
-  // ISSUE_DISPLAY_FILTERS_BY_PAGE,
+  ISSUE_DISPLAY_FILTERS_BY_PAGE,
 } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
-// import { Tooltip } from "@plane/propel/tooltip";
-// import { EIssuesStoreType } from "@plane/types";
-import type { TWorkItemFilterExpression } from "@plane/types";
+import { Tooltip } from "@plane/propel/tooltip";
+import type { IIssueFilters, TWorkItemFilterExpression } from "@plane/types";
+import { EIssuesStoreType } from "@plane/types";
 import { CustomSearchSelect, CustomSelect } from "@plane/ui";
-// import { WorkspaceLevelWorkItemFiltersHOC } from "@/components/work-item-filters/filters-hoc/workspace-level";
-// import { WorkItemFiltersRow } from "@/components/work-item-filters/filters-row";
+import { WorkspaceLevelWorkItemFiltersHOC } from "@/components/work-item-filters/filters-hoc/workspace-level";
+import { WorkItemFiltersRow } from "@/components/work-item-filters/filters-row";
 import { useProject } from "@/hooks/store/use-project";
 import { useUser, useUserPermissions } from "@/hooks/store/user";
 import { ProjectExportService } from "@/services/project/project-export.service";
@@ -32,7 +31,6 @@ import { SettingsBoxedControlItem } from "../settings/boxed-control-item";
 
 type Props = {
   workspaceSlug: string;
-  provider: string | null;
   mutateServices: () => void;
 };
 type FormData = {
@@ -42,17 +40,24 @@ type FormData = {
   filters: TWorkItemFilterExpression;
 };
 
-// const initialWorkItemFilters = {
-//   richFilters: {},
-//   displayFilters: {},
-//   displayProperties: {},
-//   kanbanFilters: {
-//     group_by: [],
-//     sub_group_by: [],
-//   },
-// };
+const initialWorkItemFilters: IIssueFilters = {
+  richFilters: {},
+  displayFilters: undefined,
+  displayProperties: undefined,
+  kanbanFilters: undefined,
+};
 
 const projectExportService = new ProjectExportService();
+
+function getExportErrorMessage(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") return undefined;
+
+  const errorData = error as Record<string, unknown>;
+  if (typeof errorData.error === "string") return errorData.error;
+  if (typeof errorData.message === "string") return errorData.message;
+
+  return undefined;
+}
 
 export const ExportForm = observer(function ExportForm(props: Props) {
   // props
@@ -62,7 +67,7 @@ export const ExportForm = observer(function ExportForm(props: Props) {
 
   // store hooks
   const { allowPermissions } = useUserPermissions();
-  const { data: user, canPerformAnyCreateAction, projectsWithCreatePermissions } = useUser();
+  const { data: user } = useUser();
   const { workspaceProjectIds, getProjectById } = useProject();
   const { t } = useTranslation();
   // form
@@ -77,23 +82,23 @@ export const ExportForm = observer(function ExportForm(props: Props) {
 
   // derived values
   const hasProjects = workspaceProjectIds && workspaceProjectIds.length > 0;
-  const isMember = allowPermissions([EUserPermissions.ADMIN, EUserPermissions.MEMBER], EUserPermissionsLevel.WORKSPACE);
-  const wsProjectIdsWithCreatePermisisons = projectsWithCreatePermissions
-    ? intersection(workspaceProjectIds, Object.keys(projectsWithCreatePermissions))
-    : [];
-  const options = wsProjectIdsWithCreatePermisisons?.map((projectId) => {
+  const isAdmin = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.WORKSPACE);
+  const options = workspaceProjectIds?.flatMap((projectId) => {
     const projectDetails = getProjectById(projectId);
+    if (!projectDetails) return [];
 
-    return {
-      value: projectDetails?.id,
-      query: `${projectDetails?.name} ${projectDetails?.identifier}`,
-      content: (
-        <div className="flex items-center gap-2">
-          <span className="flex-shrink-0 text-10 text-secondary">{projectDetails?.identifier}</span>
-          <span className="truncate">{projectDetails?.name}</span>
-        </div>
-      ),
-    };
+    return [
+      {
+        value: projectDetails.id,
+        query: `${projectDetails.name} ${projectDetails.identifier}`,
+        content: (
+          <div className="flex items-center gap-2">
+            <span className="flex-shrink-0 text-10 text-secondary">{projectDetails.identifier}</span>
+            <span className="truncate">{projectDetails.name}</span>
+          </div>
+        ),
+      },
+    ];
   });
 
   // handlers
@@ -129,7 +134,7 @@ export const ExportForm = observer(function ExportForm(props: Props) {
         setToast({
           type: TOAST_TYPE.ERROR,
           title: t("error"),
-          message: t("workspace_settings.settings.exports.modal.toasts.error.message"),
+          message: getExportErrorMessage(error) ?? t("workspace_settings.settings.exports.modal.toasts.error.message"),
         });
       }
     } else {
@@ -153,7 +158,7 @@ export const ExportForm = observer(function ExportForm(props: Props) {
             <Controller
               control={control}
               name="project"
-              disabled={!isMember && (!hasProjects || !canPerformAnyCreateAction)}
+              disabled={!isAdmin || !hasProjects}
               render={({ field: { value, onChange } }) => (
                 <CustomSearchSelect
                   value={value ?? []}
@@ -169,7 +174,7 @@ export const ExportForm = observer(function ExportForm(props: Props) {
                             return projectDetails?.identifier;
                           })
                           .join(", ")
-                      : "All projects"
+                      : t("workspace_analytics.all_projects")
                   }
                   optionsClassName="max-w-48 sm:max-w-[532px]"
                   placement="bottom-end"
@@ -187,7 +192,7 @@ export const ExportForm = observer(function ExportForm(props: Props) {
             <Controller
               control={control}
               name="provider"
-              disabled={!isMember && (!hasProjects || !canPerformAnyCreateAction)}
+              disabled={!isAdmin || !hasProjects}
               render={({ field: { value, onChange } }) => (
                 <CustomSelect
                   value={value}
@@ -208,19 +213,19 @@ export const ExportForm = observer(function ExportForm(props: Props) {
           }
         />
         <div className="px-4 py-3">
-          <Button variant="primary" size="lg" type="submit" loading={exportLoading}>
+          <Button variant="primary" size="lg" type="submit" loading={exportLoading} disabled={!isAdmin || !hasProjects}>
             {exportLoading ? `${t("workspace_settings.settings.exports.exporting")}...` : t("export")}
           </Button>
         </div>
       </div>
       {/* Rich Filters */}
-      {/* <div className="w-full">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="text-13 font-medium text-secondary leading-tight">{t("common.filters")}</div>
+      <div className="w-full">
+        <div className="mb-2 flex items-center gap-2">
+          <div className="text-13 leading-tight font-medium text-secondary">{t("common.filters")}</div>
           <Tooltip
             tooltipContent={
-              <div className="max-w-[238px] flex gap-2">
-                <div className=" rounded-sm bg-layer-1 flex items-center justify-center p-1 h-5 aspect-square">
+              <div className="flex max-w-[238px] gap-2">
+                <div className="flex aspect-square h-5 items-center justify-center rounded-sm bg-layer-1 p-1">
                   <Info className="h-3 w-3" />
                 </div>
                 {t("workspace_settings.settings.exports.filters_info")}
@@ -255,7 +260,7 @@ export const ExportForm = observer(function ExportForm(props: Props) {
             </WorkspaceLevelWorkItemFiltersHOC>
           )}
         />
-      </div> */}
+      </div>
     </form>
   );
 });

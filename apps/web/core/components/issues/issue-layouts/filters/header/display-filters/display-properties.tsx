@@ -47,6 +47,8 @@ export const FilterDisplayProperties = observer(function FilterDisplayProperties
         return !cycleViewDisabled;
       case "modules":
         return !moduleViewDisabled;
+      case "estimate":
+        return false;
       default:
         return true;
     }

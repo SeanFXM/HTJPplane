@@ -12,6 +12,7 @@ import { ArchiveRestoreIcon, Settings, UserPlus } from "lucide-react";
 // plane imports
 import { EUserPermissions, EUserPermissionsLevel, IS_FAVORITE_MENU_OPEN } from "@plane/constants";
 import { useLocalStorage } from "@plane/hooks";
+import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import { Logo } from "@plane/propel/emoji-icon-picker";
 import { LinkIcon, LockIcon, NewTabIcon, TrashIcon, CheckIcon } from "@plane/propel/icons";
@@ -20,12 +21,12 @@ import { Tooltip } from "@plane/propel/tooltip";
 import type { IProject } from "@plane/types";
 import type { TContextMenuItem } from "@plane/ui";
 import { Avatar, AvatarGroup, ContextMenu, FavoriteStar } from "@plane/ui";
-import { copyUrlToClipboard, cn, getFileURL, renderFormattedDate } from "@plane/utils";
+import { copyUrlToClipboard, cn, getFileURL } from "@plane/utils";
 // components
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 import { useProject } from "@/hooks/store/use-project";
-import { useUserPermissions } from "@/hooks/store/user";
+import { useUser, useUserPermissions } from "@/hooks/store/user";
 import { useAppRouter } from "@/hooks/use-app-router";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // local imports
@@ -53,8 +54,10 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
   const { getUserDetails } = useMember();
   const { addProjectToFavorites, removeProjectFromFavorites } = useProject();
   const { allowPermissions } = useUserPermissions();
+  const { data: currentUser } = useUser();
   // hooks
   const { isMobile } = usePlatformOS();
+  const { currentLocale, t } = useTranslation();
   // derived values
   const projectMembersIds = project.members;
   const shouldRenderFavorite = allowPermissions(
@@ -67,6 +70,14 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
   const hasMemberRole = project.member_role === EUserPermissions.MEMBER;
   // archive
   const isArchived = !!project.archived_at;
+  const createdAt = project.created_at ? new Date(project.created_at) : null;
+  const formattedCreatedAt =
+    !createdAt || Number.isNaN(createdAt.getTime())
+      ? ""
+      : new Intl.DateTimeFormat(currentLocale, {
+          dateStyle: "medium",
+          timeZone: currentUser?.user_timezone || "Asia/Tokyo",
+        }).format(createdAt);
   // local storage
   const { setValue: toggleFavoriteMenu, storedValue: isFavoriteMenuOpen } = useLocalStorage<boolean>(
     IS_FAVORITE_MENU_OPEN,
@@ -78,18 +89,18 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
 
     const addToFavoritePromise = addProjectToFavorites(workspaceSlug.toString(), project.id);
     setPromiseToast(addToFavoritePromise, {
-      loading: "Adding project to favorites...",
+      loading: t("adding_project_to_favorites"),
       success: {
-        title: "Success!",
-        message: () => "Project added to favorites.",
+        title: t("common.success"),
+        message: () => t("project_added_to_favorites"),
         actionItems: () => {
           if (!isFavoriteMenuOpen) toggleFavoriteMenu(true);
           return <></>;
         },
       },
       error: {
-        title: "Error!",
-        message: () => "Couldn't add the project to favorites. Please try again.",
+        title: t("common.error.label"),
+        message: () => t("couldnt_add_the_project_to_favorites"),
       },
     });
   };
@@ -99,14 +110,14 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
 
     const removeFromFavoritePromise = removeProjectFromFavorites(workspaceSlug.toString(), project.id);
     setPromiseToast(removeFromFavoritePromise, {
-      loading: "Removing project from favorites...",
+      loading: t("removing_project_from_favorites"),
       success: {
-        title: "Success!",
-        message: () => "Project removed from favorites.",
+        title: t("common.success"),
+        message: () => t("project_removed_from_favorites"),
       },
       error: {
-        title: "Error!",
-        message: () => "Couldn't remove the project from favorites. Please try again.",
+        title: t("common.error.label"),
+        message: () => t("couldnt_remove_the_project_from_favorites"),
       },
     });
   };
@@ -116,8 +127,8 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
     copyUrlToClipboard(projectLink).then(() =>
       setToast({
         type: TOAST_TYPE.INFO,
-        title: "Link Copied!",
-        message: "Project link copied to clipboard.",
+        title: t("link_copied"),
+        message: t("project_link_copied_to_clipboard"),
       })
     );
   const handleOpenInNewTab = () => window.open(`/${projectLink}`, "_blank");
@@ -126,42 +137,42 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
     {
       key: "settings",
       action: () => router.push(`/${workspaceSlug}/settings/projects/${project.id}`),
-      title: "Settings",
+      title: t("settings"),
       icon: Settings,
       shouldRender: !isArchived && (hasAdminRole || hasMemberRole),
     },
     {
       key: "join",
       action: () => setJoinProjectModal(true),
-      title: "Join",
+      title: t("common.join"),
       icon: UserPlus,
       shouldRender: !isMemberOfProject && !isArchived,
     },
     {
       key: "open-new-tab",
       action: handleOpenInNewTab,
-      title: "Open in new tab",
+      title: t("common.actions.open_in_new_tab"),
       icon: NewTabIcon,
       shouldRender: !isMemberOfProject && !isArchived,
     },
     {
       key: "copy-link",
       action: handleCopyText,
-      title: "Copy link",
+      title: t("common.actions.copy_link"),
       icon: LinkIcon,
       shouldRender: !isArchived,
     },
     {
       key: "restore",
       action: () => setRestoreProject(true),
-      title: "Restore",
+      title: t("common.actions.restore"),
       icon: ArchiveRestoreIcon,
       shouldRender: isArchived && hasAdminRole,
     },
     {
       key: "delete",
       action: () => setDeleteProjectModal(true),
-      title: "Delete",
+      title: t("common.actions.delete"),
       icon: TrashIcon,
       shouldRender: isArchived && hasAdminRole,
     },
@@ -237,6 +248,8 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
             {!isArchived && (
               <div data-prevent-progress className="flex h-full flex-shrink-0 items-center gap-2">
                 <button
+                  type="button"
+                  aria-label={t("common.actions.copy_link")}
                   className="flex h-6 w-6 items-center justify-center rounded-sm bg-white/10"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -274,15 +287,19 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
           <p className="line-clamp-2 text-13 break-words text-tertiary">
             {project.description && project.description.trim() !== ""
               ? project.description
-              : `Created on ${renderFormattedDate(project.created_at)}`}
+              : formattedCreatedAt
+                ? `${t("common.created_on")} ${formattedCreatedAt}`
+                : t("project_card.no_description")}
           </p>
           <div className="item-center flex justify-between">
             <div className="flex items-center justify-center gap-2">
               <Tooltip
                 isMobile={isMobile}
-                tooltipHeading="Members"
+                tooltipHeading={t("common.members")}
                 tooltipContent={
-                  project.members && project.members.length > 0 ? `${project.members.length} Members` : "No Member"
+                  project.members && project.members.length > 0
+                    ? t("member", { count: project.members.length })
+                    : t("project_card.no_members")
                 }
                 position="top"
               >
@@ -299,10 +316,14 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
                     </AvatarGroup>
                   </div>
                 ) : (
-                  <span className="text-13 text-placeholder italic">No Member Yet</span>
+                  <span className="text-13 text-placeholder italic">{t("project_card.no_members_yet")}</span>
                 )}
               </Tooltip>
-              {isArchived && <div className="text-11 font-medium text-placeholder">Archived</div>}
+              {isArchived && (
+                <div className="text-11 font-medium text-placeholder">
+                  {t("workspace_projects.scope.archived_projects")}
+                </div>
+              )}
             </div>
             {isArchived ? (
               hasAdminRole && (
@@ -317,7 +338,7 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
                   >
                     <div className="flex items-center gap-1.5">
                       <ArchiveRestoreIcon className="h-3.5 w-3.5" />
-                      Restore
+                      {t("common.actions.restore")}
                     </div>
                   </div>
                   <div
@@ -348,7 +369,7 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
                   ) : (
                     <span className="flex items-center gap-1 text-13 text-placeholder">
                       <CheckIcon className="h-3.5 w-3.5" />
-                      Joined
+                      {t("project_card.joined")}
                     </span>
                   ))}
                 {!isMemberOfProject && (
@@ -362,7 +383,7 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
                         setJoinProjectModal(true);
                       }}
                     >
-                      Join
+                      {t("common.join")}
                     </Button>
                   </div>
                 )}

@@ -17,6 +17,16 @@
 		max_size {$FILE_SIZE_LIMIT:5242880}
 	}
 
+	# Railway readiness: require both the mounted Admin artifact and a Django
+	# process that can execute a database query before the deployment is active.
+	handle /health {
+		root * /app/admin
+		@admin_missing not file /index.html
+		respond @admin_missing "admin unavailable" 503
+		rewrite * /health/ready/
+		reverse_proxy localhost:3004
+	}
+
 	# Public share app (SSR) — websockets pass through automatically.
 	handle /spaces/* {
 		reverse_proxy localhost:3002
@@ -36,9 +46,11 @@
 	}
 
 	# Admin panel (static SPA).
-	handle_path /god-mode* {
+	redir /god-mode /god-mode/ 308
+	handle_path /god-mode/* {
 		root * /app/admin
 		try_files {path} {path}/ /index.html
+		header X-Plane-App admin
 		file_server
 	}
 

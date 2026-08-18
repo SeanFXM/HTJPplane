@@ -9,11 +9,18 @@ import { observer } from "mobx-react";
 // plane imports
 import { DEFAULT_GLOBAL_VIEWS_LIST } from "@plane/constants";
 // components
+import { redirectUnavailableProductArea } from "@/app/routes/guards/product-policy";
 import { PageHead } from "@/components/core/page-title";
 import { AllIssueLayoutRoot } from "@/components/issues/issue-layouts/roots/all-issue-layout-root";
 // hooks
 import { useWorkspace } from "@/hooks/store/use-workspace";
 import type { Route } from "./+types/page";
+
+export const clientLoader = ({ params }: Route.ClientLoaderArgs) => {
+  if (DEFAULT_GLOBAL_VIEWS_LIST.some((view) => view.key === params.globalViewId)) return null;
+
+  return redirectUnavailableProductArea(params, "views", `/${params.workspaceSlug}/workspace-views/all-issues`);
+};
 
 function GlobalViewIssuesPage({ params }: Route.ComponentProps) {
   // router

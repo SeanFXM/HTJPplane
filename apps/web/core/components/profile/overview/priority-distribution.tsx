@@ -54,7 +54,7 @@ export function ProfilePriorityDistribution({ userProfile }: Props) {
               ]}
               xAxis={{
                 key: "name",
-                label: t("profile.stats.priority_distribution.priority"),
+                label: t("priority"),
               }}
               yAxis={{
                 key: "count",

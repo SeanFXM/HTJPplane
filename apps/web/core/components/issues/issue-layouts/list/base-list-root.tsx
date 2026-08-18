@@ -28,6 +28,7 @@ import { List } from "./default";
 import type { IQuickActionProps, TRenderQuickActions } from "./list-view-types";
 
 type ListStoreType =
+  | EIssuesStoreType.GLOBAL
   | EIssuesStoreType.PROJECT
   | EIssuesStoreType.MODULE
   | EIssuesStoreType.CYCLE
@@ -46,6 +47,7 @@ interface IBaseListRoot {
   viewId?: string | undefined;
   isCompletedCycle?: boolean;
   isEpic?: boolean;
+  shouldFetchIssues?: boolean;
 }
 export const BaseListRoot = observer(function BaseListRoot(props: IBaseListRoot) {
   const {
@@ -55,6 +57,7 @@ export const BaseListRoot = observer(function BaseListRoot(props: IBaseListRoot)
     canEditPropertiesBasedOnProject,
     isCompletedCycle = false,
     isEpic = false,
+    shouldFetchIssues = true,
   } = props;
   // router
   const storeType = useIssueStoreType() as ListStoreType;
@@ -87,8 +90,9 @@ export const BaseListRoot = observer(function BaseListRoot(props: IBaseListRoot)
     issuesFilter?.issueFilters?.kanbanFilters || ({ group_by: [], sub_group_by: [] } as TIssueKanbanFilters);
 
   useEffect(() => {
+    if (!shouldFetchIssues) return;
     fetchIssues("init-loader", { canGroup: true, perPageCount: group_by ? 50 : 100 }, viewId);
-  }, [fetchIssues, storeType, group_by, viewId]);
+  }, [fetchIssues, storeType, group_by, shouldFetchIssues, viewId]);
 
   const groupedIssueIds = issues?.groupedIssueIds as TGroupedIssues | undefined;
   // auth
@@ -99,9 +103,11 @@ export const BaseListRoot = observer(function BaseListRoot(props: IBaseListRoot)
   const { enableInlineEditing, enableQuickAdd, enableIssueCreation } = issues?.viewFlags || {};
 
   const canEditProperties = useCallback(
-    (projectId: string | undefined) => {
+    (issueProjectId: string | undefined) => {
       const isEditingAllowedBasedOnProject =
-        canEditPropertiesBasedOnProject && projectId ? canEditPropertiesBasedOnProject(projectId) : isEditingAllowed;
+        canEditPropertiesBasedOnProject && issueProjectId
+          ? canEditPropertiesBasedOnProject(issueProjectId)
+          : isEditingAllowed;
 
       return !!enableInlineEditing && isEditingAllowedBasedOnProject;
     },
@@ -138,14 +144,12 @@ export const BaseListRoot = observer(function BaseListRoot(props: IBaseListRoot)
   const handleCollapsedGroups = useCallback(
     (value: string) => {
       if (workspaceSlug) {
-        let collapsedGroups = issuesFilter?.issueFilters?.kanbanFilters?.group_by || [];
-        if (collapsedGroups.includes(value)) {
-          collapsedGroups = collapsedGroups.filter((_value) => _value != value);
-        } else {
-          collapsedGroups.push(value);
-        }
+        const currentCollapsedGroups = issuesFilter?.issueFilters?.kanbanFilters?.group_by || [];
+        const nextCollapsedGroups = currentCollapsedGroups.includes(value)
+          ? currentCollapsedGroups.filter((_value) => _value != value)
+          : [...currentCollapsedGroups, value];
         updateFilters(projectId?.toString() ?? "", EIssueFilterType.KANBAN_FILTERS, {
-          group_by: collapsedGroups,
+          group_by: nextCollapsedGroups,
         } as TIssueKanbanFilters);
       }
     },
@@ -166,9 +170,9 @@ export const BaseListRoot = observer(function BaseListRoot(props: IBaseListRoot)
           loadMoreIssues={loadMoreIssues}
           showEmptyGroup={showEmptyGroup}
           quickAddCallback={quickAddIssue}
-          enableIssueQuickAdd={!!enableQuickAdd}
+          enableIssueQuickAdd={!!enableQuickAdd && !!quickAddIssue}
           canEditProperties={canEditProperties}
-          disableIssueCreation={!enableIssueCreation || !isEditingAllowed}
+          disableIssueCreation={!enableIssueCreation || !isEditingAllowed || !quickAddIssue}
           addIssuesToView={addIssuesToView}
           isCompletedCycle={isCompletedCycle}
           handleOnDrop={handleOnDrop}

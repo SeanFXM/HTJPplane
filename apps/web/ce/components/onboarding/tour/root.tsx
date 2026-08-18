@@ -10,11 +10,8 @@ import { observer } from "mobx-react";
 import { Button } from "@plane/propel/button";
 import { CloseIcon } from "@plane/propel/icons";
 // assets
-import CyclesTour from "@/app/assets/onboarding/cycles.webp?url";
 import IssuesTour from "@/app/assets/onboarding/issues.webp?url";
-import ModulesTour from "@/app/assets/onboarding/modules.webp?url";
 import PagesTour from "@/app/assets/onboarding/pages.webp?url";
-import ViewsTour from "@/app/assets/onboarding/views.webp?url";
 // hooks
 import { useCommandPalette } from "@/hooks/store/use-command-palette";
 import { useUser } from "@/hooks/store/user";
@@ -25,7 +22,7 @@ export type TOnboardingTourProps = {
   onComplete: () => void;
 };
 
-export type TTourSteps = "welcome" | "work-items" | "cycles" | "modules" | "views" | "pages";
+export type TTourSteps = "welcome" | "work-items" | "pages";
 
 const TOUR_STEPS: {
   key: TTourSteps;
@@ -41,32 +38,6 @@ const TOUR_STEPS: {
     description:
       "Work items are the foundation of this workspace. Most views and planning tools are built around them.",
     image: IssuesTour,
-    nextStep: "cycles",
-  },
-  {
-    key: "cycles",
-    title: "Move with cycles",
-    description:
-      "Cycles help you and your team to progress faster, similar to the sprints commonly used in agile development.",
-    image: CyclesTour,
-    prevStep: "work-items",
-    nextStep: "modules",
-  },
-  {
-    key: "modules",
-    title: "Break into modules",
-    description: "Modules break your big thing into Projects or Features, to help you organize better.",
-    image: ModulesTour,
-    prevStep: "cycles",
-    nextStep: "views",
-  },
-  {
-    key: "views",
-    title: "Views",
-    description:
-      "Create custom filters to display only the work items that matter to you. Save and share your filters in just a few clicks.",
-    image: ViewsTour,
-    prevStep: "modules",
     nextStep: "pages",
   },
   {
@@ -74,7 +45,7 @@ const TOUR_STEPS: {
     title: "Document with pages",
     description: "Use Pages to quickly jot down work items when you're in a meeting or starting a day.",
     image: PagesTour,
-    prevStep: "views",
+    prevStep: "work-items",
   },
 ];
 

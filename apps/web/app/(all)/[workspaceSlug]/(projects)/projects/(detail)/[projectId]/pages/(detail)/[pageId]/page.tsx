@@ -9,6 +9,7 @@ import { observer } from "mobx-react";
 import Link from "next/link";
 import useSWR from "swr";
 // plane types
+import { useTranslation } from "@plane/i18n";
 import { getButtonStyling } from "@plane/propel/button";
 import type { TSearchEntityRequestPayload, TWebhookConnectionQueryParams } from "@plane/types";
 import { EFileAssetType } from "@plane/types";
@@ -40,6 +41,7 @@ const projectPageVersionService = new ProjectPageVersionService();
 const storeType = EPageStoreType.PROJECT;
 
 function PageDetailsPage({ params }: Route.ComponentProps) {
+  const { t } = useTranslation();
   // router
   const router = useAppRouter();
   const { workspaceSlug, projectId, pageId } = params;
@@ -161,15 +163,13 @@ function PageDetailsPage({ params }: Route.ComponentProps) {
   if (pageDetailsError || !canCurrentUserAccessPage)
     return (
       <div className="flex h-full w-full flex-col items-center justify-center">
-        <h3 className="text-center text-16 font-semibold">Page not found</h3>
-        <p className="mt-3 text-center text-13 text-secondary">
-          The page you are trying to access doesn{"'"}t exist or you don{"'"}t have permission to view it.
-        </p>
+        <h3 className="text-center text-16 font-semibold">{t("pages_ui.not_found.title")}</h3>
+        <p className="mt-3 text-center text-13 text-secondary">{t("pages_ui.not_found.description")}</p>
         <Link
           href={`/${workspaceSlug}/projects/${projectId}/pages`}
           className={cn(getButtonStyling("secondary", "base"), "mt-5")}
         >
-          View other Pages
+          {t("pages_ui.not_found.view_others")}
         </Link>
       </div>
     );

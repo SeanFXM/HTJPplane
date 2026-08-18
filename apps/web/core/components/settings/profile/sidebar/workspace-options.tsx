@@ -12,11 +12,14 @@ import { useTranslation } from "@plane/i18n";
 import { SettingsSidebarItem } from "@/components/settings/sidebar/item";
 import { WorkspaceLogo } from "@/components/workspace/logo";
 // hooks
+import { useInstance } from "@/hooks/store/use-instance";
 import { useWorkspace } from "@/hooks/store/use-workspace";
 
 export const ProfileSettingsSidebarWorkspaceOptions = observer(function ProfileSettingsSidebarWorkspaceOptions() {
   // store hooks
+  const { config } = useInstance();
   const { workspaces } = useWorkspace();
+  const isWorkspaceCreationDisabled = config?.is_workspace_creation_disabled ?? false;
   // translation
   const { t } = useTranslation();
 
@@ -35,13 +38,15 @@ export const ProfileSettingsSidebarWorkspaceOptions = observer(function ProfileS
           />
         ))}
         <div className="mt-1.5">
-          <SettingsSidebarItem
-            as="link"
-            href="/create-workspace/"
-            icon={CirclePlus}
-            label={t("create_workspace")}
-            isActive={false}
-          />
+          {!isWorkspaceCreationDisabled && (
+            <SettingsSidebarItem
+              as="link"
+              href="/create-workspace/"
+              icon={CirclePlus}
+              label={t("create_workspace")}
+              isActive={false}
+            />
+          )}
           <SettingsSidebarItem
             as="link"
             href="/invitations/"

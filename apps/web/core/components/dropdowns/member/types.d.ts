@@ -5,6 +5,7 @@ export type MemberDropdownProps = TDropdownProps & {
   dropdownArrow?: boolean;
   dropdownArrowClassName?: string;
   placeholder?: string;
+  showUnassignedOption?: boolean;
   tooltipContent?: string;
   onClose?: () => void;
   showUserDetails?: boolean;

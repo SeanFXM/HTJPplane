@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import type {
   DragLocationHistory,
@@ -30,6 +30,7 @@ import type { IFavorite, InstructionType } from "@plane/types";
 import { CustomMenu, DropIndicator, DragHandle } from "@plane/ui";
 // helpers
 import { cn } from "@plane/utils";
+import { isFavoriteEntityVisible } from "@/constants/product-policy";
 // hooks
 import { useFavorite } from "@/hooks/store/use-favorite";
 import { usePlatformOS } from "@/hooks/use-platform-os";
@@ -62,6 +63,13 @@ export function FavoriteFolder(props: Props) {
   const elementRef = useRef<HTMLDivElement | null>(null);
   // translation
   const { t } = useTranslation();
+  const visibleChildren = useMemo(
+    () =>
+      orderBy(favorite.children ?? [], "sequence", "desc").filter((child) =>
+        isFavoriteEntityVisible(child.entity_type, child.project_id)
+      ),
+    [favorite.children]
+  );
 
   useEffect(() => {
     if (favorite.children === undefined && workspaceSlug) {
@@ -259,7 +267,7 @@ export function FavoriteFolder(props: Props) {
                 </Disclosure.Button>
               </>
             </div>
-            {favorite.children && favorite.children.length > 0 && (
+            {visibleChildren.length > 0 && (
               <Transition
                 enter="transition duration-100 ease-out"
                 enterFrom="transform scale-95 opacity-0"
@@ -269,12 +277,12 @@ export function FavoriteFolder(props: Props) {
                 leaveTo="transform scale-95 opacity-0"
               >
                 <Disclosure.Panel as="div" className="mt-1 flex flex-col gap-0.5 px-2">
-                  {orderBy(favorite.children, "sequence", "desc").map((child, index) => (
+                  {visibleChildren.map((child, index) => (
                     <FavoriteRoot
                       key={child.id}
                       workspaceSlug={workspaceSlug.toString()}
                       favorite={child}
-                      isLastChild={index === favorite.children.length - 1}
+                      isLastChild={index === visibleChildren.length - 1}
                       parentId={favorite.id}
                       handleRemoveFromFavorites={handleRemoveFromFavorites}
                       handleDrop={handleDrop}

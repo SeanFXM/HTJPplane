@@ -13,11 +13,12 @@ import useSWR from "swr";
 import { useTranslation } from "@plane/i18n";
 import type { TPageVersion } from "@plane/types";
 import { Avatar } from "@plane/ui";
-import { cn, getFileURL, renderFormattedDate, renderFormattedTime } from "@plane/utils";
+import { cn, getFileURL } from "@plane/utils";
 // components
 import type { TPageRootHandlers } from "@/components/pages/editor/page-root";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
+import { useUser } from "@/hooks/store/user";
 import { useQueryParams } from "@/hooks/use-query-params";
 // store
 import type { TPageInstance } from "@/store/pages/base-page";
@@ -39,10 +40,19 @@ const VersionHistoryItem = observer(function VersionHistoryItem(props: VersionHi
   const { getVersionLink, isVersionActive, version } = props;
   // store hooks
   const { getUserDetails } = useMember();
+  const { data: currentUser } = useUser();
   // derived values
   const versionCreator = getUserDetails(version.owned_by);
   // translation
-  const { t } = useTranslation();
+  const { currentLocale, t } = useTranslation();
+  const savedAt = new Date(version.last_saved_at);
+  const formattedSavedAt = Number.isNaN(savedAt.getTime())
+    ? ""
+    : new Intl.DateTimeFormat(currentLocale, {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: currentUser?.user_timezone || "Asia/Tokyo",
+      }).format(savedAt);
 
   return (
     <li className="relative flex items-center gap-x-4 text-11 font-medium">
@@ -57,9 +67,7 @@ const VersionHistoryItem = observer(function VersionHistoryItem(props: VersionHi
           "bg-layer-transparent-selected hover:bg-layer-transparent-selected": isVersionActive,
         })}
       >
-        <p className="text-tertiary">
-          {renderFormattedDate(version.last_saved_at)}, {renderFormattedTime(version.last_saved_at)}
-        </p>
+        <p className="text-tertiary">{formattedSavedAt}</p>
         <p className="mt-1 flex items-center gap-1">
           <Avatar
             size="sm"

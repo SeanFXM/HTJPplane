@@ -9,6 +9,7 @@ import useSWR from "swr";
 import { Loader } from "@plane/ui";
 // components
 import { PageWrapper } from "@/components/common/page-wrapper";
+import { getInternalAdminPageTitle } from "@/constants/branding";
 // hooks
 import { useInstance } from "@/hooks/store";
 // types
@@ -26,7 +27,7 @@ const InstanceAIPage = observer(function InstanceAIPage(_props: Route.ComponentP
     <PageWrapper
       header={{
         title: "AI features for all your workspaces",
-        description: "Configure your AI API credentials so Plane AI features are turned on for all your workspaces.",
+        description: "Configure the AI credentials available to Hotone Japan workspaces.",
       }}
     >
       {formattedConfig ? (
@@ -45,6 +46,6 @@ const InstanceAIPage = observer(function InstanceAIPage(_props: Route.ComponentP
   );
 });
 
-export const meta: Route.MetaFunction = () => [{ title: "Artificial Intelligence Settings - God Mode" }];
+export const meta: Route.MetaFunction = () => [{ title: getInternalAdminPageTitle("AI settings") }];
 
 export default InstanceAIPage;

@@ -57,6 +57,7 @@ export const MemberDropdownBase = observer(function MemberDropdownBase(props: TM
     placement,
     renderByDefault = true,
     showTooltip = false,
+    showUnassignedOption = false,
     showUserDetails = false,
     tabIndex,
     tooltipContent,
@@ -83,27 +84,31 @@ export const MemberDropdownBase = observer(function MemberDropdownBase(props: TM
     setIsOpen,
   });
 
-  const dropdownOnChange = (val: string & string[]) => {
-    onChange(val);
+  const dropdownOnChange = (val: string | string[] | null) => {
+    if (multiple) {
+      onChange(Array.isArray(val) ? val : val ? [val] : []);
+    } else {
+      onChange(Array.isArray(val) ? (val[0] ?? null) : val);
+    }
     if (!multiple) handleClose();
   };
 
-  const getDisplayName = (value: string | string[] | null, showUserDetails: boolean, placeholder: string = "") => {
-    if (Array.isArray(value)) {
-      if (value.length > 0) {
-        if (value.length === 1) {
-          return getUserDetails(value[0])?.display_name || placeholder;
+  const getDisplayName = (selectedValue: string | string[] | null, shouldShowUserDetails: boolean, fallback = "") => {
+    if (Array.isArray(selectedValue)) {
+      if (selectedValue.length > 0) {
+        if (selectedValue.length === 1) {
+          return getUserDetails(selectedValue[0])?.display_name || fallback;
         } else {
-          return showUserDetails ? `${value.length} ${t("members").toLocaleLowerCase()}` : "";
+          return shouldShowUserDetails ? `${selectedValue.length} ${t("members").toLocaleLowerCase()}` : "";
         }
       } else {
-        return placeholder;
+        return fallback;
       }
     } else {
-      if (showUserDetails && value) {
-        return getUserDetails(value)?.display_name || placeholder;
+      if (shouldShowUserDetails && selectedValue) {
+        return getUserDetails(selectedValue)?.display_name || fallback;
       } else {
-        return placeholder;
+        return fallback;
       }
     }
   };
@@ -183,6 +188,7 @@ export const MemberDropdownBase = observer(function MemberDropdownBase(props: TM
           optionsClassName={optionsClassName}
           placement={placement}
           referenceElement={referenceElement}
+          showUnassignedOption={showUnassignedOption}
           value={value}
         />
       )}

@@ -5,9 +5,11 @@
 # Python imports
 import copy
 import json
+from uuid import UUID
 
 # Django imports
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db import transaction
 from django.db.models import OuterRef, Q, Prefetch, Exists, Subquery, Count
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -38,6 +40,7 @@ from plane.utils.grouper import (
     issue_queryset_grouper,
 )
 from plane.utils.issue_filters import issue_filters
+from plane.utils.issue_hierarchy import get_issue_tree_ids
 from plane.utils.order_queryset import order_issue_queryset
 from plane.utils.paginator import GroupedOffsetPaginator, SubGroupedOffsetPaginator
 from plane.app.permissions import allow_permission, ROLE
@@ -255,49 +258,90 @@ class IssueArchiveViewSet(BaseViewSet):
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def archive(self, request, slug, project_id, pk=None):
-        issue = Issue.issue_objects.get(workspace__slug=slug, project_id=project_id, pk=pk)
-        if issue.state.group not in ["completed", "cancelled"]:
-            return Response(
-                {"error": "Can only archive completed or cancelled state group issue"},
-                status=status.HTTP_400_BAD_REQUEST,
+        with transaction.atomic():
+            issue = Issue.issue_objects.select_for_update(of=("self",)).get(
+                workspace__slug=slug,
+                project_id=project_id,
+                pk=pk,
             )
-        issue_activity.delay(
-            type="issue.activity.updated",
-            requested_data=json.dumps({"archived_at": str(timezone.now().date()), "automation": False}),
-            actor_id=str(request.user.id),
-            issue_id=str(issue.id),
-            project_id=str(project_id),
-            current_instance=json.dumps(IssueSerializer(issue).data, cls=DjangoJSONEncoder),
-            epoch=int(timezone.now().timestamp()),
-            notification=True,
-            origin=base_host(request=request, is_app=True),
-        )
-        issue.archived_at = timezone.now().date()
-        issue.save()
+            if issue.state.group not in ["completed", "cancelled"]:
+                return Response(
+                    {"error": "Can only archive completed or cancelled state group issue"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            issue_tree_ids = get_issue_tree_ids(
+                workspace_slug=slug,
+                project_id=project_id,
+                root_ids=[issue.id],
+            )
+            has_active_descendants = Issue.objects.filter(
+                id__in=issue_tree_ids - {issue.id},
+                archived_at__isnull=True,
+            ).exists()
+            if has_active_descendants:
+                return Response(
+                    {"error": "Archive sub-work items before archiving their parent"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            archive_date = timezone.now().date()
+            current_instance = json.dumps(IssueSerializer(issue).data, cls=DjangoJSONEncoder)
+            issue.archived_at = archive_date
+            issue.save()
+
+            transaction.on_commit(
+                lambda: issue_activity.delay(
+                    type="issue.activity.updated",
+                    requested_data=json.dumps({"archived_at": str(archive_date), "automation": False}),
+                    actor_id=str(request.user.id),
+                    issue_id=str(issue.id),
+                    project_id=str(project_id),
+                    current_instance=current_instance,
+                    epoch=int(timezone.now().timestamp()),
+                    notification=True,
+                    origin=base_host(request=request, is_app=True),
+                )
+            )
 
         return Response({"archived_at": str(issue.archived_at)}, status=status.HTTP_200_OK)
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def unarchive(self, request, slug, project_id, pk=None):
-        issue = Issue.objects.get(
-            workspace__slug=slug,
-            project_id=project_id,
-            archived_at__isnull=False,
-            pk=pk,
-        )
-        issue_activity.delay(
-            type="issue.activity.updated",
-            requested_data=json.dumps({"archived_at": None}),
-            actor_id=str(request.user.id),
-            issue_id=str(issue.id),
-            project_id=str(project_id),
-            current_instance=json.dumps(IssueSerializer(issue).data, cls=DjangoJSONEncoder),
-            epoch=int(timezone.now().timestamp()),
-            notification=True,
-            origin=base_host(request=request, is_app=True),
-        )
-        issue.archived_at = None
-        issue.save()
+        with transaction.atomic():
+            issue = Issue.objects.select_for_update().get(
+                workspace__slug=slug,
+                project_id=project_id,
+                archived_at__isnull=False,
+                pk=pk,
+            )
+            if issue.parent_id and Issue.all_objects.filter(
+                id=issue.parent_id,
+                workspace__slug=slug,
+                project_id=project_id,
+            ).filter(Q(archived_at__isnull=False) | Q(deleted_at__isnull=False)).exists():
+                return Response(
+                    {"error": "Restore the parent work item before restoring this sub-work item"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            current_instance = json.dumps(IssueSerializer(issue).data, cls=DjangoJSONEncoder)
+            issue.archived_at = None
+            issue.save()
+
+            transaction.on_commit(
+                lambda: issue_activity.delay(
+                    type="issue.activity.updated",
+                    requested_data=json.dumps({"archived_at": None}),
+                    actor_id=str(request.user.id),
+                    issue_id=str(issue.id),
+                    project_id=str(project_id),
+                    current_instance=current_instance,
+                    epoch=int(timezone.now().timestamp()),
+                    notification=True,
+                    origin=base_host(request=request, is_app=True),
+                )
+            )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -309,15 +353,46 @@ class BulkArchiveIssuesEndpoint(BaseAPIView):
     def post(self, request, slug, project_id):
         issue_ids = request.data.get("issue_ids", [])
 
-        if not len(issue_ids):
+        if not isinstance(issue_ids, list) or not issue_ids:
             return Response({"error": "Issue IDs are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        issues = Issue.objects.filter(workspace__slug=slug, project_id=project_id, pk__in=issue_ids).select_related(
-            "state"
-        )
-        bulk_archive_issues = []
-        for issue in issues:
-            if issue.state.group not in ["completed", "cancelled"]:
+        try:
+            normalized_issue_ids = set(UUID(str(issue_id)) for issue_id in issue_ids)
+        except (TypeError, ValueError, AttributeError):
+            return Response({"error": "Invalid Issue IDs"}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            issues = list(
+                Issue.issue_objects.select_for_update(of=("self",))
+                .filter(
+                    workspace__slug=slug,
+                    project_id=project_id,
+                    pk__in=normalized_issue_ids,
+                )
+                .select_related("state")
+            )
+            if len(issues) != len(normalized_issue_ids):
+                return Response(
+                    {"error": "All work items must belong to the current project and be active"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            selected_issue_ids = {issue.id for issue in issues}
+            issue_tree_ids = get_issue_tree_ids(
+                workspace_slug=slug,
+                project_id=project_id,
+                root_ids=selected_issue_ids,
+            )
+            if Issue.objects.filter(
+                id__in=issue_tree_ids - selected_issue_ids,
+                archived_at__isnull=True,
+            ).exists():
+                return Response(
+                    {"error": "Include all active sub-work items when archiving a parent"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if any(issue.state.group not in ["completed", "cancelled"] for issue in issues):
                 return Response(
                     {
                         "error_code": ERROR_CODES["INVALID_ARCHIVE_STATE_GROUP"],
@@ -325,19 +400,33 @@ class BulkArchiveIssuesEndpoint(BaseAPIView):
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            issue_activity.delay(
-                type="issue.activity.updated",
-                requested_data=json.dumps({"archived_at": str(timezone.now().date()), "automation": False}),
-                actor_id=str(request.user.id),
-                issue_id=str(issue.id),
-                project_id=str(project_id),
-                current_instance=json.dumps(IssueSerializer(issue).data, cls=DjangoJSONEncoder),
-                epoch=int(timezone.now().timestamp()),
-                notification=True,
-                origin=base_host(request=request, is_app=True),
-            )
-            issue.archived_at = timezone.now().date()
-            bulk_archive_issues.append(issue)
-        Issue.objects.bulk_update(bulk_archive_issues, ["archived_at"])
 
-        return Response({"archived_at": str(timezone.now().date())}, status=status.HTTP_200_OK)
+            archive_date = timezone.now().date()
+            activity_data = tuple(
+                (
+                    str(issue.id),
+                    json.dumps(IssueSerializer(issue).data, cls=DjangoJSONEncoder),
+                )
+                for issue in issues
+            )
+            for issue in issues:
+                issue.archived_at = archive_date
+            Issue.objects.bulk_update(issues, ["archived_at"])
+
+            def enqueue_archive_activities():
+                for issue_id, current_instance in activity_data:
+                    issue_activity.delay(
+                        type="issue.activity.updated",
+                        requested_data=json.dumps({"archived_at": str(archive_date), "automation": False}),
+                        actor_id=str(request.user.id),
+                        issue_id=issue_id,
+                        project_id=str(project_id),
+                        current_instance=current_instance,
+                        epoch=int(timezone.now().timestamp()),
+                        notification=True,
+                        origin=base_host(request=request, is_app=True),
+                    )
+
+            transaction.on_commit(enqueue_archive_activities)
+
+        return Response({"archived_at": str(archive_date)}, status=status.HTTP_200_OK)

@@ -15,7 +15,7 @@ import { getDate, renderFormattedPayloadDate, shouldHighlightIssueDueDate } from
 // components
 import { DateDropdown } from "@/components/dropdowns/date";
 import { DateRangeDropdown } from "@/components/dropdowns/date-range";
-import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
+import { CurrentOwnerDropdown } from "@/components/issues/current-owner-dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 // hooks
@@ -204,7 +204,7 @@ export const SubIssuesListItemProperties = observer(function SubIssuesListItemPr
 
       <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="assignee">
         <div className="h-5 flex-shrink-0">
-          <MemberDropdown
+          <CurrentOwnerDropdown
             value={issue.assignee_ids}
             projectId={issue.project_id ?? undefined}
             onChange={(val) =>
@@ -214,7 +214,6 @@ export const SubIssuesListItemProperties = observer(function SubIssuesListItemPr
               })
             }
             disabled={!canEdit}
-            multiple
             buttonVariant={(issue?.assignee_ids || []).length > 0 ? "transparent-without-text" : "border-without-text"}
             buttonClassName={(issue?.assignee_ids || []).length > 0 ? "hover:bg-transparent px-0" : ""}
           />

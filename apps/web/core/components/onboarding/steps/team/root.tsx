@@ -209,7 +209,7 @@ const InviteMemberInput = observer(function InviteMemberInput(props: InviteMembe
                     style={styles.popper}
                     {...attributes.popper}
                   >
-                    {Object.entries(ROLE_DETAILS).map(([key, value]) => (
+                    {Object.entries(ROLE_DETAILS).map(([key, roleDetails]) => (
                       <Listbox.Option
                         as="div"
                         key={key}
@@ -223,8 +223,8 @@ const InviteMemberInput = observer(function InviteMemberInput(props: InviteMembe
                         {({ selected }) => (
                           <div className="flex items-center gap-2 p-1 text-wrap">
                             <div className="flex flex-col">
-                              <div className="text-13 font-medium">{t(value.i18n_title)}</div>
-                              <div className="flex text-11 text-tertiary">{t(value.i18n_description)}</div>
+                              <div className="text-13 font-medium">{t(roleDetails.i18n_title)}</div>
+                              <div className="flex text-11 text-tertiary">{t(roleDetails.i18n_description)}</div>
                             </div>
                             {selected && <CheckIcon className="h-4 w-4 shrink-0" />}
                           </div>
@@ -290,28 +290,39 @@ export const InviteTeamStep = observer(function InviteTeamStep(props: Props) {
     let payload = { ...formData };
     payload = { emails: payload.emails.filter((email) => email.email !== "") };
 
-    await workspaceService
-      .inviteWorkspace(workspace.slug, {
+    try {
+      await workspaceService.inviteWorkspace(workspace.slug, {
         emails: payload.emails.map((email) => ({
           email: email.email,
           role: email.role,
         })),
-      })
-      .then(async () => {
-        setToast({
-          type: TOAST_TYPE.SUCCESS,
-          title: "Success!",
-          message: "Invitations sent successfully.",
-        });
-        await nextStep();
-      })
-      .catch((err) => {
-        setToast({
-          type: TOAST_TYPE.ERROR,
-          title: "Error!",
-          message: err?.error,
-        });
       });
+    } catch (error) {
+      setToast({
+        type: TOAST_TYPE.ERROR,
+        title: "Error!",
+        message:
+          error && typeof error === "object" && "error" in error
+            ? String(error.error)
+            : "Invitations could not be sent. Please try again.",
+      });
+      return;
+    }
+
+    setToast({
+      type: TOAST_TYPE.SUCCESS,
+      title: "Success!",
+      message: "Invitations sent successfully.",
+    });
+    try {
+      await nextStep();
+    } catch {
+      setToast({
+        type: TOAST_TYPE.ERROR,
+        title: "Setup could not continue",
+        message: "The invitations were sent, but the next setup step could not open. Please try again.",
+      });
+    }
   };
 
   const appendField = () => {
@@ -343,7 +354,7 @@ export const InviteTeamStep = observer(function InviteTeamStep(props: Props) {
     >
       <CommonOnboardingHeader
         title="Invite your teammates"
-        description="Work in plane happens best with your team. Invite them now to use Plane to its potential."
+        description="Invite the Hotone Japan teammates who need access to this workspace."
       />
       <div className="w-full py-4 text-13">
         <div className="group relative mx-8 grid grid-cols-10 gap-4 py-2">

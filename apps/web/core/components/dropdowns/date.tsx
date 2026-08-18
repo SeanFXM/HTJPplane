@@ -82,7 +82,7 @@ export const DateDropdown = observer(function DateDropdown(props: Props) {
     "zh-CN": zhCN,
   };
   const docLang = typeof document !== "undefined" ? document.documentElement?.lang : undefined;
-  const currentLocale = (docLang && localeMap[docLang]) ?? (docLang && localeMap[docLang.split("-")[0]]) ?? enUS;
+  const currentLocale = localeMap[docLang ?? ""] ?? localeMap[docLang?.split("-")[0] ?? ""] ?? enUS;
   // states
   const [isOpen, setIsOpen] = useState(defaultOpen);
   // refs

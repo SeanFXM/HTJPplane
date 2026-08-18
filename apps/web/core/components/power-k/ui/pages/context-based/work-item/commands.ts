@@ -28,6 +28,7 @@ import { EIssueServiceType, EUserPermissions } from "@plane/types";
 import { copyTextToClipboard } from "@plane/utils";
 // components
 import type { TPowerKCommandConfig } from "@/components/power-k/core/types";
+import { isProjectFeatureVisible } from "@/constants/product-policy";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useCommandPalette } from "@/hooks/store/use-command-palette";
@@ -103,9 +104,7 @@ export const usePowerKWorkItemContextBasedCommands = (): TPowerKCommandConfig[] 
     (assigneeId: string) => {
       if (!entityDetails) return;
 
-      const updatedAssignees = [...(entityDetails.assignee_ids ?? [])];
-      if (updatedAssignees.includes(assigneeId)) updatedAssignees.splice(updatedAssignees.indexOf(assigneeId), 1);
-      else updatedAssignees.push(assigneeId);
+      const updatedAssignees = entityDetails.assignee_ids?.includes(assigneeId) ? [] : [assigneeId];
 
       handleUpdateEntity({ assignee_ids: updatedAssignees });
     },
@@ -287,8 +286,14 @@ export const usePowerKWorkItemContextBasedCommands = (): TPowerKCommandConfig[] 
         });
       },
       modifierShortcut: "shift+e",
-      isEnabled: () => isEstimateEnabled && isEditingAllowed,
-      isVisible: () => isEstimateEnabled && isEditingAllowed,
+      isEnabled: () =>
+        Boolean(entityDetails?.project_id && isProjectFeatureVisible("estimates", entityDetails.project_id)) &&
+        isEstimateEnabled &&
+        isEditingAllowed,
+      isVisible: () =>
+        Boolean(entityDetails?.project_id && isProjectFeatureVisible("estimates", entityDetails.project_id)) &&
+        isEstimateEnabled &&
+        isEditingAllowed,
       closeOnSelect: true,
     },
     {
@@ -327,8 +332,8 @@ export const usePowerKWorkItemContextBasedCommands = (): TPowerKCommandConfig[] 
         }
       },
       modifierShortcut: "shift+c",
-      isEnabled: () => Boolean(projectDetails?.cycle_view && isEditingAllowed),
-      isVisible: () => Boolean(projectDetails?.cycle_view && isEditingAllowed),
+      isEnabled: () => false,
+      isVisible: () => false,
       closeOnSelect: true,
     },
     {
@@ -359,8 +364,20 @@ export const usePowerKWorkItemContextBasedCommands = (): TPowerKCommandConfig[] 
         }
       },
       modifierShortcut: "shift+m",
-      isEnabled: () => Boolean(projectDetails?.module_view && isEditingAllowed),
-      isVisible: () => Boolean(projectDetails?.module_view && isEditingAllowed),
+      isEnabled: () =>
+        Boolean(
+          entityDetails?.project_id &&
+          isProjectFeatureVisible("modules", entityDetails.project_id) &&
+          projectDetails?.module_view &&
+          isEditingAllowed
+        ),
+      isVisible: () =>
+        Boolean(
+          entityDetails?.project_id &&
+          isProjectFeatureVisible("modules", entityDetails.project_id) &&
+          projectDetails?.module_view &&
+          isEditingAllowed
+        ),
       closeOnSelect: false,
     },
     {

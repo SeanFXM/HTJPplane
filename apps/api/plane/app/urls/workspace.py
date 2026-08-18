@@ -37,10 +37,22 @@ from plane.app.views import (
     WorkspaceHomePreferenceViewSet,
     WorkspaceStickyViewSet,
     WorkspaceUserPreferenceViewSet,
+    HotoneWorkflowApplyEndpoint,
+    HotoneWorkflowPreviewEndpoint,
 )
 
 
 urlpatterns = [
+    path(
+        "workspaces/<str:slug>/hotone-workflow/preview/",
+        HotoneWorkflowPreviewEndpoint.as_view(),
+        name="hotone-workflow-preview",
+    ),
+    path(
+        "workspaces/<str:slug>/hotone-workflow/apply/",
+        HotoneWorkflowApplyEndpoint.as_view(),
+        name="hotone-workflow-apply",
+    ),
     path(
         "workspace-slug-check/",
         WorkSpaceAvailabilityCheckEndpoint.as_view(),

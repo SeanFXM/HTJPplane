@@ -4,12 +4,13 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import { observer } from "mobx-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 // types
 import type { IProject } from "@plane/types";
+// constants
+import { isProjectFeatureVisible } from "@/constants/product-policy";
 // hooks
 import { useProject } from "@/hooks/store/use-project";
 
@@ -26,12 +27,13 @@ const ARCHIVES_TAB_LIST: {
   {
     key: "cycles",
     label: "Cycles",
-    shouldRender: (projectDetails) => projectDetails.cycle_view,
+    shouldRender: () => false,
   },
   {
     key: "modules",
     label: "Modules",
-    shouldRender: (projectDetails) => projectDetails.module_view,
+    shouldRender: (projectDetails) =>
+      projectDetails.module_view && isProjectFeatureVisible("modules", projectDetails.id),
   },
 ];
 

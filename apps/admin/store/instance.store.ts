@@ -60,6 +60,7 @@ export class InstanceStore implements IInstanceStore {
       error: observable.ref,
       instanceStatus: observable,
       instance: observable,
+      config: observable.ref,
       instanceAdmins: observable,
       instanceConfigurations: observable,
       // computed
@@ -184,10 +185,20 @@ export class InstanceStore implements IInstanceStore {
       const response = await this.instanceService.updateConfigurations(data);
       runInAction(() => {
         this.instanceConfigurations = this.instanceConfigurations?.map((config) => {
-          const item = response.find((item) => item.key === config.key);
-          if (item) return item;
+          const updatedConfiguration = response.find((responseItem) => responseItem.key === config.key);
+          if (updatedConfiguration) return updatedConfiguration;
           return config;
         });
+
+        const workspaceCreationPolicy = response.find(
+          (responseItem) => responseItem.key === "DISABLE_WORKSPACE_CREATION"
+        );
+        if (workspaceCreationPolicy && this.config) {
+          this.config = {
+            ...this.config,
+            is_workspace_creation_disabled: workspaceCreationPolicy.value === "1",
+          };
+        }
       });
       return response;
     } catch (error) {

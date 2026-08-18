@@ -85,9 +85,7 @@ const ProjectInsights = observer(function ProjectInsights() {
                 data={
                   projectInsightsData?.map((item) => ({
                     ...item,
-                    name: RADAR_CHART_KEY_TO_I18N[item.key]
-                      ? t(RADAR_CHART_KEY_TO_I18N[item.key])
-                      : item.name,
+                    name: RADAR_CHART_KEY_TO_I18N[item.key] ? t(RADAR_CHART_KEY_TO_I18N[item.key]) : item.name,
                   })) ?? []
                 }
                 dataKey="key"
@@ -122,9 +120,7 @@ const ProjectInsights = observer(function ProjectInsights() {
               </div>
               {projectInsightsData?.map((item) => (
                 <div key={item.key} className="flex items-center justify-between text-13 text-primary">
-                  <div>
-                    {RADAR_CHART_KEY_TO_I18N[item.key] ? t(RADAR_CHART_KEY_TO_I18N[item.key]) : item.name}
-                  </div>
+                  <div>{RADAR_CHART_KEY_TO_I18N[item.key] ? t(RADAR_CHART_KEY_TO_I18N[item.key]) : item.name}</div>
                   <div className="flex items-center gap-1">
                     {/* <TrendPiece key={item.key} size='xs' /> */}
                     <div className="text-secondary">{item.count}</div>

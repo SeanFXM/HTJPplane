@@ -7,7 +7,7 @@
 import Link from "next/link";
 // plane packages
 import type { TAdminAuthErrorInfo } from "@plane/constants";
-import { SUPPORT_EMAIL, EAdminAuthErrorCodes } from "@plane/constants";
+import { EAdminAuthErrorCodes } from "@plane/constants";
 
 export enum EErrorAlertType {
   BANNER_ALERT = "BANNER_ALERT",
@@ -50,7 +50,7 @@ const errorCodeMessages: {
     message: () => (
       <div>
         Admin user already exists.&nbsp;
-        <Link className="font-medium underline underline-offset-4 transition-all hover:font-bold" href={`/admin`}>
+        <Link className="font-medium underline underline-offset-4 transition-all hover:font-bold" href="/">
           Sign In
         </Link>
         &nbsp;now.
@@ -62,7 +62,7 @@ const errorCodeMessages: {
     message: () => (
       <div>
         Admin user does not exist.&nbsp;
-        <Link className="font-medium underline underline-offset-4 transition-all hover:font-bold" href={`/admin`}>
+        <Link className="font-medium underline underline-offset-4 transition-all hover:font-bold" href="/">
           Sign In
         </Link>
         &nbsp;now.
@@ -71,7 +71,7 @@ const errorCodeMessages: {
   },
   [EAdminAuthErrorCodes.ADMIN_USER_DEACTIVATED]: {
     title: `User account deactivated`,
-    message: () => `User account deactivated. Please contact ${SUPPORT_EMAIL ? SUPPORT_EMAIL : "administrator"}.`,
+    message: () => "User account deactivated. Contact the Hotone Japan system administrator.",
   },
 };
 

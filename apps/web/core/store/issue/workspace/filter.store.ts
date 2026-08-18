@@ -100,7 +100,7 @@ export class WorkspaceIssuesFilter extends IssueFilterHelperStore implements IWo
     const userFilters = this.getIssueFilters(viewId);
     if (!userFilters) return undefined;
 
-    const filteredParams = handleIssueQueryParamsByLayout(EIssueLayoutTypes.SPREADSHEET, "my_issues");
+    const filteredParams = handleIssueQueryParamsByLayout(EIssueLayoutTypes.LIST, "my_issues");
     if (!filteredParams) return undefined;
 
     const filteredRouteParams: Partial<Record<TIssueParams, string | boolean>> = this.computedFilteredParams(
@@ -160,7 +160,7 @@ export class WorkspaceIssuesFilter extends IssueFilterHelperStore implements IWo
 
     const _filters = this.handleIssuesLocalFilters.get(EIssuesStoreType.GLOBAL, workspaceSlug, undefined, viewId);
     displayFilters = this.computedDisplayFilters(_filters?.display_filters, {
-      layout: EIssueLayoutTypes.SPREADSHEET,
+      layout: EIssueLayoutTypes.LIST,
       order_by: "-created_at",
     });
     displayProperties = this.computedDisplayProperties(_filters?.display_properties);
@@ -171,14 +171,16 @@ export class WorkspaceIssuesFilter extends IssueFilterHelperStore implements IWo
 
     // Get the view details if the view is not a static view
     if (STATIC_VIEW_TYPES.includes(viewId) === false) {
-      const _filters = await this.issueFilterService.getViewDetails(workspaceSlug, viewId);
-      richFilters = _filters?.rich_filters;
-      displayFilters = this.computedDisplayFilters(_filters?.display_filters, {
-        layout: EIssueLayoutTypes.SPREADSHEET,
+      const viewFilters = await this.issueFilterService.getViewDetails(workspaceSlug, viewId);
+      richFilters = viewFilters?.rich_filters;
+      displayFilters = this.computedDisplayFilters(viewFilters?.display_filters, {
+        layout: EIssueLayoutTypes.LIST,
         order_by: "-created_at",
       });
-      displayProperties = this.computedDisplayProperties(_filters?.display_properties);
+      displayProperties = this.computedDisplayProperties(viewFilters?.display_properties);
     }
+
+    displayFilters.layout = EIssueLayoutTypes.LIST;
 
     // override existing order by if ordered by manual sort_order
     if (displayFilters.order_by === "sort_order") {
@@ -226,7 +228,10 @@ export class WorkspaceIssuesFilter extends IssueFilterHelperStore implements IWo
 
       switch (type) {
         case EIssueFilterType.DISPLAY_FILTERS: {
-          const updatedDisplayFilters = filters as IIssueDisplayFilterOptions;
+          const updatedDisplayFilters = {
+            ...(filters as IIssueDisplayFilterOptions),
+            layout: EIssueLayoutTypes.LIST,
+          };
           _filters.displayFilters = { ..._filters.displayFilters, ...updatedDisplayFilters };
 
           // set sub_group_by to null if group_by is set to null

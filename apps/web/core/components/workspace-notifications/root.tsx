@@ -8,7 +8,8 @@ import { useCallback, useEffect } from "react";
 import { observer } from "mobx-react";
 import useSWR from "swr";
 // plane imports
-import { ENotificationLoader, ENotificationQueryParamType } from "@plane/constants";
+import { ENotificationLoader, ENotificationQueryParamType, ENotificationTab } from "@plane/constants";
+import { useTranslation } from "@plane/i18n";
 import { EmptyStateCompact } from "@plane/propel/empty-state";
 import { cn } from "@plane/utils";
 // components
@@ -31,9 +32,12 @@ type NotificationsRootProps = {
 
 export const NotificationsRoot = observer(function NotificationsRoot({ workspaceSlug }: NotificationsRootProps) {
   // hooks
+  const { t } = useTranslation();
   const { currentWorkspace } = useWorkspace();
   const {
     currentSelectedNotificationId,
+    currentNotificationTab,
+    loader,
     setCurrentSelectedNotificationId,
     notificationLiteByNotificationId,
     notificationIdsByWorkspaceId,
@@ -43,6 +47,8 @@ export const NotificationsRoot = observer(function NotificationsRoot({ workspace
   const { isWorkItem, PeekOverviewComponent, setPeekWorkItem } = useNotificationPreview();
   const selectedNotification = useNotification(currentSelectedNotificationId);
   // derived values
+  const notificationIds = currentWorkspace ? notificationIdsByWorkspaceId(currentWorkspace.id) : undefined;
+  const hasNotifications = Boolean(notificationIds?.length);
   const { workspace_slug, project_id, issue_id, is_inbox_issue } =
     notificationLiteByNotificationId(currentSelectedNotificationId);
 
@@ -78,19 +84,45 @@ export const NotificationsRoot = observer(function NotificationsRoot({ workspace
     [setCurrentSelectedNotificationId]
   );
 
-  // clearing up the selected notifications when unmounting the page
-  useEffect(
-    () => () => {
+  // A selected notification belongs to one workspace and one tab. Clear both
+  // preview states before rendering a different scope and again on unmount.
+  useEffect(() => {
+    setCurrentSelectedNotificationId(undefined);
+    setPeekWorkItem(undefined);
+
+    return () => {
+      setCurrentSelectedNotificationId(undefined);
       setPeekWorkItem(undefined);
-    },
-    [setCurrentSelectedNotificationId, setPeekWorkItem]
-  );
+    };
+  }, [currentNotificationTab, setCurrentSelectedNotificationId, setPeekWorkItem, workspaceSlug]);
 
   return (
     <div className={cn("h-full w-full overflow-hidden", isWorkItem && "overflow-y-auto")}>
       {!currentSelectedNotificationId ? (
         <div className="flex size-full items-center justify-center">
-          <EmptyStateCompact assetKey="unknown" assetClassName="size-20" />
+          {loader === ENotificationLoader.INIT_LOADER ? (
+            <LogoSpinner />
+          ) : (
+            <EmptyStateCompact
+              assetKey="inbox"
+              assetClassName="size-24"
+              className="max-w-80"
+              title={
+                hasNotifications
+                  ? t("notification.empty_state.detail.title")
+                  : currentNotificationTab === ENotificationTab.MENTIONS
+                    ? t("notification.empty_state.mentions.title")
+                    : t("notification.empty_state.all.title")
+              }
+              description={
+                hasNotifications
+                  ? undefined
+                  : currentNotificationTab === ENotificationTab.MENTIONS
+                    ? t("notification.empty_state.mentions.description")
+                    : t("notification.empty_state.all.description")
+              }
+            />
+          )}
         </div>
       ) : (
         <>

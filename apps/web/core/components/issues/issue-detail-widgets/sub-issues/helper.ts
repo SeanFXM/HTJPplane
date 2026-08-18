@@ -142,18 +142,8 @@ export const useSubIssueOperations = (issueServiceType: TIssueServiceType): TSub
         try {
           setSubIssueHelpers(parentIssueId, "issue_loader", issueId);
           await deleteSubIssue(workspaceSlug, projectId, parentIssueId, issueId);
+        } finally {
           setSubIssueHelpers(parentIssueId, "issue_loader", issueId);
-        } catch (_error) {
-          setToast({
-            type: TOAST_TYPE.ERROR,
-            title: t("toast.error"),
-            message: t("entity.delete.failed", {
-              entity:
-                issueServiceType === EIssueServiceType.ISSUES
-                  ? t("common.sub_work_items")
-                  : t("issue.label", { count: 1 }),
-            }),
-          });
         }
       },
     }),

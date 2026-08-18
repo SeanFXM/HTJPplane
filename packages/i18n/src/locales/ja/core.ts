@@ -16,7 +16,7 @@ export default {
     inbox: "受信トレイ",
     workspace: "ワークスペース",
     views: "ビュー",
-    analytics: "アナリティクス",
+    analytics: "レポート",
     work_items: "作業項目",
     cycles: "サイクル",
     modules: "モジュール",
@@ -28,6 +28,11 @@ export default {
     stickies: "付箋",
   },
   auth: {
+    hotone_portal: {
+      title: "Hotone Japan 業務運営センター",
+      description: "社内のタスクと引き継ぎを一元管理",
+      help: "社内アカウント専用です。ログインできない場合はワークスペース管理者へ連絡してください。",
+    },
     common: {
       email: {
         label: "メールアドレス",

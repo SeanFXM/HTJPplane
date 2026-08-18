@@ -10,6 +10,7 @@ import type { LucideIcon } from "lucide-react";
 
 // plane imports
 import { ETabIndices, EPageAccess } from "@plane/constants";
+import type { TLanguage } from "@plane/i18n";
 import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import { EmojiPicker, EmojiIconPickerTypes, Logo } from "@plane/propel/emoji-icon-picker";
@@ -22,12 +23,18 @@ import { getTabIndex } from "@plane/utils";
 import { AccessField } from "@/components/common/access-field";
 // hooks
 import { usePlatformOS } from "@/hooks/use-platform-os";
+// local imports
+import { PageTemplatePicker } from "../page-template-picker";
+import type { TPageTemplateId } from "../page-template-data";
 
 type Props = {
+  currentLocale: TLanguage;
   formData: Partial<TPage>;
   handleFormData: <T extends keyof TPage>(key: T, value: TPage[T]) => void;
   handleModalClose: () => void;
   handleFormSubmit: () => Promise<void>;
+  handleTemplateSelect: (templateId: TPageTemplateId) => void;
+  selectedTemplateId: TPageTemplateId;
 };
 
 const PAGE_ACCESS_SPECIFIERS: {
@@ -40,7 +47,15 @@ const PAGE_ACCESS_SPECIFIERS: {
 ];
 
 export function PageForm(props: Props) {
-  const { formData, handleFormData, handleModalClose, handleFormSubmit } = props;
+  const {
+    currentLocale,
+    formData,
+    handleFormData,
+    handleModalClose,
+    handleFormSubmit,
+    handleTemplateSelect,
+    selectedTemplateId,
+  } = props;
   // hooks
   const { isMobile } = usePlatformOS();
   const { t } = useTranslation();
@@ -57,18 +72,24 @@ export function PageForm(props: Props) {
     try {
       setIsSubmitting(true);
       await handleFormSubmit();
-      setIsSubmitting(false);
-    } catch {
+    } finally {
       setIsSubmitting(false);
     }
   };
 
+  const isTitleEmpty = !formData.name?.trim();
   const isTitleLengthMoreThan255Character = formData.name ? formData.name.length > 255 : false;
 
   return (
     <form onSubmit={handlePageFormSubmit}>
       <div className="space-y-5 p-5">
-        <h3 className="text-18 font-medium text-secondary">Create page</h3>
+        <h3 className="text-18 font-medium text-secondary">{t("pages_ui.create.title")}</h3>
+        <PageTemplatePicker
+          disabled={isSubmitting}
+          locale={currentLocale}
+          onSelect={handleTemplateSelect}
+          selectedTemplateId={selectedTemplateId}
+        />
         <div className="flex h-9 w-full items-start gap-2">
           <EmojiPicker
             isOpen={isOpen}
@@ -113,7 +134,7 @@ export function PageForm(props: Props) {
                 : EmojiIconPickerTypes.ICON
             }
           />
-          <div className="flew-grow w-full space-y-1">
+          <div className="w-full flex-grow space-y-1">
             <Input
               id="name"
               type="text"
@@ -123,12 +144,9 @@ export function PageForm(props: Props) {
               className="w-full resize-none text-14"
               tabIndex={getIndex("name")}
               required
-              autoFocus
             />
             {isTitleLengthMoreThan255Character && (
-              <span className="text-11 text-danger-primary">
-                Max length of the name should be less than 255 characters
-              </span>
+              <span className="text-11 text-danger-primary">{t("pages_ui.create.name_too_long")}</span>
             )}
           </div>
         </div>
@@ -144,18 +162,18 @@ export function PageForm(props: Props) {
           <h6 className="text-11 font-medium">{t(i18n_access_label || "")}</h6>
         </div>
         <div className="flex items-center justify-end gap-2">
-          <Button variant="secondary" size="lg" onClick={handleModalClose} tabIndex={getIndex("cancel")}>
-            Cancel
+          <Button variant="secondary" size="lg" type="button" onClick={handleModalClose} tabIndex={getIndex("cancel")}>
+            {t("common.cancel")}
           </Button>
           <Button
             variant="primary"
             size="lg"
             type="submit"
             loading={isSubmitting}
-            disabled={isTitleLengthMoreThan255Character}
+            disabled={isSubmitting || isTitleEmpty || isTitleLengthMoreThan255Character}
             tabIndex={getIndex("submit")}
           >
-            {isSubmitting ? "Creating" : "Create Page"}
+            {isSubmitting ? t("common.creating") : t("pages_ui.create.title")}
           </Button>
         </div>
       </div>

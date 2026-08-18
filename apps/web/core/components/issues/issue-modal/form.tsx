@@ -4,7 +4,6 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
 import React, { useState, useRef, useEffect } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
@@ -17,7 +16,6 @@ import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { TIssue, TWorkspaceDraftIssue } from "@plane/types";
-import { EIssuesStoreType } from "@plane/types";
 // hooks
 import { ToggleSwitch } from "@plane/ui";
 import {
@@ -143,6 +141,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
   // form info
   const methods = useForm<TIssue>({
     defaultValues: { ...DEFAULT_WORK_ITEM_FORM_VALUES, project_id: defaultProjectId, ...data },
+    mode: "onChange",
     reValidateMode: "onChange",
   });
   const {
@@ -166,6 +165,8 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
   // derived values
   const projectDetails = projectId ? getProjectById(projectId) : undefined;
   const isDisabled = isSubmitting || isApplyingTemplate;
+  const issueTitle = watch("name") ?? "";
+  const isIssueTitleValid = issueTitle.trim().length > 0 && issueTitle.length <= 255;
 
   const { getIndex } = getTabIndex(ETabIndices.ISSUE_FORM, isMobile);
 
@@ -272,6 +273,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
           });
           editorRef?.current?.clearEditor();
         }
+        return undefined;
       })
       .catch((error) => {
         console.error(error);
@@ -336,15 +338,15 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     const issue = getIssueById(parentId);
     if (!issue) return;
 
-    const projectDetails = getProjectById(issue.project_id);
-    if (!projectDetails) return;
+    const parentProjectDetails = getProjectById(issue.project_id);
+    if (!parentProjectDetails) return;
 
     const stateDetails = getStateById(issue.state_id);
 
     setSelectedParentIssue(
-      convertWorkItemDataToSearchResponse(workspaceSlug?.toString(), issue, projectDetails, stateDetails)
+      convertWorkItemDataToSearchResponse(workspaceSlug?.toString(), issue, parentProjectDetails, stateDetails)
     );
-  }, [watch, getIssueById, getProjectById, selectedParentIssue, getStateById]);
+  }, [watch, getIssueById, getProjectById, selectedParentIssue, getStateById, setSelectedParentIssue, workspaceSlug]);
 
   // executing this useEffect when isDirty changes
   useEffect(() => {
@@ -382,7 +384,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
         <div className="w-full rounded-lg">
           <form
             ref={formRef}
-            onSubmit={handleSubmit((data) => handleFormSubmit(data))}
+            onSubmit={handleSubmit((formData) => handleFormSubmit(formData))}
             className="flex w-full flex-col"
           >
             <div className="rounded-t-lg bg-surface-1 p-5">
@@ -515,15 +517,13 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                   tabIndex={getIndex("create_more")}
                 >
                   {!data?.id && (
-                    <div
-                      className="inline-flex cursor-pointer items-center gap-1.5"
-                      onClick={() => onCreateMoreToggleChange(!isCreateMoreToggleEnabled)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") onCreateMoreToggleChange(!isCreateMoreToggleEnabled);
-                      }}
-                      role="button"
-                    >
-                      <ToggleSwitch value={isCreateMoreToggleEnabled} onChange={() => {}} size="sm" />
+                    <div className="inline-flex items-center gap-1.5">
+                      <ToggleSwitch
+                        value={isCreateMoreToggleEnabled}
+                        onChange={onCreateMoreToggleChange}
+                        label={t("create_more")}
+                        size="sm"
+                      />
                       <span className="text-caption-sm-regular">{t("create_more")}</span>
                     </div>
                   )}
@@ -554,7 +554,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                         type="submit"
                         ref={submitBtnRef}
                         loading={isSubmitting}
-                        disabled={isDisabled}
+                        disabled={isDisabled || !isIssueTitleValid}
                       >
                         {isSubmitting ? primaryButtonText.loading : primaryButtonText.default}
                       </Button>
@@ -566,7 +566,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                         type="button"
                         loading={isMoving}
                         onClick={handleMoveToProjects}
-                        disabled={isMoving}
+                        disabled={isMoving || !isIssueTitleValid}
                         size="lg"
                       >
                         {t("add_to_project")}

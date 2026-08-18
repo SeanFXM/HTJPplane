@@ -12,6 +12,7 @@ import { EUserPermissionsLevel, GROUPED_PROJECT_SETTINGS, PROJECT_SETTINGS_CATEG
 import { useTranslation } from "@plane/i18n";
 // components
 import { SettingsSidebarItem } from "@/components/settings/sidebar/item";
+import { isProjectSettingsItemVisible } from "@/constants/product-policy";
 // hooks
 import { useUserPermissions } from "@/hooks/store/user";
 // local imports
@@ -37,8 +38,10 @@ export const ProjectSettingsSidebarItemCategories = observer(function ProjectSet
     <div className="mt-3 flex flex-col divide-y divide-subtle px-3">
       {PROJECT_SETTINGS_CATEGORIES.map((category) => {
         const categoryItems = GROUPED_PROJECT_SETTINGS[category];
-        const accessibleItems = categoryItems.filter((item) =>
-          allowPermissions(item.access, EUserPermissionsLevel.PROJECT, workspaceSlug, projectId)
+        const accessibleItems = categoryItems.filter(
+          (item) =>
+            isProjectSettingsItemVisible(item.key, projectId) &&
+            allowPermissions(item.access, EUserPermissionsLevel.PROJECT, workspaceSlug, projectId)
         );
 
         if (accessibleItems.length === 0) return null;

@@ -151,6 +151,7 @@ export const CycleIssueQuickActions = observer(function CycleIssueQuickActions(p
       <ContextMenu parentRef={parentRef} items={CONTEXT_MENU_ITEMS} />
       <CustomMenu
         ellipsis
+        ariaLabel={`Actions for ${issue.name}`}
         placement={placements}
         customButton={customActionButton}
         portalElement={portalElement}

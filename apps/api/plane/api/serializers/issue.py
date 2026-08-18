@@ -5,7 +5,7 @@
 # Django imports
 from django.utils import timezone
 from lxml import html
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 
 #  Third party imports
 from rest_framework import serializers
@@ -68,7 +68,7 @@ class IssueSerializer(BaseSerializer):
 
     class Meta:
         model = Issue
-        read_only_fields = ["id", "workspace", "project", "updated_by", "updated_at"]
+        read_only_fields = ["id", "workspace", "project", "updated_by", "updated_at", "waiting_since"]
         exclude = ["description_json", "description_stripped"]
 
     def validate(self, data):
@@ -104,12 +104,19 @@ class IssueSerializer(BaseSerializer):
 
         # Validate assignees are from project
         if data.get("assignees", []):
-            data["assignees"] = ProjectMember.objects.filter(
-                project_id=self.context.get("project_id"),
-                is_active=True,
-                role__gte=15,
-                member_id__in=data["assignees"],
-            ).values_list("member_id", flat=True)
+            project_id = self.context.get("project_id") or getattr(self.instance, "project_id", None)
+            requested_assignee_ids = {getattr(assignee, "id", assignee) for assignee in data["assignees"]}
+            valid_assignee_ids = list(
+                ProjectMember.objects.filter(
+                    project_id=project_id,
+                    is_active=True,
+                    role__gte=15,
+                    member_id__in=requested_assignee_ids,
+                ).values_list("member_id", flat=True)
+            )
+            if requested_assignee_ids != set(valid_assignee_ids):
+                raise serializers.ValidationError({"assignees": "Current owner must be an active project member"})
+            data["assignees"] = valid_assignee_ids
 
         # Validate labels are from project
         if data.get("labels", []):
@@ -124,16 +131,24 @@ class IssueSerializer(BaseSerializer):
         ):
             raise serializers.ValidationError("State is not valid please pass a valid state_id")
 
-        # Check parent issue is from workspace as it can be cross workspace
-        if (
-            data.get("parent")
-            and not Issue.objects.filter(
+        parent = data.get("parent")
+        if parent:
+            if not Issue.issue_objects.filter(
                 workspace_id=self.context.get("workspace_id"),
                 project_id=self.context.get("project_id"),
-                pk=data.get("parent").id,
-            ).exists()
-        ):
-            raise serializers.ValidationError("Parent is not valid issue_id please pass a valid issue_id")
+                pk=parent.id,
+            ).exists():
+                raise serializers.ValidationError("Parent is not valid issue_id please pass a valid issue_id")
+
+            if self.instance:
+                if parent.id == self.instance.id or parent.parent_id == self.instance.id:
+                    raise serializers.ValidationError("Circular work-item relationships are not allowed")
+
+                if Issue.objects.filter(parent_id=self.instance.id).exists():
+                    raise serializers.ValidationError("A parent work item cannot become a sub-work item")
+
+            if parent.parent_id is not None:
+                raise serializers.ValidationError("Work-item hierarchy is limited to one level")
 
         if (
             data.get("estimate_point")
@@ -146,6 +161,20 @@ class IssueSerializer(BaseSerializer):
             raise serializers.ValidationError("Estimate point is not valid please pass a valid estimate_point_id")
 
         return data
+
+    def validate_assignees(self, value):
+        if len(value) > 1:
+            raise serializers.ValidationError("A work item can have only one current owner")
+        return value
+
+    def validate_waiting_party(self, value):
+        return value.strip() or None if isinstance(value, str) else value
+
+    def validate_blocked_reason(self, value):
+        return value.strip() if isinstance(value, str) else value
+
+    def validate_next_action(self, value):
+        return value.strip() if isinstance(value, str) else value
 
     def create(self, validated_data):
         assignees = validated_data.pop("assignees", None)
@@ -168,7 +197,7 @@ class IssueSerializer(BaseSerializer):
         created_by_id = issue.created_by_id
         updated_by_id = issue.updated_by_id
 
-        if assignees is not None and len(assignees):
+        if assignees:
             try:
                 IssueAssignee.objects.bulk_create(
                     [
@@ -186,7 +215,7 @@ class IssueSerializer(BaseSerializer):
                 )
             except IntegrityError:
                 pass
-        else:
+        elif assignees is None:
             try:
                 # Then assign it to default assignee, if it is a valid assignee
                 if (
@@ -234,15 +263,18 @@ class IssueSerializer(BaseSerializer):
         assignees = validated_data.pop("assignees", None)
         labels = validated_data.pop("labels", None)
 
-        # Related models
-        project_id = instance.project_id
-        workspace_id = instance.workspace_id
-        created_by_id = instance.created_by_id
-        updated_by_id = instance.updated_by_id
+        with transaction.atomic():
+            Issue.objects.select_for_update().only("id").get(pk=instance.pk)
+            instance.refresh_from_db()
 
-        if assignees is not None:
-            IssueAssignee.objects.filter(issue=instance).delete()
-            try:
+            # Related models
+            project_id = instance.project_id
+            workspace_id = instance.workspace_id
+            created_by_id = instance.created_by_id
+            updated_by_id = instance.updated_by_id
+
+            if assignees is not None:
+                IssueAssignee.objects.filter(issue=instance).delete()
                 IssueAssignee.objects.bulk_create(
                     [
                         IssueAssignee(
@@ -256,14 +288,10 @@ class IssueSerializer(BaseSerializer):
                         for assignee_id in assignees
                     ],
                     batch_size=10,
-                    ignore_conflicts=True,
                 )
-            except IntegrityError:
-                pass
 
-        if labels is not None:
-            IssueLabel.objects.filter(issue=instance).delete()
-            try:
+            if labels is not None:
+                IssueLabel.objects.filter(issue=instance).delete()
                 IssueLabel.objects.bulk_create(
                     [
                         IssueLabel(
@@ -277,14 +305,11 @@ class IssueSerializer(BaseSerializer):
                         for label_id in labels
                     ],
                     batch_size=10,
-                    ignore_conflicts=True,
                 )
-            except IntegrityError:
-                pass
 
-        # Time updation occues even when other related models are updated
-        instance.updated_at = timezone.now()
-        return super().update(instance, validated_data)
+            # Time updation occues even when other related models are updated
+            instance.updated_at = timezone.now()
+            return super().update(instance, validated_data)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

@@ -9,7 +9,7 @@ import { action, makeObservable, runInAction } from "mobx";
 import type { TLoader, IssuePaginationOptions, TIssuesResponse, ViewFlags, TBulkOperationsPayload } from "@plane/types";
 // services
 // types
-import type { IBaseIssuesStore } from "../helpers/base-issues.store";
+import type { IBaseIssuesStore, TBulkDeleteIssuesResponse } from "../helpers/base-issues.store";
 import { BaseIssuesStore } from "../helpers/base-issues.store";
 import type { IIssueRootStore } from "../root.store";
 import type { IArchivedIssuesFilter } from "./filter.store";
@@ -37,7 +37,11 @@ export interface IArchivedIssues extends IBaseIssuesStore {
   ) => Promise<TIssuesResponse | undefined>;
 
   restoreIssue: (workspaceSlug: string, projectId: string, issueId: string) => Promise<void>;
-  removeBulkIssues: (workspaceSlug: string, projectId: string, issueIds: string[]) => Promise<void>;
+  removeBulkIssues: (
+    workspaceSlug: string,
+    projectId: string,
+    issueIds: string[]
+  ) => Promise<TBulkDeleteIssuesResponse>;
   bulkUpdateProperties: (workspaceSlug: string, projectId: string, data: TBulkOperationsPayload) => Promise<void>;
 
   updateIssue: undefined;

@@ -17,10 +17,11 @@ import { getDate, renderFormattedPayloadDate, shouldHighlightIssueDueDate } from
 import { CycleDropdown } from "@/components/dropdowns/cycle";
 import { DateDropdown } from "@/components/dropdowns/date";
 import { EstimateDropdown } from "@/components/dropdowns/estimate";
-import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
+import { CurrentOwnerDropdown } from "@/components/issues/current-owner-dropdown";
 import { ModuleDropdown } from "@/components/dropdowns/module/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
+import { isProjectFeatureVisible } from "@/constants/product-policy";
 // helpers
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
@@ -212,15 +213,13 @@ export const DraftIssueProperties = observer(function DraftIssueProperties(props
 
       {/* assignee */}
       <div className="h-5" onClick={handleEventPropagation}>
-        <MemberDropdown
+        <CurrentOwnerDropdown
           projectId={issue?.project_id}
           value={issue?.assignee_ids}
           onChange={handleAssignee}
-          multiple
           buttonVariant={issue.assignee_ids?.length > 0 ? "transparent-without-text" : "border-without-text"}
           buttonClassName={issue.assignee_ids?.length > 0 ? "hover:bg-transparent px-0" : ""}
           showTooltip={issue?.assignee_ids?.length === 0}
-          placeholder={t("common.assignees")}
           optionsClassName="z-10"
           tooltipContent=""
           renderByDefault={isMobile}
@@ -228,7 +227,7 @@ export const DraftIssueProperties = observer(function DraftIssueProperties(props
       </div>
 
       {/* modules */}
-      {projectDetails?.module_view && (
+      {projectDetails?.module_view && isProjectFeatureVisible("modules", issue.project_id) && (
         <div className="h-5" onClick={handleEventPropagation}>
           <ModuleDropdown
             buttonContainerClassName="truncate max-w-40"
@@ -245,7 +244,7 @@ export const DraftIssueProperties = observer(function DraftIssueProperties(props
       )}
 
       {/* cycles */}
-      {projectDetails?.cycle_view && (
+      {projectDetails?.cycle_view && isProjectFeatureVisible("cycles", issue.project_id) && (
         <div className="h-5" onClick={handleEventPropagation}>
           <CycleDropdown
             buttonContainerClassName="truncate max-w-40"
@@ -260,18 +259,20 @@ export const DraftIssueProperties = observer(function DraftIssueProperties(props
       )}
 
       {/* estimates */}
-      {issue.project_id && areEstimateEnabledByProjectId(issue.project_id?.toString()) && (
-        <div className="h-5" onClick={handleEventPropagation}>
-          <EstimateDropdown
-            value={issue.estimate_point ?? undefined}
-            onChange={handleEstimate}
-            projectId={issue.project_id}
-            buttonVariant="border-with-text"
-            renderByDefault={isMobile}
-            showTooltip
-          />
-        </div>
-      )}
+      {issue.project_id &&
+        isProjectFeatureVisible("estimates", issue.project_id) &&
+        areEstimateEnabledByProjectId(issue.project_id?.toString()) && (
+          <div className="h-5" onClick={handleEventPropagation}>
+            <EstimateDropdown
+              value={issue.estimate_point ?? undefined}
+              onChange={handleEstimate}
+              projectId={issue.project_id}
+              buttonVariant="border-with-text"
+              renderByDefault={isMobile}
+              showTooltip
+            />
+          </div>
+        )}
     </div>
   );
 });

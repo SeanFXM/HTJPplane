@@ -76,8 +76,8 @@ export const StateDelete = observer(function StateDelete(props: TStateDelete) {
         content={
           <>
             Are you sure you want to delete state-{" "}
-            <span className="font-medium text-primary">{state ? getStateDisplayName(state, t) : ""}</span>? All
-            of the data related to the state will be permanently removed. This action cannot be undone.
+            <span className="font-medium text-primary">{state ? getStateDisplayName(state, t) : ""}</span>? All of the
+            data related to the state will be permanently removed. This action cannot be undone.
           </>
         }
       />

@@ -16,6 +16,7 @@ import { useUser } from "@/hooks/store/user";
 import { HomePeekOverviewsRoot } from "@/plane-web/components/home";
 // local imports
 import { DashboardWidgets } from "./home-dashboard-widgets";
+import { OperationalActionCenter } from "./operational-action-center";
 import { UserGreetingsView } from "./user-greetings";
 
 export const WorkspaceHomeView = observer(function WorkspaceHomeView() {
@@ -42,6 +43,7 @@ export const WorkspaceHomeView = observer(function WorkspaceHomeView() {
         <ContentWrapper className="mx-auto scrollbar-hide gap-6 bg-surface-1 px-page-x">
           <div className="mx-auto w-full max-w-[800px]">
             {currentUser && <UserGreetingsView user={currentUser} />}
+            {workspaceSlug && <OperationalActionCenter workspaceSlug={workspaceSlug.toString()} />}
             <DashboardWidgets />
           </div>
         </ContentWrapper>

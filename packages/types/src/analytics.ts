@@ -5,6 +5,8 @@
  */
 
 import type { TChartData } from "./charts";
+import type { TIssuePriorities } from "./issues";
+import type { TStateGroups } from "./state";
 
 export enum ChartXAxisProperty {
   STATES = "STATES",
@@ -94,3 +96,45 @@ export interface IAnalyticsParams {
   y_axis: ChartYAxisMetric;
   group_by?: ChartXAxisProperty;
 }
+
+export type TOperationalReportIssue = {
+  id: string;
+  name: string;
+  project_id: string;
+  project__identifier: string;
+  project__name: string;
+  sequence_id: number;
+  priority: TIssuePriorities;
+  state__name: string | null;
+  state__group: TStateGroups | null;
+  start_date: string | null;
+  target_date: string | null;
+  waiting_party: string | null;
+  waiting_since: string | null;
+  blocked_reason: string;
+  next_action: string;
+  updated_at: string;
+};
+
+export type TOperationalReportCategory =
+  | "overdue"
+  | "due_soon"
+  | "unassigned"
+  | "missing_due_date"
+  | "blocked"
+  | "waiting"
+  | "awaiting_review"
+  | "stale";
+
+export type TOperationalReportResponse = {
+  generated_at: string;
+  counts: Record<TOperationalReportCategory | "active" | "urgent_overdue", number>;
+  issues: Record<TOperationalReportCategory, TOperationalReportIssue[]>;
+  in_progress_by_owner: {
+    assignees__id: string;
+    assignees__display_name: string;
+    assignees__first_name: string;
+    assignees__last_name: string;
+    count: number;
+  }[];
+};

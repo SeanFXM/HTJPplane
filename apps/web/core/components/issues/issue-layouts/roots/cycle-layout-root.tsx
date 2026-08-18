@@ -87,7 +87,6 @@ export const CycleLayoutRoot = observer(function CycleLayoutRoot() {
   return (
     <IssuesStoreContext.Provider value={EIssuesStoreType.CYCLE}>
       <ProjectLevelWorkItemFiltersHOC
-        enableSaveView
         entityType={EIssuesStoreType.CYCLE}
         entityId={cycleId}
         filtersToShowByLayout={ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters}

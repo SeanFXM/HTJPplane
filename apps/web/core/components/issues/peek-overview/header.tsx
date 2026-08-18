@@ -129,19 +129,10 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
   };
 
   const handleDeleteIssue = async () => {
-    try {
-      const deleteIssue = issueDetails?.archived_at ? removeArchivedIssue : removeIssue;
+    const deleteIssue = issueDetails?.archived_at ? removeArchivedIssue : removeIssue;
 
-      return deleteIssue(workspaceSlug, projectId, issueId).then(() => {
-        setPeekIssue(undefined);
-      });
-    } catch (_error) {
-      setToast({
-        title: t("toast.error"),
-        type: TOAST_TYPE.ERROR,
-        message: t("entity.delete.failed", { entity: t("issue.label", { count: 1 }) }),
-      });
-    }
+    await deleteIssue(workspaceSlug, projectId, issueId);
+    setPeekIssue(undefined);
   };
 
   const handleArchiveIssue = async () => {

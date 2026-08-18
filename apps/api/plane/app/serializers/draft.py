@@ -92,12 +92,18 @@ class DraftIssueCreateSerializer(BaseSerializer):
 
         # Validate assignees are from project
         if attrs.get("assignee_ids", []):
-            attrs["assignee_ids"] = ProjectMember.objects.filter(
-                project_id=self.context["project_id"],
-                role__gte=ROLE.MEMBER.value,
-                is_active=True,
-                member_id__in=attrs["assignee_ids"],
-            ).values_list("member_id", flat=True)
+            requested_assignee_ids = {assignee.id for assignee in attrs["assignee_ids"]}
+            valid_assignee_ids = list(
+                ProjectMember.objects.filter(
+                    project_id=self.context["project_id"],
+                    role__gte=ROLE.MEMBER.value,
+                    is_active=True,
+                    member_id__in=requested_assignee_ids,
+                ).values_list("member_id", flat=True)
+            )
+            if requested_assignee_ids != set(valid_assignee_ids):
+                raise serializers.ValidationError({"assignee_ids": "Current owner must be an active project member"})
+            attrs["assignee_ids"] = valid_assignee_ids
 
         # Validate labels are from project
         if attrs.get("label_ids"):
@@ -138,6 +144,11 @@ class DraftIssueCreateSerializer(BaseSerializer):
             raise serializers.ValidationError("Estimate point is not valid please pass a valid estimate_point_id")
 
         return attrs
+
+    def validate_assignee_ids(self, value):
+        if len(value) > 1:
+            raise serializers.ValidationError("A work item can have only one current owner")
+        return value
 
     def create(self, validated_data):
         assignees = validated_data.pop("assignee_ids", None)

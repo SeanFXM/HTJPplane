@@ -10,6 +10,8 @@ import { useSearchParams } from "next/navigation";
 // plane imports
 import { useTranslation } from "@plane/i18n";
 import { OAuthOptions } from "@plane/ui";
+// assets
+import hotoneLogo from "@/app/assets/logos/hotone-logo.png?url";
 // helpers
 import type { TAuthErrorInfo } from "@/helpers/authentication.helper";
 import {
@@ -116,6 +118,15 @@ export const AuthRoot = observer(function AuthRoot(props: TAuthRoot) {
 
   return (
     <AuthContainer>
+      <div className="flex flex-col items-center gap-3 text-center">
+        <div className="shadow-sm rounded-md bg-white px-4 py-2 ring-1 ring-black/5">
+          <img src={hotoneLogo} alt="Hotone" className="h-auto w-52" />
+        </div>
+        <div className="space-y-1">
+          <h1 className="text-h4-semibold text-primary">{t("auth.hotone_portal.title")}</h1>
+          <p className="text-body-sm-regular text-secondary">{t("auth.hotone_portal.description")}</p>
+        </div>
+      </div>
       {errorInfo && errorInfo?.type === EErrorAlertType.BANNER_ALERT && (
         <AuthBanner message={errorInfo.message} handleBannerData={(value) => setErrorInfo(value)} />
       )}
@@ -138,13 +149,14 @@ export const AuthRoot = observer(function AuthRoot(props: TAuthRoot) {
           authStep={authStep}
           authMode={authMode}
           email={email}
-          setEmail={(email) => setEmail(email)}
-          setAuthMode={(authMode) => setAuthMode(authMode)}
-          setAuthStep={(authStep) => setAuthStep(authStep)}
-          setErrorInfo={(errorInfo) => setErrorInfo(errorInfo)}
+          setEmail={(nextEmail) => setEmail(nextEmail)}
+          setAuthMode={(nextAuthMode) => setAuthMode(nextAuthMode)}
+          setAuthStep={(nextAuthStep) => setAuthStep(nextAuthStep)}
+          setErrorInfo={(nextErrorInfo) => setErrorInfo(nextErrorInfo)}
           currentAuthMode={currentAuthMode}
         />
       )}
+      <p className="text-center text-body-xs-regular text-tertiary">{t("auth.hotone_portal.help")}</p>
     </AuthContainer>
   );
 });

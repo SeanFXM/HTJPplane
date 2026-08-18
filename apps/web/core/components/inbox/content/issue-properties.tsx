@@ -5,6 +5,7 @@
  */
 
 import { observer } from "mobx-react";
+import { useTranslation } from "@plane/i18n";
 import {
   StatePropertyIcon,
   MembersPropertyIcon,
@@ -20,9 +21,9 @@ import { getDate, renderFormattedPayloadDate, generateWorkItemLink } from "@plan
 // components
 import { DateDropdown } from "@/components/dropdowns/date";
 import { IntakeStateDropdown } from "@/components/dropdowns/intake-state/dropdown";
-import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
+import { CURRENT_OWNER_COPY, CurrentOwnerDropdown } from "@/components/issues/current-owner-dropdown";
 import type { TIssueOperations } from "@/components/issues/issue-detail";
 import { IssueLabel } from "@/components/issues/issue-detail/label";
 // hooks
@@ -42,6 +43,9 @@ type Props = {
 export const InboxIssueContentProperties = observer(function InboxIssueContentProperties(props: Props) {
   const { workspaceSlug, projectId, issue, issueOperations, isEditable, duplicateIssueDetails, isIntakeAccepted } =
     props;
+  const { currentLocale } = useTranslation();
+  const currentOwnerLabel =
+    CURRENT_OWNER_COPY[currentLocale as keyof typeof CURRENT_OWNER_COPY] ?? CURRENT_OWNER_COPY.en;
 
   const router = useAppRouter();
   // store hooks
@@ -87,21 +91,19 @@ export const InboxIssueContentProperties = observer(function InboxIssueContentPr
                 />
               )}
             </div>
-            {/* Assignee */}
+            {/* Current owner */}
             <div className="flex h-8 items-center gap-2">
               <div className="flex w-2/5 flex-shrink-0 items-center gap-1 text-13 text-tertiary">
                 <MembersPropertyIcon className="h-4 w-4 flex-shrink-0" />
-                <span>Assignees</span>
+                <span>{currentOwnerLabel}</span>
               </div>
-              <MemberDropdown
+              <CurrentOwnerDropdown
                 value={issue?.assignee_ids ?? []}
                 onChange={(val) =>
                   issue?.id && issueOperations.update(workspaceSlug, projectId, issue?.id, { assignee_ids: val })
                 }
                 disabled={!isEditable}
                 projectId={projectId?.toString() ?? ""}
-                placeholder="Add assignees"
-                multiple
                 buttonVariant={
                   (issue?.assignee_ids || [])?.length > 0 ? "transparent-without-text" : "transparent-with-text"
                 }

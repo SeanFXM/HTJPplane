@@ -11,6 +11,7 @@ import type {
   TAnalyticsTabsBase,
   TAnalyticsGraphsBase,
   TAnalyticsFilterParams,
+  TOperationalReportResponse,
 } from "@plane/types";
 // services
 import { APIService } from "./api.service";
@@ -20,13 +21,21 @@ export class AnalyticsService extends APIService {
     super(API_BASE_URL);
   }
 
+  async getOperationalReport(workspaceSlug: string): Promise<TOperationalReportResponse> {
+    return this.get(`/api/workspaces/${workspaceSlug}/operational-reports/`)
+      .then((res) => res?.data)
+      .catch((err) => {
+        throw err?.response?.data;
+      });
+  }
+
   async getAdvanceAnalytics<T extends IAnalyticsResponse>(
     workspaceSlug: string,
     tab: TAnalyticsTabsBase,
     params?: TAnalyticsFilterParams,
     isPeekView?: boolean
   ): Promise<T> {
-    return this.get(this.processUrl<TAnalyticsTabsBase>("advance-analytics", workspaceSlug, tab, params, isPeekView), {
+    return this.get(this.processUrl("advance-analytics", workspaceSlug, tab, params, isPeekView), {
       params: {
         tab,
         ...params,
@@ -44,13 +53,7 @@ export class AnalyticsService extends APIService {
     params?: TAnalyticsFilterParams,
     isPeekView?: boolean
   ): Promise<T> {
-    const processedUrl = this.processUrl<Exclude<TAnalyticsTabsBase, "overview">>(
-      "advance-analytics-stats",
-      workspaceSlug,
-      tab,
-      params,
-      isPeekView
-    );
+    const processedUrl = this.processUrl("advance-analytics-stats", workspaceSlug, tab, params, isPeekView);
     return this.get(processedUrl, {
       params: {
         type: tab,
@@ -69,13 +72,7 @@ export class AnalyticsService extends APIService {
     params?: TAnalyticsFilterParams,
     isPeekView?: boolean
   ): Promise<T> {
-    const processedUrl = this.processUrl<TAnalyticsGraphsBase>(
-      "advance-analytics-charts",
-      workspaceSlug,
-      tab,
-      params,
-      isPeekView
-    );
+    const processedUrl = this.processUrl("advance-analytics-charts", workspaceSlug, tab, params, isPeekView);
     return this.get(processedUrl, {
       params: {
         type: tab,
@@ -88,7 +85,7 @@ export class AnalyticsService extends APIService {
       });
   }
 
-  processUrl<T extends string>(
+  processUrl(
     endpoint: string,
     workspaceSlug: string,
     tab: TAnalyticsGraphsBase | TAnalyticsTabsBase,

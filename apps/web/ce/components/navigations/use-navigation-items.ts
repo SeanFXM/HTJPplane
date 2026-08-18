@@ -10,6 +10,7 @@ import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { CycleIcon, IntakeIcon, ModuleIcon, PageIcon, ViewsIcon, WorkItemsIcon } from "@plane/propel/icons";
 import type { EUserProjectRoles, IPartialProject } from "@plane/types";
 import type { TNavigationItem } from "@/components/navigation/tab-navigation-root";
+import { isProjectFeatureVisible } from "@/constants/product-policy";
 
 type UseNavigationItemsProps = {
   workspaceSlug: string;
@@ -49,7 +50,7 @@ export const useNavigationItems = ({
         href: `/${workspaceSlug}/projects/${projectId}/cycles`,
         icon: CycleIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
-        shouldRender: !!project?.cycle_view,
+        shouldRender: !!project?.cycle_view && isProjectFeatureVisible("cycles", projectId),
         sortOrder: 2,
       },
       {
@@ -59,7 +60,7 @@ export const useNavigationItems = ({
         href: `/${workspaceSlug}/projects/${projectId}/modules`,
         icon: ModuleIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
-        shouldRender: !!project?.module_view,
+        shouldRender: !!project?.module_view && isProjectFeatureVisible("modules", projectId),
         sortOrder: 3,
       },
       {
@@ -69,7 +70,7 @@ export const useNavigationItems = ({
         href: `/${workspaceSlug}/projects/${projectId}/views`,
         icon: ViewsIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
-        shouldRender: !!project?.issue_views_view,
+        shouldRender: !!project?.issue_views_view && isProjectFeatureVisible("views", projectId),
         sortOrder: 4,
       },
       {
@@ -89,7 +90,7 @@ export const useNavigationItems = ({
         href: `/${workspaceSlug}/projects/${projectId}/intake`,
         icon: IntakeIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
-        shouldRender: !!project?.inbox_view,
+        shouldRender: !!project?.inbox_view && isProjectFeatureVisible("intake", projectId),
         sortOrder: 6,
       },
     ],

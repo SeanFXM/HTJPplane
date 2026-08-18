@@ -54,6 +54,13 @@ export enum EIssueGroupedAction {
   DELETE = "DELETE",
   REORDER = "REORDER",
 }
+
+export type TBulkDeleteIssuesResponse = {
+  message: string;
+  selected_count?: number;
+  deleted_count?: number;
+};
+
 export interface IBaseIssuesStore {
   // observable
   loader: Record<string, TLoader>;
@@ -172,6 +179,30 @@ const ISSUE_ORDERBY_KEY: Record<TIssueOrderByOptions, keyof TIssue> = {
   "-attachment_count": "attachment_count",
   sub_issues_count: "sub_issues_count",
   "-sub_issues_count": "sub_issues_count",
+};
+
+const getKnownIssueTreeIds = (issuesMap: Record<string, TIssue>, rootIssueIds: string[]): string[] => {
+  const childIdsByParentId = new Map<string, string[]>();
+  Object.values(issuesMap).forEach((issue) => {
+    if (!issue.parent_id) return;
+    const childIds = childIdsByParentId.get(issue.parent_id) ?? [];
+    childIds.push(issue.id);
+    childIdsByParentId.set(issue.parent_id, childIds);
+  });
+
+  const issueIds = new Set(rootIssueIds);
+  const pendingIssueIds = [...rootIssueIds];
+
+  for (let index = 0; index < pendingIssueIds.length; index += 1) {
+    const parentIssueId = pendingIssueIds[index];
+    childIdsByParentId.get(parentIssueId)?.forEach((childIssueId) => {
+      if (issueIds.has(childIssueId)) return;
+      issueIds.add(childIssueId);
+      pendingIssueIds.push(childIssueId);
+    });
+  }
+
+  return [...issueIds];
 };
 
 export abstract class BaseIssuesStore implements IBaseIssuesStore {
@@ -575,10 +606,16 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
       } as TIssue);
 
       // call API to update the issue
-      await this.issueService.patchIssue(workspaceSlug, projectId, issueId, data);
+      const response = await this.issueService.patchIssue(workspaceSlug, projectId, issueId, data);
+
+      // Merge the canonical server response after the optimistic update. Some
+      // fields (for example waiting_since) are derived by the API and are not
+      // present in the submitted payload.
+      if (response) this.rootIssueStore.issues.updateIssue(issueId, response);
 
       // call fetch Parent Stats
       this.fetchParentStats(workspaceSlug, projectId);
+      return response;
     } catch (error) {
       // If errored out update store again to revert the change
       this.rootIssueStore.issues.updateIssue(issueId, issueBeforeUpdate ?? {});
@@ -596,19 +633,22 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
   async removeIssue(workspaceSlug: string, projectId: string, issueId: string) {
     // Store Before state of the issue
     const issueBeforeRemoval = clone(this.rootIssueStore.issues.getIssueById(issueId));
-    // update parent stats optimistically
-    this.updateParentStats(issueBeforeRemoval, undefined);
+    const deletedIssueIds = getKnownIssueTreeIds(this.rootIssueStore.issues.issuesMap, [issueId]);
 
-    // Male API call
+    // Make API call
     await this.issueService.deleteIssue(workspaceSlug, projectId, issueId);
+    // Update counts only after the API accepts the deletion. The backend can
+    // reject hierarchy or permission rules without changing any data.
+    this.updateParentStats(issueBeforeRemoval, undefined);
     // Remove from Respective issue Id list
     runInAction(() => {
-      this.removeIssueFromList(issueId);
+      deletedIssueIds.forEach((deletedIssueId) => {
+        this.removeIssueFromList(deletedIssueId);
+        this.rootIssueStore.issues.removeIssue(deletedIssueId);
+      });
     });
     // call fetch Parent stats
     this.fetchParentStats(workspaceSlug, projectId);
-    // Remove issue from main issue Map store
-    this.rootIssueStore.issues.removeIssue(issueId);
   }
 
   /**
@@ -619,10 +659,10 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
    */
   async issueArchive(workspaceSlug: string, projectId: string, issueId: string) {
     const issueBeforeArchive = clone(this.rootIssueStore.issues.getIssueById(issueId));
-    // update parent stats optimistically
-    this.updateParentStats(issueBeforeArchive, undefined);
-    // Male API call
+    // Make API call
     const response = await this.issueArchiveService.archiveIssue(workspaceSlug, projectId, issueId);
+    // Keep counts unchanged when hierarchy/state validation rejects the archive.
+    this.updateParentStats(issueBeforeArchive, undefined);
     // call fetch Parent stats
     this.fetchParentStats(workspaceSlug, projectId);
     runInAction(() => {
@@ -675,15 +715,16 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
    * @returns
    */
   async removeBulkIssues(workspaceSlug: string, projectId: string, issueIds: string[]) {
+    const deletedIssueIds = getKnownIssueTreeIds(this.rootIssueStore.issues.issuesMap, issueIds);
     // Make API call to bulk delete issues
     const response = await this.issueService.bulkDeleteIssues(workspaceSlug, projectId, { issue_ids: issueIds });
     // call fetch parent stats
     this.fetchParentStats(workspaceSlug, projectId);
     // Remove issues from the store
     runInAction(() => {
-      issueIds.forEach((issueId) => {
-        this.removeIssueFromList(issueId);
-        this.rootIssueStore.issues.removeIssue(issueId);
+      deletedIssueIds.forEach((deletedIssueId) => {
+        this.removeIssueFromList(deletedIssueId);
+        this.rootIssueStore.issues.removeIssue(deletedIssueId);
       });
     });
     return response;
@@ -720,6 +761,9 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
    */
   bulkUpdateProperties = async (workspaceSlug: string, projectId: string, data: TBulkOperationsPayload) => {
     const issueIds = data.issue_ids;
+    if (data.properties.assignee_ids && data.properties.assignee_ids.length > 1) {
+      throw new Error("A work item can have only one current owner");
+    }
     // make request to update issue properties
     await this.issueService.bulkOperations(workspaceSlug, projectId, data);
     // update issues in the store
@@ -731,7 +775,11 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
           const property = key as keyof TBulkOperationsPayload["properties"];
           const propertyValue = data.properties[property];
           // update root issue map properties
-          if (Array.isArray(propertyValue)) {
+          if (property === "assignee_ids") {
+            this.rootIssueStore.issues.updateIssue(issueId, {
+              assignee_ids: propertyValue as string[],
+            });
+          } else if (Array.isArray(propertyValue)) {
             // if property value is array, append it to the existing values
             const existingValue = issueBeforeUpdate[property];
             // convert existing value to an array
@@ -1204,7 +1252,7 @@ export abstract class BaseIssuesStore implements IBaseIssuesStore {
     const issueId = issue?.id ?? issueBeforeUpdate?.id;
     if (!issueId) return;
 
-    // Get display filters to check if 'Show sub Work items' is enabled - Donot add Work item to main list if disabled.
+    // Get display filters to check if 'Show sub Work items' is enabled - Do not add Work item to main list if disabled.
     const isShowWorkItemsEnabled = this.issueFilterStore.issueFilters?.displayFilters?.sub_issue ?? false;
 
     // get issueUpdates from another method by passing down the three arguments

@@ -27,16 +27,13 @@ function ExportsPage() {
   const { t } = useTranslation();
 
   // derived values
-  const canPerformWorkspaceMemberActions = allowPermissions(
-    [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
-    EUserPermissionsLevel.WORKSPACE
-  );
+  const canManageExports = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.WORKSPACE);
   const pageTitle = currentWorkspace?.name
     ? `${currentWorkspace.name} - ${t("workspace_settings.settings.exports.title")}`
     : undefined;
 
   // if user is not authorized to view this page
-  if (workspaceUserInfo && !canPerformWorkspaceMemberActions) {
+  if (workspaceUserInfo && !canManageExports) {
     return <NotAuthorizedView section="settings" className="h-auto" />;
   }
 
@@ -45,7 +42,7 @@ function ExportsPage() {
       <PageHead title={pageTitle} />
       <div
         className={cn("flex w-full flex-col gap-y-6", {
-          "opacity-60": !canPerformWorkspaceMemberActions,
+          "opacity-60": !canManageExports,
         })}
       >
         <SettingsHeading

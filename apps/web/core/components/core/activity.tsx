@@ -134,7 +134,9 @@ const getInboxUserActivityMessage = (activity: IIssueActivity, showIssue: boolea
   }
 };
 
-const getActivityDetails = (t: TTranslateFn): {
+const getActivityDetails = (
+  t: TTranslateFn
+): {
   [key: string]: {
     message: (activity: IIssueActivity, showIssue: boolean, workspaceSlug: string) => React.ReactNode;
     icon: React.ReactNode;
@@ -271,7 +273,8 @@ const getActivityDetails = (t: TTranslateFn): {
       else if (activity.verb === "converted")
         return (
           <>
-            {t("activity_messages.converted_to_epic")} <IssueLink activity={activity} /> {t("activity_messages.to_epic")}
+            {t("activity_messages.converted_to_epic")} <IssueLink activity={activity} />{" "}
+            {t("activity_messages.to_epic")}
           </>
         );
       else
@@ -415,7 +418,8 @@ const getActivityDetails = (t: TTranslateFn): {
         return (
           <>
             <span className="flex-shrink-0">
-              {t("activity_messages.added_to_cycle")} {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")}{" "}
+              {t("activity_messages.added_to_cycle")}{" "}
+              {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")}{" "}
               <span className="whitespace-nowrap">{t("activity_messages.to_the_cycle")}</span>{" "}
             </span>
             <a
@@ -445,7 +449,8 @@ const getActivityDetails = (t: TTranslateFn): {
       else
         return (
           <>
-            {t("activity_messages.removed_from_cycle")} <IssueLink activity={activity} /> {t("activity_messages.from_the_cycle")}{" "}
+            {t("activity_messages.removed_from_cycle")} <IssueLink activity={activity} />{" "}
+            {t("activity_messages.from_the_cycle")}{" "}
             <a
               href={`/${workspaceSlug}/projects/${activity.project}/cycles/${activity.old_identifier}`}
               target="_blank"
@@ -464,7 +469,9 @@ const getActivityDetails = (t: TTranslateFn): {
       if (activity.verb === "created")
         return (
           <>
-            {t("activity_messages.added_to_module")} {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")} {t("activity_messages.to_the_module")}{" "}
+            {t("activity_messages.added_to_module")}{" "}
+            {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")}{" "}
+            {t("activity_messages.to_the_module")}{" "}
             <a
               href={`/${workspaceSlug}/projects/${activity.project}/modules/${activity.new_identifier}`}
               target="_blank"
@@ -492,7 +499,8 @@ const getActivityDetails = (t: TTranslateFn): {
       else
         return (
           <>
-            {t("activity_messages.removed_from_module")} <IssueLink activity={activity} /> {t("activity_messages.from_the_module")}{" "}
+            {t("activity_messages.removed_from_module")} <IssueLink activity={activity} />{" "}
+            {t("activity_messages.from_the_module")}{" "}
             <a
               href={`/${workspaceSlug}/projects/${activity.project}/modules/${activity.old_identifier}`}
               target="_blank"
@@ -525,7 +533,8 @@ const getActivityDetails = (t: TTranslateFn): {
       if (!activity.new_value)
         return (
           <>
-            {t("activity_messages.removed_parent")} <span className="font-medium whitespace-nowrap text-primary">{activity.old_value}</span>
+            {t("activity_messages.removed_parent")}{" "}
+            <span className="font-medium whitespace-nowrap text-primary">{activity.old_value}</span>
             {showIssue && (
               <>
                 {t("activity_messages.from")}
@@ -537,7 +546,8 @@ const getActivityDetails = (t: TTranslateFn): {
       else
         return (
           <>
-            {t("activity_messages.set_parent_to")} <span className="font-medium whitespace-nowrap text-primary">{activity.new_value}</span>
+            {t("activity_messages.set_parent_to")}{" "}
+            <span className="font-medium whitespace-nowrap text-primary">{activity.new_value}</span>
             {showIssue && (
               <>
                 {t("activity_messages.for")}
@@ -571,7 +581,9 @@ const getActivityDetails = (t: TTranslateFn): {
       if (activity.old_value === "")
         return (
           <>
-            {t("activity_messages.marked_relates_to")} {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")} {t("activity_messages.relates_to")}{" "}
+            {t("activity_messages.marked_relates_to")}{" "}
+            {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")}{" "}
+            {t("activity_messages.relates_to")}{" "}
             <span className="font-medium whitespace-nowrap text-primary">{activity.new_value}</span>.
           </>
         );
@@ -590,7 +602,9 @@ const getActivityDetails = (t: TTranslateFn): {
       if (activity.old_value === "")
         return (
           <>
-            {t("activity_messages.marked_blocking")} {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")} {t("activity_messages.is_blocking")}{" "}
+            {t("activity_messages.marked_blocking")}{" "}
+            {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")}{" "}
+            {t("activity_messages.is_blocking")}{" "}
             <span className="font-medium whitespace-nowrap text-primary">{activity.new_value}</span>.
           </>
         );
@@ -609,14 +623,18 @@ const getActivityDetails = (t: TTranslateFn): {
       if (activity.old_value === "")
         return (
           <>
-            {t("activity_messages.marked_blocked_by")} {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")} {t("activity_messages.is_blocked_by")}{" "}
+            {t("activity_messages.marked_blocked_by")}{" "}
+            {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")}{" "}
+            {t("activity_messages.is_blocked_by")}{" "}
             <span className="font-medium whitespace-nowrap text-primary">{activity.new_value}</span>.
           </>
         );
       else
         return (
           <>
-            {t("activity_messages.removed_blocked_by")} {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")} {t("activity_messages.being_blocked_by")}{" "}
+            {t("activity_messages.removed_blocked_by")}{" "}
+            {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")}{" "}
+            {t("activity_messages.being_blocked_by")}{" "}
             <span className="font-medium whitespace-nowrap text-primary">{activity.old_value}</span>.
           </>
         );
@@ -628,14 +646,18 @@ const getActivityDetails = (t: TTranslateFn): {
       if (activity.old_value === "")
         return (
           <>
-            {t("activity_messages.marked_duplicate_of")} {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")} {t("activity_messages.as_duplicate_of")}{" "}
+            {t("activity_messages.marked_duplicate_of")}{" "}
+            {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")}{" "}
+            {t("activity_messages.as_duplicate_of")}{" "}
             <span className="font-medium whitespace-nowrap text-primary">{activity.new_value}</span>.
           </>
         );
       else
         return (
           <>
-            {t("activity_messages.removed_duplicate_of")} {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")} {t("activity_messages.as_a_duplicate_of")}{" "}
+            {t("activity_messages.removed_duplicate_of")}{" "}
+            {showIssue ? <IssueLink activity={activity} /> : t("activity_messages.this_work_item")}{" "}
+            {t("activity_messages.as_a_duplicate_of")}{" "}
             <span className="font-medium whitespace-nowrap text-primary">{activity.old_value}</span>.
           </>
         );
@@ -645,7 +667,8 @@ const getActivityDetails = (t: TTranslateFn): {
   state: {
     message: (activity, showIssue) => (
       <>
-        {t("activity_messages.set_state_to")} <span className="font-medium break-all text-primary">{activity.new_value}</span>
+        {t("activity_messages.set_state_to")}{" "}
+        <span className="font-medium break-all text-primary">{activity.new_value}</span>
         {showIssue && (
           <>
             {t("activity_messages.for")}

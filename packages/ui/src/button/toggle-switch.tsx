@@ -11,6 +11,10 @@ import { cn } from "../utils";
 interface IToggleSwitchProps {
   value: boolean;
   onChange: (value: boolean) => void;
+  /** Accessible name announced by assistive technology. Falls back to `label`. */
+  ariaLabel?: string;
+  /** ID of visible text that labels the switch. */
+  ariaLabelledBy?: string;
   label?: string;
   size?: "sm" | "md" | "lg";
   disabled?: boolean;
@@ -18,15 +22,19 @@ interface IToggleSwitchProps {
 }
 
 function ToggleSwitch(props: IToggleSwitchProps) {
-  const { value, onChange, label, size = "sm", disabled, className } = props;
+  const { value, onChange, ariaLabel, ariaLabelledBy, label, size = "sm", disabled, className } = props;
+
+  const accessibleLabel = ariaLabelledBy ? undefined : (ariaLabel ?? label ?? "Toggle setting");
 
   return (
     <Switch
       checked={value}
       disabled={disabled}
       onChange={onChange}
+      aria-label={accessibleLabel}
+      aria-labelledby={ariaLabelledBy}
       className={cn(
-        "relative inline-flex h-6 w-10 flex-shrink-0 cursor-pointer rounded-full border border-subtle bg-layer-1 transition-colors duration-200 ease-in-out focus:outline-none",
+        "relative inline-flex h-6 w-10 flex-shrink-0 cursor-pointer rounded-full border border-subtle bg-layer-1 transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:ring-offset-2",
         {
           "h-4 w-7": size === "sm",
           "h-5 w-9": size === "md",
@@ -38,7 +46,7 @@ function ToggleSwitch(props: IToggleSwitchProps) {
         className
       )}
     >
-      <span className="sr-only">{label}</span>
+      {label && <span className="sr-only">{label}</span>}
       <span
         aria-hidden="true"
         className={cn(

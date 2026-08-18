@@ -5,6 +5,7 @@
  */
 
 import { Outlet } from "react-router";
+import { ProductUnavailableNotice } from "@/components/navigation/product-unavailable-notice";
 import type { Route } from "./+types/layout";
 import { PreloadResources } from "./layout.preload";
 
@@ -17,6 +18,7 @@ export default function AppLayout() {
   return (
     <>
       <PreloadResources />
+      <ProductUnavailableNotice />
       <Outlet />
     </>
   );

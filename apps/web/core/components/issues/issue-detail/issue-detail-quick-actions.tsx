@@ -90,53 +90,24 @@ export const IssueDetailQuickActions = observer(function IssueDetailQuickActions
   };
 
   const handleDeleteIssue = async () => {
-    try {
-      const deleteIssue = issue?.archived_at ? removeArchivedIssue : removeIssue;
-      const redirectionPath = issue?.archived_at
-        ? `/${workspaceSlug}/projects/${projectId}/archives/issues`
-        : `/${workspaceSlug}/projects/${projectId}/issues`;
+    const deleteIssue = issue?.archived_at ? removeArchivedIssue : removeIssue;
+    const redirectionPath = issue?.archived_at
+      ? `/${workspaceSlug}/projects/${projectId}/archives/issues`
+      : `/${workspaceSlug}/projects/${projectId}/issues`;
 
-      await deleteIssue(workspaceSlug, projectId, issueId);
-      router.push(redirectionPath);
-    } catch (_error) {
-      setToast({
-        title: t("toast.error "),
-        type: TOAST_TYPE.ERROR,
-        message: t("entity.delete.failed", { entity: t("issue.label", { count: 1 }) }),
-      });
-    }
+    await deleteIssue(workspaceSlug, projectId, issueId);
+    router.push(redirectionPath);
   };
 
   const handleArchiveIssue = async () => {
-    try {
-      await archiveIssue(workspaceSlug, projectId, issueId);
-      router.push(`/${workspaceSlug}/projects/${projectId}/issues`);
-    } catch (_error) {
-      setToast({
-        title: t("toast.error"),
-        type: TOAST_TYPE.ERROR,
-        message: t("issue.archive.failed.message"),
-      });
-    }
+    await archiveIssue(workspaceSlug, projectId, issueId);
+    router.push(`/${workspaceSlug}/projects/${projectId}/issues`);
   };
 
   const handleRestore = async () => {
     if (!workspaceSlug || !projectId || !issueId) return;
-    try {
-      await restoreIssue(workspaceSlug.toString(), projectId.toString(), issueId.toString());
-      setToast({
-        type: TOAST_TYPE.SUCCESS,
-        title: t("issue.restore.success.title"),
-        message: t("issue.restore.success.message"),
-      });
-      router.push(workItemLink);
-    } catch (_error) {
-      setToast({
-        title: t("toast.error"),
-        type: TOAST_TYPE.ERROR,
-        message: t("issue.restore.failed.message"),
-      });
-    }
+    await restoreIssue(workspaceSlug.toString(), projectId.toString(), issueId.toString());
+    router.push(workItemLink);
   };
 
   return (

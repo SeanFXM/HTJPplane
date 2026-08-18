@@ -9,6 +9,7 @@ import useSWR from "swr";
 import { Loader } from "@plane/ui";
 // components
 import { PageWrapper } from "@/components/common/page-wrapper";
+import { getInternalAdminPageTitle } from "@/constants/branding";
 // hooks
 import { useInstance } from "@/hooks/store";
 // types
@@ -41,6 +42,6 @@ const InstanceImagePage = observer(function InstanceImagePage(_props: Route.Comp
   );
 });
 
-export const meta: Route.MetaFunction = () => [{ title: "Images Settings - God Mode" }];
+export const meta: Route.MetaFunction = () => [{ title: getInternalAdminPageTitle("Image settings") }];
 
 export default InstanceImagePage;

@@ -14,6 +14,4 @@ import type { IProjectEpicsFilter } from "./filter.store";
 export type IProjectEpics = IProjectIssues;
 
 // @ts-nocheck - This class will never be used, extending similar class to avoid type errors
-export class ProjectEpics extends ProjectIssues implements IProjectEpics {
-  
-}
+export class ProjectEpics extends ProjectIssues implements IProjectEpics {}

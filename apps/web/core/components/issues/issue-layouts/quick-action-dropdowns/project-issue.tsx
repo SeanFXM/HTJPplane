@@ -152,6 +152,7 @@ export const ProjectIssueQuickActions = observer(function ProjectIssueQuickActio
       <ContextMenu parentRef={parentRef} items={CONTEXT_MENU_ITEMS} />
       <CustomMenu
         ellipsis
+        ariaLabel={`Actions for ${issue.name}`}
         placement={placements}
         customButton={customActionButton}
         portalElement={portalElement}

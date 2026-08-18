@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
 import Script from "next/script";
 import { Links, Meta, Outlet, Scripts } from "react-router";
 import type { LinksFunction } from "react-router";
-import { ThemeProvider, useTheme } from "next-themes";
+import { ThemeProvider } from "next-themes";
 // plane imports
 import { SITE_DESCRIPTION } from "@plane/constants";
 import { DEFAULT_LANGUAGE } from "@plane/i18n";
@@ -137,12 +137,11 @@ export default function Root() {
 }
 
 export function HydrateFallback() {
-  const { resolvedTheme } = useTheme();
-
-  // Show loading spinner during hydration; use neutral bg when theme not yet resolved
-  const bgClass = resolvedTheme === undefined ? "bg-white dark:bg-[#0a0a0a]" : "bg-canvas";
   return (
-    <div className={cn("relative flex h-screen w-full items-center justify-center", bgClass)}>
+    // This fallback is rendered into the SPA shell at build time. Keep its
+    // markup deterministic so a locally resolved theme cannot differ from
+    // the pre-rendered HTML during hydration.
+    <div className="relative flex h-screen w-full items-center justify-center bg-white dark:bg-[#0a0a0a]">
       <LogoSpinner />
     </div>
   );

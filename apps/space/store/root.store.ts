@@ -80,3 +80,8 @@ export class RootStore {
     this.publishList = new PublishListStore(this);
   }
 }
+
+// Store implementations use the historical CoreRootStore name for their
+// constructor contract. Keep the alias explicit while exposing RootStore as
+// the public runtime class.
+export type CoreRootStore = RootStore;

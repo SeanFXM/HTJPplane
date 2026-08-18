@@ -23,7 +23,6 @@ import { copyUrlToClipboard, cn, orderJoinedProjects } from "@plane/utils";
 // components
 import { LeaveProjectModal } from "@/components/project/leave-project-modal";
 import { CreateProjectModal } from "@/components/project/create-project-modal";
-import { PublishProjectModal } from "@/components/project/publish-project/modal";
 import { SidebarNavItem } from "@/components/sidebar/sidebar-navigation";
 // hooks
 import { useAppTheme } from "@/hooks/store/use-app-theme";
@@ -42,7 +41,6 @@ export const SidebarProjectsList = observer(function SidebarProjectsList() {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false); // scroll animation state
   const [activeLeaveProjectId, setActiveLeaveProjectId] = useState<string | null>(null);
-  const [activePublishProjectId, setActivePublishProjectId] = useState<string | null>(null);
   // refs
   const containerRef = useRef<HTMLDivElement | null>(null);
   // store hooks
@@ -168,13 +166,6 @@ export const SidebarProjectsList = observer(function SidebarProjectsList() {
           workspaceSlug={workspaceSlug.toString()}
         />
       )}
-      {activePublishProjectId && (
-        <PublishProjectModal
-          isOpen
-          projectId={activePublishProjectId}
-          onClose={() => setActivePublishProjectId(null)}
-        />
-      )}
       {activeLeaveProject && (
         <LeaveProjectModal project={activeLeaveProject} isOpen onClose={() => setActiveLeaveProjectId(null)} />
       )}
@@ -263,7 +254,6 @@ export const SidebarProjectsList = observer(function SidebarProjectsList() {
                         isLastChild={index === displayedProjects.length - 1}
                         handleOnProjectDrop={handleOnProjectDrop}
                         onLeaveProject={setActiveLeaveProjectId}
-                        onPublishProject={setActivePublishProjectId}
                       />
                     ))}
                     {hasMoreProjects && (

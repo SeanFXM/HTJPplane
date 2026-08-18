@@ -26,9 +26,9 @@ import { cn, getDate, renderFormattedPayloadDate, shouldHighlightIssueDueDate } 
 import { DateDropdown } from "@/components/dropdowns/date";
 import { EstimateDropdown } from "@/components/dropdowns/estimate";
 import { ButtonAvatars } from "@/components/dropdowns/member/avatar";
-import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
+import { isProjectFeatureVisible } from "@/constants/product-policy";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
@@ -46,7 +46,9 @@ import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/prop
 import { IssueCycleSelect } from "./cycle-select";
 import { IssueLabel } from "./label";
 import { IssueModuleSelect } from "./module-select";
+import { OperationalDetails } from "./operational-details";
 import type { TIssueOperations } from "./root";
+import { CURRENT_OWNER_COPY, CurrentOwnerDropdown } from "../current-owner-dropdown";
 
 type Props = {
   workspaceSlug: string;
@@ -57,7 +59,7 @@ type Props = {
 };
 
 export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: Props) {
-  const { t } = useTranslation();
+  const { t, currentLocale } = useTranslation();
   const { workspaceSlug, projectId, issueId, issueOperations, isEditable } = props;
   // store hooks
   const { getProjectById } = useProject();
@@ -75,6 +77,8 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
   // derived values
   const projectDetails = getProjectById(issue.project_id);
   const stateDetails = getStateById(issue.state_id);
+  const currentOwnerLabel =
+    CURRENT_OWNER_COPY[currentLocale as keyof typeof CURRENT_OWNER_COPY] ?? CURRENT_OWNER_COPY.en;
 
   const minDate = issue.start_date ? getDate(issue.start_date) : null;
   minDate?.setDate(minDate.getDate());
@@ -103,14 +107,12 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               />
             </SidebarPropertyListItem>
 
-            <SidebarPropertyListItem icon={MembersPropertyIcon} label={t("common.assignees")}>
-              <MemberDropdown
+            <SidebarPropertyListItem icon={MembersPropertyIcon} label={currentOwnerLabel}>
+              <CurrentOwnerDropdown
                 value={issue?.assignee_ids ?? undefined}
                 onChange={(val) => issueOperations.update(workspaceSlug, projectId, issueId, { assignee_ids: val })}
                 disabled={!isEditable}
                 projectId={projectId?.toString() ?? ""}
-                placeholder={t("issue.add.assignee")}
-                multiple
                 buttonVariant={issue?.assignee_ids?.length > 1 ? "transparent-without-text" : "transparent-with-text"}
                 className="group w-full grow"
                 buttonContainerClassName="w-full text-left h-7.5"
@@ -188,28 +190,30 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               </div>
             </SidebarPropertyListItem>
 
-            {projectId && areEstimateEnabledByProjectId(projectId) && (
-              <SidebarPropertyListItem icon={EstimatePropertyIcon} label={t("common.estimate")}>
-                <EstimateDropdown
-                  value={issue?.estimate_point ?? undefined}
-                  onChange={(val: string | undefined) =>
-                    issueOperations.update(workspaceSlug, projectId, issueId, { estimate_point: val })
-                  }
-                  projectId={projectId}
-                  disabled={!isEditable}
-                  buttonVariant="transparent-with-text"
-                  className="group w-full grow"
-                  buttonContainerClassName="w-full text-left h-7.5"
-                  buttonClassName={`text-body-xs-regular ${issue?.estimate_point !== null ? "" : "text-placeholder"}`}
-                  placeholder={t("common.none")}
-                  hideIcon
-                  dropdownArrow
-                  dropdownArrowClassName="h-3.5 w-3.5 hidden group-hover:inline"
-                />
-              </SidebarPropertyListItem>
-            )}
+            {projectId &&
+              isProjectFeatureVisible("estimates", projectId) &&
+              areEstimateEnabledByProjectId(projectId) && (
+                <SidebarPropertyListItem icon={EstimatePropertyIcon} label={t("common.estimate")}>
+                  <EstimateDropdown
+                    value={issue?.estimate_point ?? undefined}
+                    onChange={(val: string | undefined) =>
+                      issueOperations.update(workspaceSlug, projectId, issueId, { estimate_point: val })
+                    }
+                    projectId={projectId}
+                    disabled={!isEditable}
+                    buttonVariant="transparent-with-text"
+                    className="group w-full grow"
+                    buttonContainerClassName="w-full text-left h-7.5"
+                    buttonClassName={`text-body-xs-regular ${issue?.estimate_point !== null ? "" : "text-placeholder"}`}
+                    placeholder={t("common.none")}
+                    hideIcon
+                    dropdownArrow
+                    dropdownArrowClassName="h-3.5 w-3.5 hidden group-hover:inline"
+                  />
+                </SidebarPropertyListItem>
+              )}
 
-            {projectDetails?.module_view && (
+            {projectDetails?.module_view && isProjectFeatureVisible("modules", projectId) && (
               <SidebarPropertyListItem icon={ModuleIcon} label={t("common.modules")}>
                 <IssueModuleSelect
                   className="w-full grow"
@@ -222,7 +226,7 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               </SidebarPropertyListItem>
             )}
 
-            {projectDetails?.cycle_view && (
+            {projectDetails?.cycle_view && isProjectFeatureVisible("cycles", projectId) && (
               <SidebarPropertyListItem
                 icon={CycleIcon}
                 label={t("common.cycle")}
@@ -274,6 +278,14 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
               isEditable={isEditable}
             />
           </div>
+
+          <OperationalDetails
+            workspaceSlug={workspaceSlug}
+            projectId={projectId}
+            issueId={issueId}
+            issue={issue}
+            isEditable={isEditable}
+          />
         </div>
       </div>
     </>

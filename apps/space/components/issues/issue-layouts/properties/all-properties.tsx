@@ -161,7 +161,10 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
         displayPropertyKey="attachment_count"
         shouldRenderProperty={(properties) => !!properties.attachment_count && !!issue.attachment_count}
       >
-        <Tooltip tooltipHeading={t("common.attachments")} tooltipContent={t("common.attachments_count", { count: issue.attachment_count })}>
+        <Tooltip
+          tooltipHeading={t("common.attachments")}
+          tooltipContent={t("common.attachments_count", { count: issue.attachment_count })}
+        >
           <div className="flex h-5 flex-shrink-0 items-center justify-center gap-2 overflow-hidden rounded-sm border-[0.5px] border-strong px-2.5 py-1">
             <Paperclip className="h-3 w-3 flex-shrink-0" strokeWidth={2} />
             <div className="text-11">{t("common.attachments_count", { count: issue.attachment_count })}</div>
@@ -175,7 +178,10 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
         displayPropertyKey="link"
         shouldRenderProperty={(properties) => !!properties.link && !!issue.link_count}
       >
-        <Tooltip tooltipHeading={t("common.links")} tooltipContent={t("common.links_count", { count: issue.link_count })}>
+        <Tooltip
+          tooltipHeading={t("common.links")}
+          tooltipContent={t("common.links_count", { count: issue.link_count })}
+        >
           <div className="flex h-5 flex-shrink-0 items-center justify-center gap-2 overflow-hidden rounded-sm border-[0.5px] border-strong px-2.5 py-1">
             <LinkIcon className="h-3 w-3 flex-shrink-0" strokeWidth={2} />
             <div className="text-11">{t("common.links_count", { count: issue.link_count })}</div>

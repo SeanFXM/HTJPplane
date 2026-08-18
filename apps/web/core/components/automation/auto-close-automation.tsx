@@ -174,11 +174,13 @@ export const AutoCloseAutomation = observer(function AutoCloseAutomation(props: 
                           ) : (
                             <StatePropertyIcon className="h-3.5 w-3.5 text-secondary" />
                           )}
-                          {selectedOption
-                            ? getStateDisplayName(selectedOption, t)
-                            : (currentDefaultState
-                                ? getStateDisplayName(currentDefaultState, t)
-                                : <span className="text-secondary">{t("state")}</span>)}
+                          {selectedOption ? (
+                            getStateDisplayName(selectedOption, t)
+                          ) : currentDefaultState ? (
+                            getStateDisplayName(currentDefaultState, t)
+                          ) : (
+                            <span className="text-secondary">{t("state")}</span>
+                          )}
                         </div>
                       }
                       onChange={(val: string) => void handleChange({ default_state: val })}

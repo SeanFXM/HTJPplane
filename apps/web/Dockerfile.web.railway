@@ -1,5 +1,5 @@
 # apps/web/Dockerfile.web.railway
-FROM node:22-bullseye-slim
+FROM node:22-bullseye-slim AS builder
 
 WORKDIR /app
 
@@ -9,6 +9,7 @@ RUN corepack enable
 # 2) 先拷贝依赖文件（提高缓存命中）
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/web/package.json apps/web/package.json
+COPY apps/admin/package.json apps/admin/package.json
 COPY packages packages
 
 # 3) 安装依赖（用 pnpm）
@@ -43,6 +44,9 @@ ENV VITE_LIVE_BASE_URL=$VITE_LIVE_BASE_URL
 ARG VITE_LIVE_BASE_PATH="/live"
 ENV VITE_LIVE_BASE_PATH=$VITE_LIVE_BASE_PATH
 
+ARG VITE_MODULE_PILOT_PROJECT_IDS=""
+ENV VITE_MODULE_PILOT_PROJECT_IDS=$VITE_MODULE_PILOT_PROJECT_IDS
+
 # 5) 确保 web 的 .env 存在（你已经建了就不会影响）
 RUN test -f /app/apps/web/.env || (mkdir -p /app/apps/web && echo "# generated for CI" > /app/apps/web/.env)
 
@@ -61,10 +65,25 @@ RUN pnpm -C packages/i18n build \
 # Note: packages/tailwind-config has no build script (pure config) — intentionally
 # not built here. The chain is strict (no `|| true`) so a real package build failure fails the image.
 
-# web 自己 build（关键）
-RUN pnpm -C apps/web run build
+# Reject incomplete critical translations before producing a release image.
+RUN pnpm --filter=@plane/i18n check:critical-keys
 
-# 7) 启动 web
-WORKDIR /app/apps/web
+# Build both static SPAs. Production links God Mode on the same origin under
+# /god-mode, so a web-only image would route those URLs back to the web SPA.
+RUN pnpm -C apps/web run build \
+ && pnpm -C apps/admin run build \
+ && node apps/admin/verify-production-build.mjs apps/admin/build/client /god-mode/
+
+# 7) Serve web + God Mode with distinct SPA fallbacks.
+FROM nginx:1.29-alpine AS production
+
+COPY apps/web/nginx/nginx.railway.conf /etc/nginx/nginx.conf
+COPY --from=builder /app/apps/web/build/client /usr/share/nginx/html
+COPY --from=builder /app/apps/admin/build/client /usr/share/nginx/html/god-mode
+
 EXPOSE 3000
-CMD ["pnpm", "start"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3000/god-mode/general | grep -q '"basename":"/god-mode/"' || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

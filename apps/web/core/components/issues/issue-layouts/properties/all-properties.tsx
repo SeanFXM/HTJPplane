@@ -29,10 +29,11 @@ import { CycleDropdown } from "@/components/dropdowns/cycle";
 import { DateDropdown } from "@/components/dropdowns/date";
 import { DateRangeDropdown } from "@/components/dropdowns/date-range";
 import { EstimateDropdown } from "@/components/dropdowns/estimate";
-import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
+import { CurrentOwnerDropdown } from "@/components/issues/current-owner-dropdown";
 import { ModuleDropdown } from "@/components/dropdowns/module/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
+import { isProjectFeatureVisible } from "@/constants/product-policy";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
 import { useIssues } from "@/hooks/store/use-issues";
@@ -312,16 +313,14 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
       {/* assignee */}
       <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="assignee">
         <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
-          <MemberDropdown
+          <CurrentOwnerDropdown
             projectId={issue?.project_id}
             value={issue?.assignee_ids}
             onChange={handleAssignee}
             disabled={isReadOnly}
-            multiple
             buttonVariant={issue.assignee_ids?.length > 0 ? "transparent-without-text" : "border-without-text"}
             buttonClassName={issue.assignee_ids?.length > 0 ? "hover:bg-transparent px-0" : ""}
             showTooltip={issue?.assignee_ids?.length === 0}
-            placeholder={t("common.assignees")}
             optionsClassName="z-10"
             tooltipContent=""
             renderByDefault={isMobile}
@@ -333,7 +332,7 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
         {!isEpic && (
           <>
             {/* modules */}
-            {projectDetails?.module_view && (
+            {projectDetails?.module_view && isProjectFeatureVisible("modules", issue.project_id) && (
               <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="modules">
                 <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
                   <ModuleDropdown
@@ -353,7 +352,7 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
             )}
 
             {/* cycles */}
-            {projectDetails?.cycle_view && (
+            {projectDetails?.cycle_view && isProjectFeatureVisible("cycles", issue.project_id) && (
               <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="cycle">
                 <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
                   <CycleDropdown
@@ -374,21 +373,23 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
       </>
 
       {/* estimates */}
-      {projectId && areEstimateEnabledByProjectId(projectId?.toString()) && (
-        <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="estimate">
-          <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
-            <EstimateDropdown
-              value={issue.estimate_point ?? undefined}
-              onChange={handleEstimate}
-              projectId={issue.project_id}
-              disabled={isReadOnly}
-              buttonVariant="border-with-text"
-              renderByDefault={isMobile}
-              showTooltip
-            />
-          </div>
-        </WithDisplayPropertiesHOC>
-      )}
+      {projectId &&
+        isProjectFeatureVisible("estimates", issue.project_id) &&
+        areEstimateEnabledByProjectId(projectId?.toString()) && (
+          <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="estimate">
+            <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+              <EstimateDropdown
+                value={issue.estimate_point ?? undefined}
+                onChange={handleEstimate}
+                projectId={issue.project_id}
+                disabled={isReadOnly}
+                buttonVariant="border-with-text"
+                renderByDefault={isMobile}
+                showTooltip
+              />
+            </div>
+          </WithDisplayPropertiesHOC>
+        )}
 
       {/* extra render properties */}
       {/* sub-issues */}

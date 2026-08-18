@@ -12,7 +12,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { API_BASE_URL, E_PASSWORD_STRENGTH } from "@plane/constants";
 import { Button } from "@plane/propel/button";
 import { AuthService } from "@plane/services";
-import { Checkbox, Input, PasswordStrengthIndicator, Spinner } from "@plane/ui";
+import { Input, PasswordStrengthIndicator, Spinner } from "@plane/ui";
 import { getPasswordStrength, validatePersonName, validateCompanyName } from "@plane/utils";
 // components
 import { AuthHeader } from "@/app/(all)/(home)/auth-header";
@@ -45,7 +45,6 @@ type TFormData = {
   company_name: string;
   password: string;
   confirm_password?: string;
-  is_telemetry_enabled: boolean;
 };
 
 const defaultFromData: TFormData = {
@@ -54,7 +53,6 @@ const defaultFromData: TFormData = {
   email: "",
   company_name: "",
   password: "",
-  is_telemetry_enabled: true,
 };
 
 export function InstanceSetupForm() {
@@ -64,7 +62,6 @@ export function InstanceSetupForm() {
   const lastNameParam = searchParams?.get("last_name") || undefined;
   const companyParam = searchParams?.get("company") || undefined;
   const emailParam = searchParams?.get("email") || undefined;
-  const isTelemetryEnabledParam = searchParams?.get("is_telemetry_enabled") !== "False";
   const errorCode = searchParams?.get("error_code") || undefined;
   const errorMessage = searchParams?.get("error_message") || undefined;
   // state
@@ -94,8 +91,7 @@ export function InstanceSetupForm() {
     if (lastNameParam) setFormData((prev) => ({ ...prev, last_name: lastNameParam }));
     if (companyParam) setFormData((prev) => ({ ...prev, company_name: companyParam }));
     if (emailParam) setFormData((prev) => ({ ...prev, email: emailParam }));
-    setFormData((prev) => ({ ...prev, is_telemetry_enabled: isTelemetryEnabledParam }));
-  }, [firstNameParam, lastNameParam, companyParam, emailParam, isTelemetryEnabledParam]);
+  }, [firstNameParam, lastNameParam, companyParam, emailParam]);
 
   // derived values
   const errorData: TError = useMemo(() => {
@@ -142,8 +138,8 @@ export function InstanceSetupForm() {
       <div className="mt-10 flex w-full flex-grow flex-col items-center justify-center py-6">
         <div className="relative flex w-full max-w-[22.5rem] flex-col gap-6">
           <FormHeader
-            heading="Setup your workspace instance"
-            subHeading="After setup, you will be able to manage this workspace instance."
+            heading="Set up Hotone Japan Admin"
+            subHeading="Create the internal administrator account for this instance."
           />
           {errorData.type &&
             errorData?.message &&
@@ -158,7 +154,7 @@ export function InstanceSetupForm() {
             onError={() => setIsSubmitting(false)}
           >
             <input type="hidden" name="csrfmiddlewaretoken" value={csrfToken} />
-            <input type="hidden" name="is_telemetry_enabled" value={formData.is_telemetry_enabled ? "True" : "False"} />
+            <input type="hidden" name="is_telemetry_enabled" value="False" />
 
             <div className="flex flex-col items-center gap-4 sm:flex-row">
               <div className="w-full space-y-1">
@@ -272,7 +268,7 @@ export function InstanceSetupForm() {
                 {showPassword.password ? (
                   <button
                     type="button"
-                    tabIndex={-1}
+                    aria-label="Hide password"
                     className="absolute top-3.5 right-3 flex items-center justify-center text-placeholder"
                     onClick={() => handleShowPassword("password")}
                   >
@@ -281,7 +277,7 @@ export function InstanceSetupForm() {
                 ) : (
                   <button
                     type="button"
-                    tabIndex={-1}
+                    aria-label="Show password"
                     className="absolute top-3.5 right-3 flex items-center justify-center text-placeholder"
                     onClick={() => handleShowPassword("password")}
                   >
@@ -316,7 +312,7 @@ export function InstanceSetupForm() {
                 {showPassword.retypePassword ? (
                   <button
                     type="button"
-                    tabIndex={-1}
+                    aria-label="Hide password confirmation"
                     className="absolute top-3.5 right-3 flex items-center justify-center text-placeholder"
                     onClick={() => handleShowPassword("retypePassword")}
                   >
@@ -325,7 +321,7 @@ export function InstanceSetupForm() {
                 ) : (
                   <button
                     type="button"
-                    tabIndex={-1}
+                    aria-label="Show password confirmation"
                     className="absolute top-3.5 right-3 flex items-center justify-center text-placeholder"
                     onClick={() => handleShowPassword("retypePassword")}
                   >
@@ -338,30 +334,6 @@ export function InstanceSetupForm() {
                 renderPasswordMatchError && (
                   <span className="text-13 text-danger-primary">Passwords don{"'"}t match</span>
                 )}
-            </div>
-
-            <div className="relative flex gap-2">
-              <div>
-                <Checkbox
-                  className="h-4 w-4"
-                  iconClassName="w-3 h-3"
-                  id="is_telemetry_enabled"
-                  onChange={() => handleFormChange("is_telemetry_enabled", !formData.is_telemetry_enabled)}
-                  checked={formData.is_telemetry_enabled}
-                />
-              </div>
-              <label className="cursor-pointer text-13 font-medium text-tertiary" htmlFor="is_telemetry_enabled">
-                Allow anonymous usage event collection.{" "}
-                <a
-                  tabIndex={-1}
-                  href="https://developers.plane.so/self-hosting/telemetry"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:text-blue-600 flex-shrink-0 text-13 font-medium"
-                >
-                  See More
-                </a>
-              </label>
             </div>
 
             <div className="py-2">

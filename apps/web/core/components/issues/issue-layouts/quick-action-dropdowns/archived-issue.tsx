@@ -87,6 +87,7 @@ export const ArchivedIssueQuickActions = observer(function ArchivedIssueQuickAct
       <ContextMenu parentRef={parentRef} items={CONTEXT_MENU_ITEMS} />
       <CustomMenu
         ellipsis
+        ariaLabel={`Actions for ${issue.name}`}
         customButton={customActionButton}
         portalElement={portalElement}
         placement={placements}

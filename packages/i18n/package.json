@@ -19,6 +19,7 @@
     "dev": "tsdown --watch",
     "build": "tsdown",
     "check:lint": "oxlint --max-warnings=2 .",
+    "check:critical-keys": "node --experimental-strip-types check-critical-keys.mjs",
     "check:types": "tsc --noEmit",
     "check:format": "oxfmt --check .",
     "fix:lint": "oxlint --fix .",

@@ -11,6 +11,7 @@ import { ContrastIcon, DiceIcon, LayersIcon } from "@plane/propel/icons";
 // components
 import { EUserProjectRoles } from "@plane/types";
 import type { TPowerKCommandConfig, TPowerKContext } from "@/components/power-k/core/types";
+import { isModulePilotProject } from "@/constants/product-policy";
 // hooks
 import { useCommandPalette } from "@/hooks/store/use-command-palette";
 import { useProject } from "@/hooks/store/use-project";
@@ -97,11 +98,8 @@ export const usePowerKCreationCommandsRecord = (): Record<TPowerKCreationCommand
       icon: Layers,
       keySequence: "nv",
       action: () => toggleCreateViewModal(true),
-      isEnabled: (ctx) => Boolean(getProjectDetails(ctx)?.issue_views_view && hasProjectMemberLevelPermissions(ctx)),
-      isVisible: (ctx) =>
-        Boolean(
-          ctx.params.projectId && getProjectDetails(ctx)?.issue_views_view && hasProjectMemberLevelPermissions(ctx)
-        ),
+      isEnabled: () => false,
+      isVisible: () => false,
       closeOnSelect: true,
     },
     create_cycle: {
@@ -112,9 +110,8 @@ export const usePowerKCreationCommandsRecord = (): Record<TPowerKCreationCommand
       icon: ContrastIcon,
       keySequence: "nc",
       action: () => toggleCreateCycleModal(true),
-      isEnabled: (ctx) => Boolean(getProjectDetails(ctx)?.cycle_view && hasProjectMemberLevelPermissions(ctx)),
-      isVisible: (ctx) =>
-        Boolean(ctx.params.projectId && getProjectDetails(ctx)?.cycle_view && hasProjectMemberLevelPermissions(ctx)),
+      isEnabled: () => false,
+      isVisible: () => false,
       closeOnSelect: true,
     },
     create_module: {
@@ -125,9 +122,18 @@ export const usePowerKCreationCommandsRecord = (): Record<TPowerKCreationCommand
       icon: DiceIcon,
       keySequence: "nm",
       action: () => toggleCreateModuleModal(true),
-      isEnabled: (ctx) => Boolean(getProjectDetails(ctx)?.module_view && hasProjectMemberLevelPermissions(ctx)),
+      isEnabled: (ctx) =>
+        Boolean(
+          isModulePilotProject(ctx.params.projectId?.toString()) &&
+          getProjectDetails(ctx)?.module_view &&
+          hasProjectMemberLevelPermissions(ctx)
+        ),
       isVisible: (ctx) =>
-        Boolean(ctx.params.projectId && getProjectDetails(ctx)?.module_view && hasProjectMemberLevelPermissions(ctx)),
+        Boolean(
+          isModulePilotProject(ctx.params.projectId?.toString()) &&
+          getProjectDetails(ctx)?.module_view &&
+          hasProjectMemberLevelPermissions(ctx)
+        ),
       closeOnSelect: true,
     },
     create_project: {
