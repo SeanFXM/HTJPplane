@@ -9,7 +9,7 @@ from rest_framework import serializers
 from plane.db.models import ProjectMember, WorkspaceMember
 from .base import BaseSerializer
 from plane.db.models import User
-from plane.utils.permissions import ROLE
+from plane.utils.internal_roles import INTERNAL_ASSIGNABLE_ROLE_VALUES
 
 
 class ProjectMemberSerializer(BaseSerializer):
@@ -28,12 +28,12 @@ class ProjectMemberSerializer(BaseSerializer):
             raise serializers.ValidationError("Slug is required", code="INVALID_SLUG")
         if not value:
             raise serializers.ValidationError("Member is required", code="INVALID_MEMBER")
-        if not WorkspaceMember.objects.filter(workspace__slug=slug, member=value).exists():
-            raise serializers.ValidationError("Member not found in workspace", code="INVALID_MEMBER")
+        if not WorkspaceMember.objects.filter(workspace__slug=slug, member=value, is_active=True).exists():
+            raise serializers.ValidationError("Active member not found in workspace", code="INVALID_MEMBER")
         return value
 
     def validate_role(self, value):
-        if value not in [ROLE.ADMIN.value, ROLE.MEMBER.value, ROLE.GUEST.value]:
+        if value not in INTERNAL_ASSIGNABLE_ROLE_VALUES:
             raise serializers.ValidationError("Invalid role", code="INVALID_ROLE")
         return value
 

@@ -21,6 +21,8 @@ from .admin import (
     InstanceAdminUserSessionEndpoint,
 )
 
+from .employee import InstanceWorkspaceEmployeeDetailEndpoint, InstanceWorkspaceEmployeeEndpoint
+
 
 from .workspace import (
     InstanceWorkSpaceAvailabilityCheckEndpoint,

@@ -22,8 +22,9 @@ from plane.app.serializers import (
     WorkSpaceMemberSerializer,
 )
 from plane.app.views.base import BaseAPIView
-from plane.db.models import DraftIssue, ProjectMember, WorkspaceMember
+from plane.db.models import DraftIssue, ProjectMember, Workspace, WorkspaceMember
 from plane.utils.cache import invalidate_cache
+from plane.utils.internal_roles import parse_assignable_role
 
 from .. import BaseViewSet
 
@@ -129,13 +130,14 @@ class WorkSpaceMemberViewSet(BaseViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
-            new_role = int(request.data["role"])
-        except (TypeError, ValueError):
+            new_role = parse_assignable_role(request.data["role"])
+        except ValueError as error:
             return Response(
-                {"role": "Role must be a valid integer"},
+                {"role": str(error)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        workspace = Workspace.objects.select_for_update().get(slug=slug)
         lock_active_workspace_memberships(workspace_slug=slug)
         workspace_member = WorkspaceMember.objects.filter(
             pk=pk,
@@ -155,6 +157,14 @@ class WorkSpaceMemberViewSet(BaseViewSet):
             return Response(
                 {"error": "Workspace admin permission is no longer active"},
                 status=status.HTTP_403_FORBIDDEN,
+            )
+        if workspace_member.member_id == workspace.owner_id:
+            return Response(
+                {
+                    "code": "WORKSPACE_OWNER_PROTECTED",
+                    "error": "The workspace owner cannot be downgraded or deactivated.",
+                },
+                status=status.HTTP_409_CONFLICT,
             )
         if request.user.id == workspace_member.member_id:
             return Response(
@@ -162,39 +172,17 @@ class WorkSpaceMemberViewSet(BaseViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        moving_to_guest = new_role == ROLE.GUEST.value
-        if moving_to_guest:
-            lock_active_memberships_for_admin_projects(
-                workspace_slug=slug,
-                member_id=workspace_member.member_id,
-            )
-        if moving_to_guest and is_only_active_project_admin(
-            workspace_slug=slug,
-            member_id=workspace_member.member_id,
-        ):
-            return Response(
-                {"error": "Promote another project admin before changing this member to guest"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        serializer = WorkSpaceMemberSerializer(workspace_member, data={"role": request.data["role"]}, partial=True)
+        serializer = WorkSpaceMemberSerializer(workspace_member, data={"role": new_role}, partial=True)
 
         if serializer.is_valid():
             serializer.save()
-            # A guest cannot retain a higher role in any project. Apply the
-            # cascade only after the workspace-role payload has validated.
-            if moving_to_guest:
-                ProjectMember.objects.filter(
-                    workspace__slug=slug,
-                    member_id=workspace_member.member_id,
-                    is_active=True,
-                ).update(role=ROLE.GUEST.value, updated_at=timezone.now())
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @allow_permission(allowed_roles=[ROLE.ADMIN], level="WORKSPACE")
     @transaction.atomic
     def destroy(self, request, slug, pk):
+        workspace = Workspace.objects.select_for_update().get(slug=slug)
         lock_active_workspace_memberships(workspace_slug=slug)
         workspace_member = WorkspaceMember.objects.filter(
             workspace__slug=slug,
@@ -215,6 +203,15 @@ class WorkSpaceMemberViewSet(BaseViewSet):
             return Response(
                 {"error": "Workspace admin permission is no longer active"},
                 status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if workspace_member.member_id == workspace.owner_id:
+            return Response(
+                {
+                    "code": "WORKSPACE_OWNER_PROTECTED",
+                    "error": "The workspace owner cannot be downgraded or deactivated.",
+                },
+                status=status.HTTP_409_CONFLICT,
             )
 
         if str(workspace_member.id) == str(requesting_workspace_member.id):
@@ -261,6 +258,7 @@ class WorkSpaceMemberViewSet(BaseViewSet):
     @allow_permission(allowed_roles=[ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
     @transaction.atomic
     def leave(self, request, slug):
+        workspace = Workspace.objects.select_for_update().get(slug=slug)
         lock_active_workspace_memberships(workspace_slug=slug)
         workspace_member = WorkspaceMember.objects.filter(
             workspace__slug=slug,
@@ -269,6 +267,15 @@ class WorkSpaceMemberViewSet(BaseViewSet):
         ).first()
         if workspace_member is None:
             return Response({"error": "Workspace membership is no longer active"}, status=status.HTTP_403_FORBIDDEN)
+
+        if workspace_member.member_id == workspace.owner_id:
+            return Response(
+                {
+                    "code": "WORKSPACE_OWNER_PROTECTED",
+                    "error": "The workspace owner cannot leave the workspace.",
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
 
         # Check if the leaving user is the only admin of the workspace
         if (

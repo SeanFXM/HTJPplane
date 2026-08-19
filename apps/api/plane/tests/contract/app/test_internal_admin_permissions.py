@@ -107,9 +107,7 @@ class TestInternalAdminPermissions:
         ProjectMember.objects.create(project=project, member=project_admin, role=20, is_active=True)
         ProjectMember.objects.create(project=project, member=member, role=15, is_active=True)
 
-        blocked_response = session_client.delete(
-            f"/api/workspaces/{workspace.slug}/members/{workspace_membership.id}/"
-        )
+        blocked_response = session_client.delete(f"/api/workspaces/{workspace.slug}/members/{workspace_membership.id}/")
 
         assert blocked_response.status_code == status.HTTP_400_BAD_REQUEST
         workspace_membership.refresh_from_db()
@@ -117,9 +115,7 @@ class TestInternalAdminPermissions:
         assert ProjectMember.objects.get(project=project, member=project_admin).is_active is True
 
         ProjectMember.objects.create(project=project, member=create_user, role=20, is_active=True)
-        removed_response = session_client.delete(
-            f"/api/workspaces/{workspace.slug}/members/{workspace_membership.id}/"
-        )
+        removed_response = session_client.delete(f"/api/workspaces/{workspace.slug}/members/{workspace_membership.id}/")
 
         assert removed_response.status_code == status.HTTP_204_NO_CONTENT
         workspace_membership.refresh_from_db()
@@ -154,6 +150,29 @@ class TestInternalAdminPermissions:
         workspace_membership.refresh_from_db()
         assert workspace_membership.is_active is True
         assert ProjectMember.objects.get(project=project, member=project_admin).is_active is True
+
+    @pytest.mark.django_db
+    def test_workspace_owner_cannot_be_downgraded_removed_or_leave(
+        self,
+        session_client,
+        workspace,
+        create_user,
+    ):
+        owner_membership = WorkspaceMember.objects.get(workspace=workspace, member=create_user)
+        member_url = f"/api/workspaces/{workspace.slug}/members/{owner_membership.id}/"
+
+        downgrade_response = session_client.patch(member_url, {"role": 15}, format="json")
+        remove_response = session_client.delete(member_url)
+        leave_response = session_client.post(f"/api/workspaces/{workspace.slug}/members/leave/")
+
+        assert downgrade_response.status_code == status.HTTP_409_CONFLICT
+        assert downgrade_response.data["code"] == "WORKSPACE_OWNER_PROTECTED"
+        assert remove_response.status_code == status.HTTP_409_CONFLICT
+        assert remove_response.data["code"] == "WORKSPACE_OWNER_PROTECTED"
+        assert leave_response.status_code == status.HTTP_409_CONFLICT
+        assert leave_response.data["code"] == "WORKSPACE_OWNER_PROTECTED"
+        owner_membership.refresh_from_db()
+        assert (owner_membership.role, owner_membership.is_active) == (20, True)
 
     @pytest.mark.django_db
     def test_regular_project_member_cannot_change_another_members_role(
@@ -256,20 +275,20 @@ class TestInternalAdminPermissions:
         assert workspace_membership.role == 15
 
         ProjectMember.objects.filter(project=project, member=create_user).update(role=20)
-        allowed_workspace_downgrade = session_client.patch(
+        retired_workspace_role_response = session_client.patch(
             f"/api/workspaces/{workspace.slug}/members/{workspace_membership.id}/",
             {"role": 5},
             format="json",
         )
 
-        assert allowed_workspace_downgrade.status_code == status.HTTP_200_OK
+        assert retired_workspace_role_response.status_code == status.HTTP_400_BAD_REQUEST
         target_project_membership.refresh_from_db()
         workspace_membership.refresh_from_db()
-        assert target_project_membership.role == 5
-        assert workspace_membership.role == 5
+        assert target_project_membership.role == 20
+        assert workspace_membership.role == 15
 
     @pytest.mark.django_db(transaction=True)
-    def test_concurrent_workspace_downgrades_preserve_one_project_admin(
+    def test_concurrent_retired_workspace_role_updates_are_rejected(
         self,
         workspace,
         create_user,
@@ -317,8 +336,8 @@ class TestInternalAdminPermissions:
                 )
             )
 
-        assert sorted(results) == [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST]
-        assert ProjectMember.objects.filter(project=project, role=20, is_active=True).count() == 1
+        assert results == [status.HTTP_400_BAD_REQUEST, status.HTTP_400_BAD_REQUEST]
+        assert ProjectMember.objects.filter(project=project, role=20, is_active=True).count() == 2
 
     @pytest.mark.django_db(transaction=True)
     def test_concurrent_project_role_updates_preserve_one_project_admin(

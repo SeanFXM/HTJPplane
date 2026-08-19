@@ -16,7 +16,7 @@ from .base import BaseModel
 from plane.utils.constants import RESTRICTED_WORKSPACE_SLUGS
 from plane.utils.color import get_random_color
 
-ROLE_CHOICES = ((20, "Admin"), (15, "Member"), (5, "Guest"))
+ROLE_CHOICES = ((20, "Admin"), (15, "Member"))
 
 
 def get_default_props():
@@ -202,7 +202,7 @@ class WorkspaceMember(BaseModel):
         on_delete=models.CASCADE,
         related_name="member_workspace",
     )
-    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=5)
+    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=15)
     company_role = models.TextField(null=True, blank=True)
     view_props = models.JSONField(default=get_default_props)
     default_props = models.JSONField(default=get_default_props)
@@ -219,7 +219,11 @@ class WorkspaceMember(BaseModel):
                 fields=["workspace", "member"],
                 condition=models.Q(deleted_at__isnull=True),
                 name="workspace_member_unique_workspace_member_when_deleted_at_null",
-            )
+            ),
+            models.CheckConstraint(
+                check=models.Q(role__in=[15, 20]),
+                name="workspace_member_internal_role",
+            ),
         ]
         verbose_name = "Workspace Member"
         verbose_name_plural = "Workspace Members"
@@ -238,7 +242,7 @@ class WorkspaceMemberInvite(BaseModel):
     token = models.CharField(max_length=255)
     message = models.TextField(null=True)
     responded_at = models.DateTimeField(null=True)
-    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=5)
+    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=15)
 
     class Meta:
         unique_together = ["email", "workspace", "deleted_at"]
@@ -247,7 +251,11 @@ class WorkspaceMemberInvite(BaseModel):
                 fields=["email", "workspace"],
                 condition=models.Q(deleted_at__isnull=True),
                 name="workspace_member_invite_unique_email_workspace_when_deleted_at_null",
-            )
+            ),
+            models.CheckConstraint(
+                check=models.Q(role__in=[15, 20]),
+                name="workspace_member_invite_internal_role",
+            ),
         ]
         verbose_name = "Workspace Member Invite"
         verbose_name_plural = "Workspace Member Invites"
@@ -393,6 +401,43 @@ class WorkspaceAnnouncement(WorkspaceBaseModel):
 
     def __str__(self):
         return f"{self.workspace.id} {self.title}"
+
+
+class WorkspaceCalendarEvent(WorkspaceBaseModel):
+    class EventCategory(models.TextChoices):
+        PRODUCT_RELEASE = "product_release", "Product release"
+        EXHIBITION = "exhibition", "Exhibition"
+        CAMPAIGN = "campaign", "Campaign"
+        LOGISTICS = "logistics", "Logistics"
+        COMPANY = "company", "Company"
+        OTHER = "other", "Other"
+
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    category = models.CharField(
+        max_length=32,
+        choices=EventCategory.choices,
+        default=EventCategory.OTHER,
+    )
+    start_date = models.DateField()
+    end_date = models.DateField(blank=True, null=True)
+    location = models.CharField(max_length=255, blank=True, default="")
+
+    class Meta:
+        verbose_name = "Workspace Calendar Event"
+        verbose_name_plural = "Workspace Calendar Events"
+        db_table = "workspace_calendar_events"
+        ordering = ("start_date", "created_at")
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(end_date__isnull=True) | models.Q(end_date__gte=models.F("start_date")),
+                name="workspace_calendar_event_valid_date_range",
+            )
+        ]
+        indexes = [models.Index(fields=["workspace", "start_date"], name="workspace_event_date_idx")]
+
+    def __str__(self):
+        return f"{self.workspace.id} {self.start_date} {self.title}"
 
 
 class WorkspaceHomePreference(BaseModel):

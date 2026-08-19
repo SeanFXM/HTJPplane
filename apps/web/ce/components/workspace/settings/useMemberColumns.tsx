@@ -13,8 +13,11 @@ import { MemberHeaderColumn } from "@/components/project/member-header-column";
 import type { RowData } from "@/components/workspace/settings/member-columns";
 import { AccountTypeColumn, NameColumn } from "@/components/workspace/settings/member-columns";
 import { useMember } from "@/hooks/store/use-member";
+import { useWorkspace } from "@/hooks/store/use-workspace";
 import { useUser, useUserPermissions } from "@/hooks/store/user";
 import type { IMemberFilters } from "@/store/member/utils";
+
+const isSuspended = (rowData: RowData) => rowData.is_active === false;
 
 export const useMemberColumns = () => {
   // states
@@ -29,12 +32,13 @@ export const useMemberColumns = () => {
       filtersStore: { filters, updateFilters },
     },
   } = useMember();
+  const { currentWorkspace } = useWorkspace();
   const { t } = useTranslation();
 
   // derived values
   const isAdmin = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.WORKSPACE);
-
-  const isSuspended = (rowData: RowData) => rowData.is_active === false;
+  const workspaceOwnerId =
+    typeof currentWorkspace?.owner === "string" ? currentWorkspace.owner : currentWorkspace?.owner.id;
 
   // handlers
   const handleDisplayFilterUpdate = (filterUpdates: Partial<IMemberFilters>) => {
@@ -58,6 +62,7 @@ export const useMemberColumns = () => {
           rowData={rowData}
           workspaceSlug={workspaceSlug}
           isAdmin={isAdmin}
+          isWorkspaceOwner={rowData.member.id === workspaceOwnerId}
           currentUser={currentUser}
           setRemoveMemberModal={setRemoveMemberModal}
         />
@@ -104,7 +109,13 @@ export const useMemberColumns = () => {
           handleDisplayFilterUpdate={handleDisplayFilterUpdate}
         />
       ),
-      tdRender: (rowData: RowData) => <AccountTypeColumn rowData={rowData} workspaceSlug={workspaceSlug} />,
+      tdRender: (rowData: RowData) => (
+        <AccountTypeColumn
+          rowData={rowData}
+          workspaceSlug={workspaceSlug}
+          isWorkspaceOwner={rowData.member.id === workspaceOwnerId}
+        />
+      ),
     },
 
     {

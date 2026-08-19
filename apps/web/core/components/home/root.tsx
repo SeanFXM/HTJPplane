@@ -16,6 +16,7 @@ import { useUser } from "@/hooks/store/user";
 import { HomePeekOverviewsRoot } from "@/plane-web/components/home";
 // local imports
 import { DashboardWidgets } from "./home-dashboard-widgets";
+import { WorkspaceCompanyCalendar } from "./workspace-company-calendar";
 import { OperationalActionCenter } from "./operational-action-center";
 import { UserGreetingsView } from "./user-greetings";
 
@@ -44,6 +45,7 @@ export const WorkspaceHomeView = observer(function WorkspaceHomeView() {
           <div className="mx-auto w-full max-w-[800px]">
             {currentUser && <UserGreetingsView user={currentUser} />}
             {workspaceSlug && <OperationalActionCenter workspaceSlug={workspaceSlug.toString()} />}
+            {workspaceSlug && <WorkspaceCompanyCalendar workspaceSlug={workspaceSlug.toString()} />}
             <DashboardWidgets />
           </div>
         </ContentWrapper>

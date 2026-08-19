@@ -6,4 +6,9 @@ from .instance import InstanceSerializer
 
 from .configuration import InstanceConfigurationSerializer
 from .admin import InstanceAdminSerializer, InstanceAdminMeSerializer
+from .employee import (
+    InstanceEmployeeCreateSerializer,
+    InstanceEmployeeSerializer,
+    InstanceEmployeeUpdateSerializer,
+)
 from .workspace import WorkspaceSerializer

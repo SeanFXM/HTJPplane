@@ -102,6 +102,7 @@ class ProjectCreateSerializer(BaseSerializer):
             "created_by",
             "updated_by",
             "logo_props",
+            "guest_view_all_features",
         ]
 
     def validate(self, data):
@@ -229,6 +230,7 @@ class ProjectSerializer(BaseSerializer):
             "updated_by",
             "deleted_at",
             "cover_image_url",
+            "guest_view_all_features",
         ]
 
     def validate(self, data):

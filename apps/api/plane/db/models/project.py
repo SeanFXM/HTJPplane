@@ -18,7 +18,7 @@ from plane.db.mixins import AuditModel
 
 from .base import BaseModel
 
-ROLE_CHOICES = ((20, "Admin"), (15, "Member"), (5, "Guest"))
+ROLE_CHOICES = ((20, "Admin"), (15, "Member"))
 
 
 class ROLE(Enum):
@@ -195,9 +195,15 @@ class ProjectMemberInvite(ProjectBaseModel):
     token = models.CharField(max_length=255)
     message = models.TextField(null=True)
     responded_at = models.DateTimeField(null=True)
-    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=5)
+    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=15)
 
     class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=Q(role__in=[15, 20]),
+                name="project_member_invite_internal_role",
+            )
+        ]
         verbose_name = "Project Member Invite"
         verbose_name_plural = "Project Member Invites"
         db_table = "project_member_invites"
@@ -216,7 +222,7 @@ class ProjectMember(ProjectBaseModel):
         related_name="member_project",
     )
     comment = models.TextField(blank=True, null=True)
-    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=5)
+    role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=15)
     view_props = models.JSONField(default=get_default_props)
     default_props = models.JSONField(default=get_default_props)
     preferences = models.JSONField(default=get_default_preferences)
@@ -248,7 +254,11 @@ class ProjectMember(ProjectBaseModel):
                 fields=["project", "member"],
                 condition=Q(deleted_at__isnull=True),
                 name="project_member_unique_project_member_when_deleted_at_null",
-            )
+            ),
+            models.CheckConstraint(
+                check=Q(role__in=[15, 20]),
+                name="project_member_internal_role",
+            ),
         ]
         verbose_name = "Project Member"
         verbose_name_plural = "Project Members"

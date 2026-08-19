@@ -5,6 +5,7 @@
  */
 
 export * from "./use-theme";
+export * from "./use-employee";
 export * from "./use-instance";
 export * from "./use-user";
 export * from "./use-workspace";

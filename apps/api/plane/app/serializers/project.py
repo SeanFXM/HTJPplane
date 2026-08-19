@@ -25,6 +25,7 @@ from plane.db.models import (
 from plane.utils.content_validator import (
     validate_html_content,
 )
+from plane.utils.internal_roles import INTERNAL_ASSIGNABLE_ROLE_VALUES
 
 
 class ProjectSerializer(BaseSerializer):
@@ -34,7 +35,7 @@ class ProjectSerializer(BaseSerializer):
     class Meta:
         model = Project
         fields = "__all__"
-        read_only_fields = ["workspace", "deleted_at"]
+        read_only_fields = ["workspace", "deleted_at", "guest_view_all_features"]
 
     def validate_name(self, name):
         project_id = self.instance.id if self.instance else None
@@ -158,6 +159,11 @@ class ProjectMemberSerializer(BaseSerializer):
     project = ProjectLiteSerializer(read_only=True)
     member = UserLiteSerializer(read_only=True)
 
+    def validate_role(self, value):
+        if value not in INTERNAL_ASSIGNABLE_ROLE_VALUES:
+            raise serializers.ValidationError("Role must be Member (15) or Admin (20).")
+        return value
+
     class Meta:
         model = ProjectMember
         fields = "__all__"
@@ -197,6 +203,11 @@ class ProjectMemberRoleSerializer(DynamicBaseSerializer):
 class ProjectMemberInviteSerializer(BaseSerializer):
     project = ProjectLiteSerializer(read_only=True)
     workspace = WorkspaceLiteSerializer(read_only=True)
+
+    def validate_role(self, value):
+        if value not in INTERNAL_ASSIGNABLE_ROLE_VALUES:
+            raise serializers.ValidationError("Role must be Member (15) or Admin (20).")
+        return value
 
     class Meta:
         model = ProjectMemberInvite

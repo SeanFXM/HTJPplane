@@ -11,9 +11,10 @@ import type { TSidebarMenuItem } from "./types";
 export function useSidebarMenu(): TSidebarMenuItem[] {
   return [
     coreSidebarMenuLinks.general,
+    coreSidebarMenuLinks.employees,
+    coreSidebarMenuLinks.workspace,
     coreSidebarMenuLinks.email,
     coreSidebarMenuLinks.authentication,
-    coreSidebarMenuLinks.workspace,
     coreSidebarMenuLinks.ai,
     coreSidebarMenuLinks.image,
   ];
