@@ -5,12 +5,14 @@
  */
 
 import { observer } from "mobx-react";
+import Link from "next/link";
 
 // plane internal packages
 import { WEB_BASE_URL } from "@plane/constants";
+import { getButtonStyling } from "@plane/propel/button";
 import { NewTabIcon } from "@plane/propel/icons";
 import { Tooltip } from "@plane/propel/tooltip";
-import { getFileURL } from "@plane/utils";
+import { cn, getFileURL } from "@plane/utils";
 // hooks
 import { useWorkspace } from "@/hooks/store";
 
@@ -26,14 +28,8 @@ export const WorkspaceListItem = observer(function WorkspaceListItem({ workspace
 
   if (!workspace) return null;
   return (
-    <a
-      key={workspaceId}
-      href={`${WEB_BASE_URL}/${encodeURIComponent(workspace.slug)}`}
-      target="_blank"
-      className="group flex items-center justify-between gap-2.5 truncate rounded-lg border border-subtle bg-layer-1 p-3 hover:border-subtle-1 hover:bg-layer-1-hover hover:shadow-raised-100"
-      rel="noreferrer"
-    >
-      <div className="flex items-start gap-4">
+    <div className="flex flex-col gap-4 rounded-lg border border-subtle bg-layer-1 p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-start gap-4">
         <span
           className={`relative mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center p-2 text-11 uppercase ${
             !workspace?.logo_url && "rounded-lg bg-accent-primary text-on-color"
@@ -43,13 +39,13 @@ export const WorkspaceListItem = observer(function WorkspaceListItem({ workspace
             <img
               src={getFileURL(workspace.logo_url)}
               className="absolute top-0 left-0 h-full w-full rounded-sm object-cover"
-              alt="Workspace Logo"
+              alt={`${workspace.name} logo`}
             />
           ) : (
             (workspace?.name?.[0] ?? "...")
           )}
         </span>
-        <div className="flex flex-col items-start gap-1">
+        <div className="flex min-w-0 flex-col items-start gap-1">
           <div className="flex w-full flex-wrap items-center gap-2.5">
             <h3 className={`text-14 font-medium capitalize`}>{workspace.name}</h3>/
             <Tooltip tooltipContent="The unique URL of your workspace">
@@ -81,9 +77,32 @@ export const WorkspaceListItem = observer(function WorkspaceListItem({ workspace
           </div>
         </div>
       </div>
-      <div className="flex-shrink-0">
-        <NewTabIcon width={14} height={16} className="text-placeholder group-hover:text-secondary" />
+      <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0 sm:justify-end">
+        <Link
+          href={`/employees?workspaceId=${encodeURIComponent(workspace.id)}#new-account`}
+          className={getButtonStyling("primary", "base")}
+        >
+          Add employee
+        </Link>
+        <Link
+          href={`/employees?workspaceId=${encodeURIComponent(workspace.id)}#employee-list`}
+          className={getButtonStyling("secondary", "base")}
+        >
+          Manage employees
+        </Link>
+        <a
+          href={`${WEB_BASE_URL}/${encodeURIComponent(workspace.slug)}`}
+          target="_blank"
+          rel="noreferrer"
+          className={cn(
+            getButtonStyling("link", "base"),
+            "inline-flex items-center gap-1.5 whitespace-nowrap text-tertiary"
+          )}
+        >
+          Open workspace
+          <NewTabIcon width={13} height={13} aria-hidden="true" />
+        </a>
       </div>
-    </a>
+    </div>
   );
 });

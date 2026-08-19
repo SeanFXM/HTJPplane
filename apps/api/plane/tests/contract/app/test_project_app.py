@@ -124,25 +124,6 @@ class TestProjectAPIPost(TestProjectBase):
         assert ProjectUserProperty.objects.filter(project=project).count() == 2
 
     @pytest.mark.django_db
-    def test_create_project_guest_forbidden(self, session_client, workspace):
-        """Test that guests cannot create projects"""
-        guest_user = User.objects.create_user(email="guest@example.com", username="guest")
-        WorkspaceMember.objects.create(workspace=workspace, member=guest_user, role=5)
-
-        session_client.force_authenticate(user=guest_user)
-
-        url = self.get_project_url(workspace.slug)
-        project_data = {
-            "name": "Guest Project",
-            "identifier": "GP",
-        }
-
-        response = session_client.post(url, project_data, format="json")
-
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert Project.objects.count() == 0
-
-    @pytest.mark.django_db
     def test_create_project_unauthenticated(self, client, workspace):
         """Test unauthenticated access"""
         url = self.get_project_url(workspace.slug)
@@ -213,7 +194,6 @@ class TestProjectAPIPost(TestProjectBase):
             "module_view": True,
             "page_view": False,
             "inbox_view": True,
-            "guest_view_all_features": True,
             "logo_props": {
                 "in_use": "emoji",
                 "emoji": {"value": "🚀", "unicode": "1f680"},
@@ -252,30 +232,27 @@ class TestProjectAPIGet(TestProjectBase):
         assert data[0]["identifier"] == "TP"
 
     @pytest.mark.django_db
-    def test_list_projects_authenticated_guest(self, session_client, workspace):
-        """Test listing projects as workspace guest"""
-        # Create a guest user
-        guest_user = User.objects.create_user(email="guest@example.com", username="guest")
-        WorkspaceMember.objects.create(workspace=workspace, member=guest_user, role=5, is_active=True)
+    def test_list_public_projects_authenticated_member(self, session_client, workspace):
+        """Employees can see public projects even before joining them."""
+        member_user = User.objects.create_user(email="member@example.com", username="member")
+        WorkspaceMember.objects.create(workspace=workspace, member=member_user, role=15, is_active=True)
 
         # Create projects
         project1 = Project.objects.create(name="Project 1", identifier="P1", workspace=workspace)
 
         Project.objects.create(name="Project 2", identifier="P2", workspace=workspace)
 
-        # Add guest to only one project
-        ProjectMember.objects.create(project=project1, member=guest_user, role=10, is_active=True)
+        ProjectMember.objects.create(project=project1, member=member_user, role=15, is_active=True)
 
-        session_client.force_authenticate(user=guest_user)
+        session_client.force_authenticate(user=member_user)
 
         url = self.get_project_url(workspace.slug)
         response = session_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        # Guest should only see projects they're members of
-        assert len(data) == 1
-        assert data[0]["name"] == "Project 1"
+        assert len(data) == 2
+        assert {project["name"] for project in data} == {"Project 1", "Project 2"}
 
     @pytest.mark.django_db
     def test_list_projects_unauthenticated(self, client, workspace):

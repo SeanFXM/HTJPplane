@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.db import transaction
 from django.db.models import Min
+from django.utils import timezone
 
 # Module imports
 from .base import BaseViewSet, BaseAPIView
@@ -22,6 +23,7 @@ from plane.app.permissions import WorkspaceUserPermission
 from plane.db.models import Project, ProjectMember, ProjectUserProperty, WorkspaceMember
 from plane.bgtasks.project_add_user_email_task import project_add_user_email
 from plane.utils.host import base_host
+from plane.utils.internal_roles import parse_assignable_role
 from plane.app.permissions.base import allow_permission, ROLE
 
 
@@ -54,12 +56,14 @@ class ProjectMemberViewSet(BaseViewSet):
         )
 
     @allow_permission([ROLE.ADMIN])
+    @transaction.atomic
     def create(self, request, slug, project_id):
         # Get the list of members to be added to the project and their roles i.e. the user_id and the role
         members = request.data.get("members", [])
 
-        # get the project
-        project = Project.objects.get(pk=project_id, workspace__slug=slug)
+        # The project row serializes concurrent bulk additions for members that
+        # do not have a membership row to lock yet.
+        project = Project.objects.select_for_update().get(pk=project_id, workspace__slug=slug)
 
         # Check if the members array is empty
         if not len(members):
@@ -68,47 +72,102 @@ class ProjectMemberViewSet(BaseViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Initialize the bulk arrays
-        bulk_project_members = []
-        bulk_issue_props = []
+        normalized_members = []
+        for member in members:
+            if not isinstance(member, dict) or not member.get("member_id"):
+                return Response(
+                    {"error": "Each member must include a member_id"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                role = parse_assignable_role(member.get("role"))
+            except ValueError as error:
+                return Response({"role": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+            normalized_members.append({**member, "role": role})
+        members = normalized_members
 
         # Create a dictionary of the member_id and their roles
-        member_roles = {member.get("member_id"): member.get("role") for member in members}
+        member_roles = {str(member["member_id"]): member["role"] for member in members}
+        member_ids = list(member_roles)
+
+        # Follow the same lock order as role updates: workspace memberships,
+        # then every project membership. Recheck the requester's authority
+        # after locking so a concurrent demotion cannot authorize this write.
+        locked_workspace_members = list(
+            WorkspaceMember.objects.select_for_update()
+            .filter(
+                workspace_id=project.workspace_id,
+                member_id__in=set(member_ids) | {str(request.user.id)},
+                is_active=True,
+            )
+            .order_by("id")
+        )
+        workspace_members = {
+            str(workspace_member.member_id): workspace_member for workspace_member in locked_workspace_members
+        }
+        if any(member_id not in workspace_members for member_id in member_ids):
+            return Response(
+                {"error": "Every project member must be an active workspace member"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        locked_project_members = list(ProjectMember.objects.select_for_update().filter(project=project).order_by("id"))
+        existing_project_members = {
+            str(project_member.member_id): project_member
+            for project_member in locked_project_members
+            if project_member.member_id is not None
+        }
+        requesting_project_member = existing_project_members.get(str(request.user.id))
+        requesting_workspace_member = workspace_members.get(str(request.user.id))
+        if (
+            requesting_project_member is None
+            or not requesting_project_member.is_active
+            or (
+                requesting_project_member.role != ROLE.ADMIN.value
+                and (requesting_workspace_member is None or requesting_workspace_member.role != ROLE.ADMIN.value)
+            )
+        ):
+            return Response(
+                {"error": "Project admin permission is no longer active"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         # check the workspace role of the new user
-        for member in member_roles:
-            workspace_member_role = WorkspaceMember.objects.get(
-                workspace__slug=slug, member=member, is_active=True
-            ).role
-            if workspace_member_role in [20] and member_roles.get(member) in [5, 15]:
+        for member_id, requested_role in member_roles.items():
+            workspace_member_role = workspace_members[member_id].role
+            if workspace_member_role == ROLE.ADMIN.value and requested_role != ROLE.ADMIN.value:
                 return Response(
                     {"error": "You cannot add a user with role lower than the workspace role"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            if workspace_member_role in [5] and member_roles.get(member) in [15, 20]:
-                return Response(
-                    {"error": "You cannot add a user with role higher than the workspace role"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        # Existing memberships are monotonic: adding an active member at the
+        # same/lower role is a no-op; reactivation keeps the higher old role.
+        project_members_to_update = []
+        for member_id, requested_role in member_roles.items():
+            project_member = existing_project_members.get(member_id)
+            if project_member is None:
+                continue
+            effective_role = max(project_member.role, requested_role)
+            if not project_member.is_active or project_member.role != effective_role:
+                project_member.role = effective_role
+                project_member.is_active = True
+                project_member.updated_at = timezone.now()
+                project_member.updated_by = request.user
+                project_members_to_update.append(project_member)
 
-        # Update roles in the members array based on the member_roles dictionary and set is_active to True
-        for project_member in ProjectMember.objects.filter(
-            project_id=project_id,
-            member_id__in=[member.get("member_id") for member in members],
-        ):
-            project_member.role = member_roles[str(project_member.member_id)]
-            project_member.is_active = True
-            bulk_project_members.append(project_member)
-
-        # Update the roles of the existing members
-        ProjectMember.objects.bulk_update(bulk_project_members, ["is_active", "role"], batch_size=100)
+        if project_members_to_update:
+            ProjectMember.objects.bulk_update(
+                project_members_to_update,
+                ["is_active", "role", "updated_at", "updated_by"],
+                batch_size=100,
+            )
 
         # Get the minimum sort_order for each member in the workspace
         member_sort_orders = (
             ProjectUserProperty.objects.filter(
                 workspace__slug=slug,
-                user_id__in=[member.get("member_id") for member in members],
+                user_id__in=member_ids,
             )
             .values("user_id")
             .annotate(min_sort_order=Min("sort_order"))
@@ -116,48 +175,55 @@ class ProjectMemberViewSet(BaseViewSet):
         # Convert to dictionary for easy lookup: {user_id: min_sort_order}
         sort_order_map = {str(item["user_id"]): item["min_sort_order"] for item in member_sort_orders}
 
-        # Loop through requested members
-        for member in members:
-            member_id = str(member.get("member_id"))
+        bulk_project_members = []
+        bulk_issue_props = []
+        for member_id, requested_role in member_roles.items():
+            if member_id in existing_project_members:
+                continue
             # Get the minimum sort_order for this member, or use default
             min_sort_order = sort_order_map.get(member_id)
             # Create a new project member
             bulk_project_members.append(
                 ProjectMember(
-                    member_id=member.get("member_id"),
-                    role=member.get("role", 5),
+                    member_id=member_id,
+                    role=requested_role,
                     project_id=project_id,
                     workspace_id=project.workspace_id,
+                    created_by=request.user,
                 )
             )
             # Create a new issue property
             bulk_issue_props.append(
                 ProjectUserProperty(
-                    user_id=member.get("member_id"),
+                    user_id=member_id,
                     project_id=project_id,
                     workspace_id=project.workspace_id,
                     sort_order=(min_sort_order - 10000 if min_sort_order is not None else 65535),
+                    created_by=request.user,
                 )
             )
 
         # Bulk create the project members and issue properties
-        project_members = ProjectMember.objects.bulk_create(bulk_project_members, batch_size=10, ignore_conflicts=True)
+        _ = ProjectMember.objects.bulk_create(bulk_project_members, batch_size=10, ignore_conflicts=True)
 
         _ = ProjectUserProperty.objects.bulk_create(bulk_issue_props, batch_size=10, ignore_conflicts=True)
 
         project_members = ProjectMember.objects.filter(
             project_id=project_id,
-            member_id__in=[member.get("member_id") for member in members],
+            member_id__in=member_ids,
         )
-        # Send emails to notify the users
-        [
-            project_add_user_email.delay(
-                base_host(request=request, is_app=True),
-                project_member.id,
-                request.user.id,
+        # Queue notifications only after memberships are committed so workers
+        # cannot race the transaction and observe a missing/stale row.
+        current_site = base_host(request=request, is_app=True)
+        requesting_user_id = request.user.id
+        for project_member_id in project_members.values_list("id", flat=True):
+            transaction.on_commit(
+                lambda member_id=project_member_id, user_id=requesting_user_id: project_add_user_email.delay(
+                    current_site,
+                    member_id,
+                    user_id,
+                )
             )
-            for project_member in project_members
-        ]
         # Serialize the project members
         serializer = ProjectMemberRoleSerializer(project_members, many=True)
         # Return the serialized data
@@ -221,10 +287,10 @@ class ProjectMemberViewSet(BaseViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
-            new_role = int(request.data["role"])
-        except (TypeError, ValueError):
+            new_role = parse_assignable_role(request.data["role"])
+        except ValueError as error:
             return Response(
-                {"role": "Role must be a valid integer"},
+                {"role": str(error)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -279,12 +345,6 @@ class ProjectMemberViewSet(BaseViewSet):
         if requested_project_member is None:
             return Response({"error": "Project membership is no longer active"}, status=status.HTTP_403_FORBIDDEN)
 
-        if "role" in request.data and target_workspace_role == ROLE.GUEST.value and new_role > ROLE.GUEST.value:
-            return Response(
-                {"error": "You cannot add a user with role higher than the workspace role"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         if "role" in request.data and target_workspace_role == ROLE.ADMIN.value and new_role < ROLE.ADMIN.value:
             return Response(
                 {"error": "You cannot add a workspace admin with a lower project role"},
@@ -315,7 +375,7 @@ class ProjectMemberViewSet(BaseViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = ProjectMemberSerializer(project_member, data={"role": request.data["role"]}, partial=True)
+        serializer = ProjectMemberSerializer(project_member, data={"role": new_role}, partial=True)
 
         if serializer.is_valid():
             serializer.save()

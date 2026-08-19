@@ -8,7 +8,7 @@ import { observer } from "mobx-react";
 import type { Control, FieldArrayWithId, FormState } from "react-hook-form";
 import { Controller } from "react-hook-form";
 // plane imports
-import { ROLE } from "@plane/constants";
+import { ASSIGNABLE_ROLES, ROLE } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { CloseIcon } from "@plane/propel/icons";
 import { CustomSelect, Input } from "@plane/ui";
@@ -96,11 +96,11 @@ export const InvitationFields = observer(function InvitationFields(props: TInvit
                     className="w-24 flex-grow"
                     input
                   >
-                    {Object.entries(ROLE).map(([key, value]) => {
+                    {Object.entries(ASSIGNABLE_ROLES).map(([key, roleLabel]) => {
                       if (currentWorkspaceRole && currentWorkspaceRole >= parseInt(key))
                         return (
                           <CustomSelect.Option key={key} value={parseInt(key)}>
-                            {value}
+                            {roleLabel}
                           </CustomSelect.Option>
                         );
                     })}

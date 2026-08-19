@@ -8,7 +8,7 @@ import React, { useEffect } from "react";
 import { observer } from "mobx-react";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 // plane imports
-import { ROLE, EUserPermissions } from "@plane/constants";
+import { ASSIGNABLE_ROLES, ROLE, EUserPermissions } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import { PlusIcon, CloseIcon, ChevronDownIcon } from "@plane/propel/icons";
@@ -40,7 +40,7 @@ type FormValues = {
 const defaultValues: FormValues = {
   members: [
     {
-      role: 5,
+      role: EUserPermissions.MEMBER,
       member_id: "",
     },
   ],
@@ -82,22 +82,20 @@ export const SendProjectInvitationModal = observer(function SendProjectInvitatio
 
     const payload = { ...formData };
 
-    await bulkAddMembersToProject(workspaceSlug.toString(), projectId.toString(), payload)
-      .then(() => {
-        if (onSuccess) onSuccess();
-        onClose();
-        setToast({
-          title: "Success!",
-          type: TOAST_TYPE.SUCCESS,
-          message: "Members added successfully.",
-        });
-      })
-      .catch((error) => {
-        console.error(error);
-      })
-      .finally(() => {
-        reset(defaultValues);
+    try {
+      await bulkAddMembersToProject(workspaceSlug.toString(), projectId.toString(), payload);
+      if (onSuccess) onSuccess();
+      onClose();
+      setToast({
+        title: "Success!",
+        type: TOAST_TYPE.SUCCESS,
+        message: "Members added successfully.",
       });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      reset(defaultValues);
+    }
   };
 
   const handleClose = () => {
@@ -111,7 +109,7 @@ export const SendProjectInvitationModal = observer(function SendProjectInvitatio
 
   const appendField = () => {
     append({
-      role: 5,
+      role: EUserPermissions.MEMBER,
       member_id: "",
     });
   };
@@ -120,7 +118,7 @@ export const SendProjectInvitationModal = observer(function SendProjectInvitatio
     if (fields.length === 0) {
       append([
         {
-          role: 5,
+          role: EUserPermissions.MEMBER,
           member_id: "",
         },
       ]);
@@ -160,15 +158,10 @@ export const SendProjectInvitationModal = observer(function SendProjectInvitatio
 
   const checkCurrentOptionWorkspaceRole = (value: string) => {
     const currentMemberWorkspaceRole = getWorkspaceMemberDetails(value)?.role;
-    if (!value || !currentMemberWorkspaceRole) return ROLE;
-
-    const isGuestOROwner = [EUserPermissions.ADMIN, EUserPermissions.GUEST].includes(
-      currentMemberWorkspaceRole as EUserPermissions
-    );
-
-    return Object.fromEntries(
-      Object.entries(ROLE).filter(([key]) => !isGuestOROwner || [currentMemberWorkspaceRole].includes(parseInt(key)))
-    );
+    if (!value || !currentMemberWorkspaceRole) return ASSIGNABLE_ROLES;
+    if (currentMemberWorkspaceRole === EUserPermissions.ADMIN)
+      return { [EUserPermissions.ADMIN]: ROLE[EUserPermissions.ADMIN] };
+    return ASSIGNABLE_ROLES;
   };
 
   return (
@@ -183,8 +176,8 @@ export const SendProjectInvitationModal = observer(function SendProjectInvitatio
           </div>
 
           <div className="mb-3 space-y-4">
-            {fields.map((field, index) => (
-              <div key={field.id} className="group mb-1 flex w-full items-start justify-between gap-x-4 text-13">
+            {fields.map((memberField, index) => (
+              <div key={memberField.id} className="group mb-1 flex w-full items-start justify-between gap-x-4 text-13">
                 <div className="flex w-full grow flex-col gap-1">
                   <Controller
                     control={control}
@@ -215,7 +208,7 @@ export const SendProjectInvitationModal = observer(function SendProjectInvitatio
                             onChange(val);
                             // Update the role to the workspace role when member ID changes
                             const workspaceMemberDetails = getWorkspaceMemberDetails(val);
-                            const workspaceRole = workspaceMemberDetails?.role ?? 5;
+                            const workspaceRole = workspaceMemberDetails?.role ?? EUserPermissions.MEMBER;
                             const newValue = ROLE[workspaceRole].toUpperCase();
                             setValue(
                               `members.${index}.role`,
@@ -241,12 +234,14 @@ export const SendProjectInvitationModal = observer(function SendProjectInvitatio
                       name={`members.${index}.role`}
                       control={control}
                       rules={{ required: "Select Role" }}
-                      render={({ field }) => (
+                      render={({ field: roleField }) => (
                         <CustomSelect
-                          {...field}
+                          {...roleField}
                           customButton={
                             <div className="shadow-sm flex w-24 items-center justify-between gap-1 rounded-md border border-subtle px-3 py-2.5 text-left text-13 text-secondary duration-300 hover:bg-layer-1 hover:text-primary focus:outline-none">
-                              <span className="capitalize">{field.value ? ROLE[field.value] : "Select role"}</span>
+                              <span className="capitalize">
+                                {roleField.value ? ROLE[roleField.value] : "Select role"}
+                              </span>
                               <ChevronDownIcon className="h-3 w-3" aria-hidden="true" />
                             </div>
                           }
@@ -254,7 +249,7 @@ export const SendProjectInvitationModal = observer(function SendProjectInvitatio
                         >
                           {Object.entries(checkCurrentOptionWorkspaceRole(watch(`members.${index}.member_id`))).map(
                             ([key, label]) => {
-                              if (parseInt(key) > (currentProjectRole ?? EUserPermissions.GUEST)) return null;
+                              if (parseInt(key) > (currentProjectRole ?? EUserPermissions.MEMBER)) return null;
 
                               return (
                                 <CustomSelect.Option key={key} value={key}>

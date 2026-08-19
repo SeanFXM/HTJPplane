@@ -14,6 +14,7 @@ from plane.db.models import (
     Project,
     ProjectUserProperty,
 )
+from plane.utils.internal_roles import parse_assignable_role
 
 
 class Command(BaseCommand):
@@ -34,7 +35,10 @@ class Command(BaseCommand):
 
             project_id = options["project_id"]
             user_email = options["user_email"]
-            role = options.get("role", 20)
+            try:
+                role = parse_assignable_role(options.get("role"), default=20)
+            except ValueError as error:
+                raise CommandError(str(error)) from error
 
             print(f"Role: {role}")
 

@@ -13,6 +13,7 @@ from .user import UserLiteSerializer, UserAdminLiteSerializer
 from plane.db.models import (
     Workspace,
     WorkspaceAnnouncement,
+    WorkspaceCalendarEvent,
     WorkspaceMember,
     WorkspaceMemberInvite,
     WorkspaceTheme,
@@ -28,6 +29,7 @@ from plane.db.models import (
     WorkspaceUserPreference,
 )
 from plane.utils.constants import RESTRICTED_WORKSPACE_SLUGS
+from plane.utils.internal_roles import INTERNAL_ASSIGNABLE_ROLE_VALUES
 from plane.utils.url import contains_url
 from plane.utils.content_validator import (
     validate_html_content,
@@ -86,6 +88,11 @@ class WorkspaceLiteSerializer(BaseSerializer):
 class WorkSpaceMemberSerializer(DynamicBaseSerializer):
     member = UserLiteSerializer(read_only=True)
 
+    def validate_role(self, value):
+        if value not in INTERNAL_ASSIGNABLE_ROLE_VALUES:
+            raise serializers.ValidationError("Role must be Member (15) or Admin (20).")
+        return value
+
     class Meta:
         model = WorkspaceMember
         fields = "__all__"
@@ -110,6 +117,11 @@ class WorkspaceMemberAdminSerializer(DynamicBaseSerializer):
 class WorkSpaceMemberInviteSerializer(BaseSerializer):
     workspace = WorkspaceLiteSerializer(read_only=True)
     invite_link = serializers.SerializerMethodField()
+
+    def validate_role(self, value):
+        if value not in INTERNAL_ASSIGNABLE_ROLE_VALUES:
+            raise serializers.ValidationError("Role must be Member (15) or Admin (20).")
+        return value
 
     def get_invite_link(self, obj):
         return f"/workspace-invitations/?invitation_id={obj.id}&slug={obj.workspace.slug}&token={obj.token}"
@@ -202,6 +214,44 @@ class WorkspaceAnnouncementSerializer(BaseSerializer):
         model = WorkspaceAnnouncement
         fields = "__all__"
         read_only_fields = ["workspace", "project"]
+
+
+class WorkspaceCalendarEventSerializer(BaseSerializer):
+    class Meta:
+        model = WorkspaceCalendarEvent
+        fields = [
+            "id",
+            "workspace",
+            "project",
+            "title",
+            "description",
+            "category",
+            "start_date",
+            "end_date",
+            "location",
+            "created_at",
+            "updated_at",
+            "created_by",
+            "updated_by",
+        ]
+        read_only_fields = [
+            "id",
+            "workspace",
+            "project",
+            "created_at",
+            "updated_at",
+            "created_by",
+            "updated_by",
+        ]
+
+    def validate(self, attrs):
+        start_date = attrs.get("start_date", getattr(self.instance, "start_date", None))
+        end_date = attrs.get("end_date", getattr(self.instance, "end_date", None))
+
+        if start_date and end_date and end_date < start_date:
+            raise serializers.ValidationError({"end_date": "End date cannot be earlier than start date."})
+
+        return attrs
 
 
 class IssueRecentVisitSerializer(serializers.ModelSerializer):

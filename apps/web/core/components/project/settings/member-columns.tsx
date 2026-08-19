@@ -10,7 +10,7 @@ import { Controller, useForm } from "react-hook-form";
 import { CircleMinus } from "lucide-react";
 import { Disclosure } from "@headlessui/react";
 // plane imports
-import { ROLE, EUserPermissions, MEMBER_TRACKER_ELEMENTS } from "@plane/constants";
+import { ASSIGNABLE_ROLES, ROLE, EUserPermissions, MEMBER_TRACKER_ELEMENTS } from "@plane/constants";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import type { EUserProjectRoles, IUser, IWorkspaceMember, TProjectMembership } from "@plane/types";
 import { CustomMenu, CustomSelect } from "@plane/ui";
@@ -45,7 +45,7 @@ export function NameColumn(props: NameProps) {
 
   return (
     <Disclosure>
-      {({}) => (
+      {() => (
         <div className="group relative">
           <div className="flex w-72 items-center gap-2">
             <div className="flex flex-1 items-center gap-x-2 gap-y-2">
@@ -75,12 +75,12 @@ export function NameColumn(props: NameProps) {
                 optionsClassName="p-1.5"
                 placement="bottom-end"
               >
-                <CustomMenu.MenuItem>
-                  <div
-                    className="flex cursor-pointer items-center gap-x-1 font-medium text-danger-primary"
-                    data-ph-element={MEMBER_TRACKER_ELEMENTS.PROJECT_MEMBER_TABLE_CONTEXT_MENU}
-                    onClick={() => setRemoveMemberModal(rowData)}
-                  >
+                <CustomMenu.MenuItem
+                  className="flex cursor-pointer items-center gap-x-1 font-medium text-danger-primary"
+                  data-ph-element={MEMBER_TRACKER_ELEMENTS.PROJECT_MEMBER_TABLE_CONTEXT_MENU}
+                  onClick={() => setRemoveMemberModal(rowData)}
+                >
+                  <div className="flex items-center gap-x-1">
                     <CircleMinus className="size-3.5 flex-shrink-0" />
                     {rowData.member?.id === currentUser?.id ? "Leave " : "Remove "}
                   </div>
@@ -109,21 +109,19 @@ export const AccountTypeColumn = observer(function AccountTypeColumn(props: Acco
     formState: { errors },
   } = useForm();
   // derived values
-  const roleLabel = ROLE[rowData.original_role ?? EUserPermissions.GUEST];
+  const roleLabel = ROLE[rowData.original_role ?? EUserPermissions.MEMBER];
   const isCurrentUser = currentUser?.id === rowData.member.id;
   const isRowDataWorkspaceAdmin = [EUserPermissions.ADMIN].includes(
-    Number(getWorkspaceMemberDetails(rowData.member.id)?.role) ?? EUserPermissions.GUEST
+    Number(getWorkspaceMemberDetails(rowData.member.id)?.role ?? EUserPermissions.MEMBER)
   );
   const isCurrentUserWorkspaceAdmin = currentUser
     ? [EUserPermissions.ADMIN].includes(
-        Number(getWorkspaceMemberDetails(currentUser.id)?.role) ?? EUserPermissions.GUEST
+        Number(getWorkspaceMemberDetails(currentUser.id)?.role ?? EUserPermissions.MEMBER)
       )
     : false;
   const currentProjectRole = getProjectRoleByWorkspaceSlugAndProjectId(workspaceSlug, projectId);
 
-  const isCurrentUserProjectAdmin = currentProjectRole
-    ? ![EUserPermissions.MEMBER, EUserPermissions.GUEST].includes(Number(currentProjectRole) ?? EUserPermissions.GUEST)
-    : false;
+  const isCurrentUserProjectAdmin = Number(currentProjectRole) === EUserPermissions.ADMIN;
 
   // logic
   // Workspace admin can change his own role
@@ -133,13 +131,10 @@ export const AccountTypeColumn = observer(function AccountTypeColumn(props: Acco
     (isCurrentUserProjectAdmin && !isRowDataWorkspaceAdmin && !isCurrentUser);
   const checkCurrentOptionWorkspaceRole = (value: string) => {
     const currentMemberWorkspaceRole = getWorkspaceMemberDetails(value)?.role as EUserPermissions | undefined;
-    if (!value || !currentMemberWorkspaceRole) return ROLE;
-
-    const isGuest = [EUserPermissions.GUEST].includes(currentMemberWorkspaceRole);
-
-    return Object.fromEntries(
-      Object.entries(ROLE).filter(([key]) => !isGuest || parseInt(key) === EUserPermissions.GUEST)
-    );
+    if (!value || !currentMemberWorkspaceRole) return ASSIGNABLE_ROLES;
+    if (currentMemberWorkspaceRole === EUserPermissions.ADMIN)
+      return { [EUserPermissions.ADMIN]: ROLE[EUserPermissions.ADMIN] };
+    return ASSIGNABLE_ROLES;
   };
 
   return (

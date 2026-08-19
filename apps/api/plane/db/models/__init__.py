@@ -69,6 +69,7 @@ from .workspace import (
     Workspace,
     WorkspaceBaseModel,
     WorkspaceAnnouncement,
+    WorkspaceCalendarEvent,
     WorkspaceMember,
     WorkspaceMemberInvite,
     WorkspaceTheme,

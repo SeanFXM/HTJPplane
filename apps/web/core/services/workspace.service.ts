@@ -24,6 +24,8 @@ import type {
   TWidgetEntityData,
   TActivityEntityData,
   TWorkspaceAnnouncement,
+  TWorkspaceCalendarEvent,
+  TWorkspaceCalendarEventEditableFields,
   IWorkspaceSidebarNavigationItem,
   IWorkspaceSidebarNavigation,
   IWorkspaceUserPropertiesResponse,
@@ -361,6 +363,48 @@ export class WorkspaceService extends APIService {
 
   async deleteWorkspaceAnnouncement(workspaceSlug: string, announcementId: string): Promise<void> {
     return this.delete(`/api/workspaces/${workspaceSlug}/announcements/${announcementId}/`)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async fetchWorkspaceCalendarEvents(
+    workspaceSlug: string,
+    range: { start: string; end: string }
+  ): Promise<TWorkspaceCalendarEvent[]> {
+    return this.get(`/api/workspaces/${workspaceSlug}/calendar-events/`, { params: range })
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response;
+      });
+  }
+
+  async createWorkspaceCalendarEvent(
+    workspaceSlug: string,
+    data: TWorkspaceCalendarEventEditableFields
+  ): Promise<TWorkspaceCalendarEvent> {
+    return this.post(`/api/workspaces/${workspaceSlug}/calendar-events/`, data)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response;
+      });
+  }
+
+  async updateWorkspaceCalendarEvent(
+    workspaceSlug: string,
+    eventId: string,
+    data: TWorkspaceCalendarEventEditableFields
+  ): Promise<TWorkspaceCalendarEvent> {
+    return this.patch(`/api/workspaces/${workspaceSlug}/calendar-events/${eventId}/`, data)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response;
+      });
+  }
+
+  async deleteWorkspaceCalendarEvent(workspaceSlug: string, eventId: string): Promise<void> {
+    return this.delete(`/api/workspaces/${workspaceSlug}/calendar-events/${eventId}/`)
       .then((response) => response?.data)
       .catch((error) => {
         throw error?.response?.data;

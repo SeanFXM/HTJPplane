@@ -10,7 +10,13 @@ import { Controller, useForm } from "react-hook-form";
 
 import { Disclosure } from "@headlessui/react";
 // plane imports
-import { ROLE, EUserPermissions, EUserPermissionsLevel, MEMBER_TRACKER_ELEMENTS } from "@plane/constants";
+import {
+  ASSIGNABLE_ROLES,
+  ROLE,
+  EUserPermissions,
+  EUserPermissionsLevel,
+  MEMBER_TRACKER_ELEMENTS,
+} from "@plane/constants";
 import { TrashIcon, SuspendedUserIcon } from "@plane/propel/icons";
 import { Pill, EPillVariant, EPillSize } from "@plane/propel/pill";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
@@ -33,6 +39,7 @@ type NameProps = {
   rowData: RowData;
   workspaceSlug: string;
   isAdmin: boolean;
+  isWorkspaceOwner: boolean;
   currentUser: IUser | undefined;
   setRemoveMemberModal: (rowData: RowData) => void;
 };
@@ -40,10 +47,11 @@ type NameProps = {
 type AccountTypeProps = {
   rowData: RowData;
   workspaceSlug: string;
+  isWorkspaceOwner: boolean;
 };
 
 export function NameColumn(props: NameProps) {
-  const { rowData, workspaceSlug, isAdmin, currentUser, setRemoveMemberModal } = props;
+  const { rowData, workspaceSlug, isAdmin, isWorkspaceOwner, currentUser, setRemoveMemberModal } = props;
   // derived values
   const { avatar_url, display_name, email, first_name, id, last_name } = rowData.member;
   const isSuspended = rowData.is_active === false;
@@ -80,28 +88,21 @@ export function NameColumn(props: NameProps) {
               </span>
             </div>
 
-            {!isSuspended && (isAdmin || id === currentUser?.id) && (
+            {!isSuspended && !isWorkspaceOwner && (isAdmin || id === currentUser?.id) && (
               <PopoverMenu
                 data={[""]}
                 keyExtractor={(item) => item}
                 popoverClassName="justify-end"
                 buttonClassName="outline-none	origin-center rotate-90 size-8 aspect-square flex-shrink-0 grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity"
                 render={() => (
-                  <div
-                    role="button"
-                    tabIndex={0}
+                  <button
+                    type="button"
                     className="flex cursor-pointer items-center gap-x-3"
                     onClick={() => setRemoveMemberModal(rowData)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setRemoveMemberModal(rowData);
-                      }
-                    }}
                     data-ph-element={MEMBER_TRACKER_ELEMENTS.WORKSPACE_MEMBER_TABLE_CONTEXT_MENU}
                   >
                     <TrashIcon className="size-3.5 align-middle" /> {id === currentUser?.id ? "Leave " : "Remove "}
-                  </div>
+                  </button>
                 )}
               />
             )}
@@ -113,7 +114,7 @@ export function NameColumn(props: NameProps) {
 }
 
 export const AccountTypeColumn = observer(function AccountTypeColumn(props: AccountTypeProps) {
-  const { rowData, workspaceSlug } = props;
+  const { rowData, workspaceSlug, isWorkspaceOwner } = props;
   // form info
   const {
     control,
@@ -130,7 +131,7 @@ export const AccountTypeColumn = observer(function AccountTypeColumn(props: Acco
   // derived values
   const isCurrentUser = currentUser?.id === rowData.member.id;
   const isAdminRole = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.WORKSPACE);
-  const isRoleNonEditable = isCurrentUser || !isAdminRole;
+  const isRoleNonEditable = isWorkspaceOwner || isCurrentUser || !isAdminRole;
   const isSuspended = rowData.is_active === false;
 
   return (
@@ -150,14 +151,14 @@ export const AccountTypeColumn = observer(function AccountTypeColumn(props: Acco
           name="role"
           control={control}
           rules={{ required: "Role is required." }}
-          render={({ field: { value } }) => (
+          render={({ field: { value: selectedRole } }) => (
             <CustomSelect
-              value={value as EUserPermissions}
-              onChange={async (value: EUserPermissions) => {
+              value={selectedRole as EUserPermissions}
+              onChange={async (nextRole: EUserPermissions) => {
                 if (!workspaceSlug) return;
                 try {
                   await updateMember(workspaceSlug.toString(), rowData.member.id, {
-                    role: value as unknown as EUserPermissions,
+                    role: nextRole as unknown as EUserPermissions,
                   });
                 } catch (err: unknown) {
                   const error = err as { error?: string | string[] };
@@ -179,9 +180,9 @@ export const AccountTypeColumn = observer(function AccountTypeColumn(props: Acco
               className="w-32 rounded-md p-0"
               input
             >
-              {Object.keys(ROLE).map((item) => (
+              {Object.keys(ASSIGNABLE_ROLES).map((item) => (
                 <CustomSelect.Option key={item} value={item as unknown as EUserPermissions}>
-                  {ROLE[item as unknown as keyof typeof ROLE]}
+                  {ASSIGNABLE_ROLES[item as unknown as keyof typeof ASSIGNABLE_ROLES]}
                 </CustomSelect.Option>
               ))}
             </CustomSelect>

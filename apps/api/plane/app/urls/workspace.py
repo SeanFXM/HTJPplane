@@ -32,6 +32,7 @@ from plane.app.views import (
     WorkspaceFavoriteGroupEndpoint,
     WorkspaceDraftIssueViewSet,
     WorkspaceAnnouncementViewSet,
+    WorkspaceCalendarEventViewSet,
     QuickLinkViewSet,
     UserRecentVisitViewSet,
     WorkspaceHomePreferenceViewSet,
@@ -248,6 +249,19 @@ urlpatterns = [
         "workspaces/<str:slug>/announcements/<uuid:pk>/",
         WorkspaceAnnouncementViewSet.as_view({"get": "retrieve", "patch": "partial_update", "delete": "destroy"}),
         name="workspace-announcements",
+    ),
+    # shared workspace calendar
+    path(
+        "workspaces/<str:slug>/calendar-events/",
+        WorkspaceCalendarEventViewSet.as_view({"get": "list", "post": "create"}),
+        name="workspace-calendar-events",
+    ),
+    path(
+        "workspaces/<str:slug>/calendar-events/<uuid:pk>/",
+        WorkspaceCalendarEventViewSet.as_view(
+            {"get": "retrieve", "patch": "partial_update", "delete": "destroy"}
+        ),
+        name="workspace-calendar-events",
     ),
     # Widgets
     path(
