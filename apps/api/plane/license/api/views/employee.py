@@ -186,7 +186,7 @@ class InstanceWorkspaceEmployeeDetailEndpoint(BaseAPIView):
             # Lock it before the membership rows so concurrent admin demotions serialize.
             workspace = get_object_or_404(Workspace.objects.select_for_update(), pk=workspace_id)
             employee = get_object_or_404(
-                WorkspaceMember.objects.select_for_update().select_related("member"),
+                WorkspaceMember.objects.select_for_update(of=("self",)).select_related("member"),
                 pk=pk,
                 workspace=workspace,
                 member__is_active=True,

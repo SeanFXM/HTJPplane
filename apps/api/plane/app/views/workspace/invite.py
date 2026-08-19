@@ -89,7 +89,7 @@ class WorkspaceInvitationsViewset(BaseViewSet):
         # lifecycle checks, including duplicate requests.
         workspace = Workspace.objects.select_for_update().get(slug=slug)
         locked_workspace_members = list(
-            WorkspaceMember.objects.select_for_update()
+            WorkspaceMember.objects.select_for_update(of=("self",))
             .filter(workspace=workspace)
             .select_related("member", "member__avatar_asset")
             .order_by("id")

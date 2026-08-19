@@ -250,10 +250,10 @@ class TestInstanceEmployees:
         assert membership.workspace_id == workspace.id
         assert membership.created_by_id == secondary_admin.id
 
-    def test_anonymous_user_is_forbidden(self, api_client, instance, workspace):
+    def test_anonymous_user_is_unauthorized(self, api_client, instance, workspace):
         response = api_client.get(f"/api/instances/workspaces/{workspace.id}/employees/")
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_missing_workspace_returns_404(self, instance_admin_client):
         url = f"/api/instances/workspaces/{uuid.uuid4()}/employees/"

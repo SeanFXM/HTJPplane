@@ -55,6 +55,7 @@ class TestProjectMemberPublicAPI:
 
     @pytest.mark.django_db
     def test_sole_admin_cannot_downgrade_self(self, api_key_client, workspace, project, create_user):
+        WorkspaceMember.objects.filter(workspace=workspace, member=create_user).update(role=15)
         membership = ProjectMember.objects.get(project=project, member=create_user)
 
         response = api_key_client.patch(
