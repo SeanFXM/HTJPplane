@@ -2,6 +2,7 @@
 
 import uuid
 
+from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
 
@@ -54,8 +55,8 @@ class Migration(migrations.Migration):
                     models.ForeignKey(
                         null=True,
                         on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="workspacecalendarevent_created_by",
-                        to="db.user",
+                        related_name="%(class)s_created_by",
+                        to=settings.AUTH_USER_MODEL,
                         verbose_name="Created By",
                     ),
                 ),
@@ -64,7 +65,7 @@ class Migration(migrations.Migration):
                     models.ForeignKey(
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name="project_workspacecalendarevent",
+                        related_name="project_%(class)s",
                         to="db.project",
                     ),
                 ),
@@ -73,8 +74,8 @@ class Migration(migrations.Migration):
                     models.ForeignKey(
                         null=True,
                         on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="workspacecalendarevent_updated_by",
-                        to="db.user",
+                        related_name="%(class)s_updated_by",
+                        to=settings.AUTH_USER_MODEL,
                         verbose_name="Last Modified By",
                     ),
                 ),
@@ -82,7 +83,7 @@ class Migration(migrations.Migration):
                     "workspace",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name="workspace_workspacecalendarevent",
+                        related_name="workspace_%(class)s",
                         to="db.workspace",
                     ),
                 ),
