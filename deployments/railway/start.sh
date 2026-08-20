@@ -11,23 +11,19 @@ echo "------------------------------------------------"
 
 # --- required vars (incl. secrets — NO insecure default, fail hard) ---------
 missing=0
-for key in DATABASE_URL REDIS_URL AMQP_URL SECRET_KEY LIVE_SERVER_SECRET_KEY; do
+for key in \
+	DOMAIN_NAME DATABASE_URL REDIS_URL AMQP_URL \
+	SECRET_KEY LIVE_SERVER_SECRET_KEY \
+	AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_S3_BUCKET_NAME AWS_S3_ENDPOINT_URL; do
 	if [ -z "${!key}" ]; then
 		echo "  ❌ $key is not set"
 		missing=1
 	fi
 done
 if [ "$missing" = "1" ]; then
-	echo "Aborting: required vars missing. Set DATABASE_URL, REDIS_URL, AMQP_URL, and"
-	echo "the secrets SECRET_KEY / LIVE_SERVER_SECRET_KEY. Generate a secret with:"
-	echo "    python -c 'import secrets; print(secrets.token_hex(32))'"
+	echo "Aborting: one or more required AIO variables are missing."
 	exit 1
 fi
-
-# S3-compatible object storage (Cloudflare R2 / AWS S3 / etc.)
-for key in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_S3_BUCKET_NAME AWS_S3_ENDPOINT_URL; do
-	[ -z "${!key}" ] && echo "  ⚠️  $key not set — file uploads will fail until configured"
-done
 
 # --- Caddy listen address: Railway injects $PORT ----------------------------
 export SITE_ADDRESS=":${PORT:-80}"

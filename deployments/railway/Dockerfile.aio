@@ -236,6 +236,7 @@ RUN addgroup -g 1001 plane \
     && mkdir -p /app/logs/access /app/logs/error /app/data \
     && chmod +x /app/start.sh /app/backend/bin/* \
     && chown -R plane:plane /app
+RUN supervisord -t -c /etc/supervisor/conf.d/supervisor.conf
 USER plane
 
 # Use the same aggregate readiness contract as Railway: Caddy first verifies
