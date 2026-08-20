@@ -8,7 +8,7 @@ import { useState } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane imports
-import { ROLE, EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
+import { ASSIGNABLE_ROLES, ROLE, EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { LinkIcon, TrashIcon, ChevronDownIcon } from "@plane/propel/icons";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
@@ -169,7 +169,7 @@ export const WorkspaceInvitationsListItem = observer(function WorkspaceInvitatio
             disabled={!hasRoleChangeAccess}
             placement="bottom-end"
           >
-            {Object.keys(ROLE).map((key) => {
+            {Object.keys(ASSIGNABLE_ROLES).map((key) => {
               if (
                 currentWorkspaceRole &&
                 Number(currentWorkspaceRole) !== 20 &&
@@ -179,7 +179,7 @@ export const WorkspaceInvitationsListItem = observer(function WorkspaceInvitatio
 
               return (
                 <CustomSelect.Option key={key} value={parseInt(key, 10)}>
-                  <>{ROLE[parseInt(key) as keyof typeof ROLE]}</>
+                  <>{ASSIGNABLE_ROLES[parseInt(key) as keyof typeof ASSIGNABLE_ROLES]}</>
                 </CustomSelect.Option>
               );
             })}

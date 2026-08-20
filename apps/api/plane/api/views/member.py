@@ -3,6 +3,7 @@
 # See the LICENSE file for details.
 
 # Third Party imports
+from django.db import transaction
 from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import (
@@ -14,8 +15,9 @@ from drf_spectacular.utils import (
 # Module imports
 from .base import BaseAPIView
 from plane.api.serializers import UserLiteSerializer, ProjectMemberSerializer
-from plane.db.models import User, Workspace, WorkspaceMember, ProjectMember
+from plane.db.models import Project, ProjectMember, User, Workspace, WorkspaceMember
 from plane.utils.permissions import ProjectMemberPermission, WorkSpaceAdminPermission, ProjectAdminPermission
+from plane.utils.internal_roles import ADMIN_ROLE, MEMBER_ROLE
 from plane.utils.openapi import (
     WORKSPACE_SLUG_PARAMETER,
     PROJECT_ID_PARAMETER,
@@ -149,15 +151,125 @@ class ProjectMemberListCreateAPIEndpoint(BaseAPIView):
         responses={201: OpenApiResponse(description="Project member created", response=ProjectMemberSerializer)},
         request=OpenApiRequest(request=ProjectMemberSerializer),
     )
+    @transaction.atomic
     def post(self, request, slug, project_id):
+        workspace = Workspace.objects.select_for_update().get(slug=slug)
+        project = Project.objects.select_for_update().get(id=project_id, workspace=workspace)
         serializer = ProjectMemberSerializer(data=request.data, context={"slug": slug})
         serializer.is_valid(raise_exception=True)
-        serializer.save(project_id=project_id)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        target_member = serializer.validated_data["member"]
+        requested_role = serializer.validated_data.get("role", MEMBER_ROLE)
+
+        locked_workspace_members = list(
+            WorkspaceMember.objects.select_for_update()
+            .filter(
+                workspace_id=project.workspace_id,
+                member_id__in=[request.user.id, target_member.id],
+                is_active=True,
+            )
+            .order_by("id")
+        )
+        workspace_members = {
+            workspace_member.member_id: workspace_member for workspace_member in locked_workspace_members
+        }
+        requesting_workspace_member = workspace_members.get(request.user.id)
+        target_workspace_member = workspace_members.get(target_member.id)
+        if requesting_workspace_member is None:
+            return Response(
+                {"error": "Active workspace membership is required"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if target_workspace_member is None:
+            return Response(
+                {"error": "The project member must be an active workspace member"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        locked_project_members = list(ProjectMember.objects.select_for_update().filter(project=project).order_by("id"))
+        project_members = {
+            project_member.member_id: project_member
+            for project_member in locked_project_members
+            if project_member.member_id is not None
+        }
+        requesting_project_member = project_members.get(request.user.id)
+        if (
+            requesting_project_member is None
+            or not requesting_project_member.is_active
+            or requesting_project_member.role != ADMIN_ROLE
+        ):
+            return Response(
+                {"error": "Project admin permission is no longer active"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if target_workspace_member.role == ADMIN_ROLE and requested_role != ADMIN_ROLE:
+            return Response(
+                {"error": "A workspace admin must be a project admin"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        project_member = project_members.get(target_member.id)
+        if project_member is None:
+            project_member = serializer.save(project=project, role=requested_role)
+        else:
+            project_member.role = max(project_member.role, requested_role)
+            project_member.is_active = True
+            project_member.save()
+
+        return Response(ProjectMemberSerializer(project_member).data, status=status.HTTP_201_CREATED)
 
 
 # API endpoint to get and update a project member
 class ProjectMemberDetailAPIEndpoint(ProjectMemberListCreateAPIEndpoint):
+    @staticmethod
+    def _locked_project_members(request, slug, project_id):
+        workspace = Workspace.objects.select_for_update().get(slug=slug)
+        project = Project.objects.select_for_update().get(id=project_id, workspace=workspace)
+        workspace_members = {
+            workspace_member.member_id: workspace_member
+            for workspace_member in WorkspaceMember.objects.select_for_update()
+            .filter(workspace=workspace)
+            .order_by("id")
+        }
+        requesting_workspace_member = workspace_members.get(request.user.id)
+        if requesting_workspace_member is not None and not requesting_workspace_member.is_active:
+            requesting_workspace_member = None
+        project_members = list(
+            ProjectMember.objects.select_for_update().filter(project=project, workspace=workspace).order_by("id")
+        )
+        requesting_project_member = next(
+            (
+                project_member
+                for project_member in project_members
+                if project_member.member_id == request.user.id
+                and project_member.is_active
+                and project_member.role == ADMIN_ROLE
+            ),
+            None,
+        )
+        return workspace_members, requesting_workspace_member, requesting_project_member, project_members
+
+    @staticmethod
+    def _is_last_active_admin(project_members, target):
+        return (
+            target.is_active
+            and target.role == ADMIN_ROLE
+            and not any(
+                project_member.id != target.id and project_member.is_active and project_member.role == ADMIN_ROLE
+                for project_member in project_members
+            )
+        )
+
+    @staticmethod
+    def _admin_conflict_response():
+        return Response(
+            {
+                "code": "LAST_PROJECT_ADMIN",
+                "error": "Promote another active project admin before changing this member.",
+            },
+            status=status.HTTP_409_CONFLICT,
+        )
+
     @extend_schema(
         operation_id="get_project_member",
         summary="Get project member",
@@ -200,10 +312,47 @@ class ProjectMemberDetailAPIEndpoint(ProjectMemberListCreateAPIEndpoint):
         responses={200: OpenApiResponse(description="Project member updated", response=ProjectMemberSerializer)},
         request=OpenApiRequest(request=ProjectMemberSerializer),
     )
+    @transaction.atomic
     def patch(self, request, slug, project_id, pk):
-        project_member = ProjectMember.objects.get(project_id=project_id, workspace__slug=slug, pk=pk)
+        if "role" not in request.data or set(request.data) - {"role"}:
+            return Response(
+                {"error": "Only the project member role can be updated"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        workspace_members, requesting_workspace_member, requesting_project_member, project_members = (
+            self._locked_project_members(
+                request=request,
+                slug=slug,
+                project_id=project_id,
+            )
+        )
+        if requesting_workspace_member is None or requesting_project_member is None:
+            return Response(
+                {"error": "Project admin permission is no longer active"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        project_member = next((member for member in project_members if member.id == pk), None)
+        if project_member is None:
+            raise ProjectMember.DoesNotExist
+
         serializer = ProjectMemberSerializer(project_member, data=request.data, partial=True, context={"slug": slug})
         serializer.is_valid(raise_exception=True)
+        target_role = serializer.validated_data.get("role", project_member.role)
+        target_workspace_member = workspace_members.get(project_member.member_id)
+        if target_workspace_member is None or not target_workspace_member.is_active:
+            return Response(
+                {"error": "The project member must be an active workspace member"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if target_workspace_member.role == ADMIN_ROLE and target_role != ADMIN_ROLE:
+            return Response(
+                {"error": "A workspace admin must remain a project admin"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if target_role != ADMIN_ROLE and self._is_last_active_admin(project_members, project_member):
+            return self._admin_conflict_response()
+
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -215,8 +364,22 @@ class ProjectMemberDetailAPIEndpoint(ProjectMemberListCreateAPIEndpoint):
         parameters=[WORKSPACE_SLUG_PARAMETER, PROJECT_ID_PARAMETER],
         responses={204: OpenApiResponse(description="Project member deleted")},
     )
+    @transaction.atomic
     def delete(self, request, slug, project_id, pk):
-        project_member = ProjectMember.objects.get(project_id=project_id, workspace__slug=slug, pk=pk)
+        _, requesting_workspace_member, requesting_project_member, project_members = self._locked_project_members(
+            request=request, slug=slug, project_id=project_id
+        )
+        if requesting_workspace_member is None or requesting_project_member is None:
+            return Response(
+                {"error": "Project admin permission is no longer active"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        project_member = next((member for member in project_members if member.id == pk), None)
+        if project_member is None:
+            raise ProjectMember.DoesNotExist
+        if self._is_last_active_admin(project_members, project_member):
+            return self._admin_conflict_response()
+
         project_member.is_active = False
         project_member.save()
         return Response(status=status.HTTP_204_NO_CONTENT)

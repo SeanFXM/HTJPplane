@@ -6,6 +6,8 @@
 
 import { enableStaticRendering } from "mobx-react";
 // stores
+import type { IEmployeeStore } from "./employee.store";
+import { EmployeeStore } from "./employee.store";
 import type { IInstanceStore } from "./instance.store";
 import { InstanceStore } from "./instance.store";
 import type { IThemeStore } from "./theme.store";
@@ -19,12 +21,14 @@ enableStaticRendering(typeof window === "undefined");
 
 export class RootStore {
   theme: IThemeStore;
+  employee: IEmployeeStore;
   instance: IInstanceStore;
   user: IUserStore;
   workspace: IWorkspaceStore;
 
   constructor() {
     this.theme = new ThemeStore(this);
+    this.employee = new EmployeeStore(this);
     this.instance = new InstanceStore(this);
     this.user = new UserStore(this);
     this.workspace = new WorkspaceStore(this);
@@ -32,6 +36,7 @@ export class RootStore {
 
   hydrate(initialData: any) {
     this.theme.hydrate(initialData.theme);
+    this.employee.hydrate(initialData.employee);
     this.instance.hydrate(initialData.instance);
     this.user.hydrate(initialData.user);
     this.workspace.hydrate(initialData.workspace);
@@ -39,6 +44,7 @@ export class RootStore {
 
   resetOnSignOut() {
     localStorage.setItem("theme", "system");
+    this.employee = new EmployeeStore(this);
     this.instance = new InstanceStore(this);
     this.user = new UserStore(this);
     this.theme = new ThemeStore(this);

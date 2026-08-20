@@ -10,7 +10,7 @@ from rest_framework import serializers
 # Module imports
 from plane.db.models import WorkspaceMemberInvite
 from .base import BaseSerializer
-from plane.app.permissions.base import ROLE
+from plane.utils.internal_roles import INTERNAL_ASSIGNABLE_ROLE_VALUES
 
 
 class WorkspaceInviteSerializer(BaseSerializer):
@@ -46,7 +46,7 @@ class WorkspaceInviteSerializer(BaseSerializer):
         return value
 
     def validate_role(self, value):
-        if value not in [ROLE.ADMIN.value, ROLE.MEMBER.value, ROLE.GUEST.value]:
+        if value not in INTERNAL_ASSIGNABLE_ROLE_VALUES:
             raise serializers.ValidationError("Invalid role", code="INVALID_WORKSPACE_MEMBER_ROLE")
         return value
 

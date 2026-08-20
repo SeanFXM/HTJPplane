@@ -83,6 +83,13 @@ export const ROLE = {
   [EUserWorkspaceRoles.ADMIN]: "Admin",
 };
 
+// Hotone Japan is an employee-only workspace. Keep ROLE for reading legacy
+// records, while every role picker uses this assignable subset.
+export const ASSIGNABLE_ROLES = {
+  [EUserWorkspaceRoles.MEMBER]: "Member",
+  [EUserWorkspaceRoles.ADMIN]: "Admin",
+};
+
 export const ROLE_DETAILS = {
   [EUserWorkspaceRoles.GUEST]: {
     i18n_title: "role_details.guest.title",
@@ -96,6 +103,11 @@ export const ROLE_DETAILS = {
     i18n_title: "role_details.admin.title",
     i18n_description: "role_details.admin.description",
   },
+};
+
+export const ASSIGNABLE_ROLE_DETAILS = {
+  [EUserWorkspaceRoles.MEMBER]: ROLE_DETAILS[EUserWorkspaceRoles.MEMBER],
+  [EUserWorkspaceRoles.ADMIN]: ROLE_DETAILS[EUserWorkspaceRoles.ADMIN],
 };
 
 export const USER_ROLES = [

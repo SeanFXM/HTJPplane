@@ -35,6 +35,8 @@ function WorkspaceInvitationPage() {
   const invitation_id = searchParams.get("invitation_id");
   const slug = searchParams.get("slug");
   const token = searchParams.get("token");
+  const invitationPath = `/workspace-invitations?${searchParams.toString()}`;
+  const signInHref = `/?next_path=${encodeURIComponent(invitationPath)}`;
   // store hooks
   const { data: currentUser } = useUser();
 
@@ -45,34 +47,31 @@ function WorkspaceInvitationPage() {
       : null
   );
 
-  const handleAccept = () => {
-    if (!invitationDetail) return;
-    workspaceService
-      .joinWorkspace(invitationDetail.workspace.slug, invitationDetail.id, {
+  const handleAccept = async () => {
+    if (!invitationDetail || invitationDetail.email.toLowerCase() !== currentUser?.email?.toLowerCase()) return;
+    try {
+      await workspaceService.joinWorkspace(invitationDetail.workspace.slug, invitationDetail.id, {
         accepted: true,
         token: token,
-      })
-      .then(() => {
-        if (invitationDetail.email === currentUser?.email) {
-          router.push(`/${invitationDetail.workspace.slug}`);
-        } else {
-          router.push("/");
-        }
-      })
-      .catch((err: unknown) => console.error(err));
+      });
+      router.push(`/${invitationDetail.workspace.slug}`);
+    } catch (err: unknown) {
+      console.error(err);
+    }
   };
 
-  const handleReject = () => {
-    if (!invitationDetail || !token) return;
-    void workspaceService
-      .joinWorkspace(invitationDetail.workspace.slug, invitationDetail.id, {
+  const handleReject = async () => {
+    if (!invitationDetail || !token || invitationDetail.email.toLowerCase() !== currentUser?.email?.toLowerCase())
+      return;
+    try {
+      await workspaceService.joinWorkspace(invitationDetail.workspace.slug, invitationDetail.id, {
         accepted: false,
         token: token,
-      })
-      .then(() => {
-        router.push("/");
-      })
-      .catch((err: unknown) => console.error(err));
+      });
+      router.push("/");
+    } catch (err: unknown) {
+      console.error(err);
+    }
   };
 
   return (
@@ -86,10 +85,24 @@ function WorkspaceInvitationPage() {
           ) : (
             <EmptySpace
               title={`You have been invited to ${invitationDetail.workspace.name}`}
-              description="Use this workspace to coordinate projects, work items, and handoffs with the Hotone Japan team."
+              description={
+                !currentUser
+                  ? `Sign in as ${invitationDetail.email} before responding. Your invitation will stay active until then.`
+                  : invitationDetail.email.toLowerCase() !== currentUser.email?.toLowerCase()
+                    ? `This invitation belongs to ${invitationDetail.email}, but you are signed in as ${currentUser.email}. Switch accounts before responding.`
+                    : "Use this workspace to coordinate projects, work items, and handoffs with the Hotone Japan team."
+              }
             >
-              <EmptySpaceItem Icon={CheckIcon} title="Accept" action={handleAccept} />
-              <EmptySpaceItem Icon={CloseIcon} title="Ignore" action={handleReject} />
+              {!currentUser ? (
+                <EmptySpaceItem Icon={User2} title="Sign in with the invited email" href={signInHref} />
+              ) : invitationDetail.email.toLowerCase() !== currentUser.email?.toLowerCase() ? (
+                <EmptySpaceItem Icon={User2} title="Return home to switch accounts" href="/" />
+              ) : (
+                <>
+                  <EmptySpaceItem Icon={CheckIcon} title="Accept" action={handleAccept} />
+                  <EmptySpaceItem Icon={CloseIcon} title="Ignore" action={handleReject} />
+                </>
+              )}
             </EmptySpace>
           )
         ) : error || invitationDetail?.responded_at ? (

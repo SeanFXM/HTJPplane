@@ -74,6 +74,33 @@ export type TWorkspaceAnnouncement = TWorkspaceAnnouncementEditableFields & {
   updated_by?: string | null;
 };
 
+export type TWorkspaceCalendarEventCategory =
+  | "product_release"
+  | "exhibition"
+  | "campaign"
+  | "logistics"
+  | "company"
+  | "other";
+
+export type TWorkspaceCalendarEventEditableFields = {
+  title: string;
+  description: string;
+  category: TWorkspaceCalendarEventCategory;
+  start_date: string;
+  end_date: string | null;
+  location: string;
+};
+
+export type TWorkspaceCalendarEvent = TWorkspaceCalendarEventEditableFields & {
+  id: string;
+  workspace: string;
+  project?: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+};
+
 export type TLink = TLinkEditableFields & {
   created_by_id: string;
   id: string;

@@ -16,6 +16,8 @@ from plane.license.api.views import (
     InstanceAdminUserMeEndpoint,
     InstanceAdminSignOutEndpoint,
     InstanceAdminUserSessionEndpoint,
+    InstanceWorkspaceEmployeeDetailEndpoint,
+    InstanceWorkspaceEmployeeEndpoint,
     InstanceWorkSpaceAvailabilityCheckEndpoint,
     InstanceWorkSpaceEndpoint,
 )
@@ -71,4 +73,14 @@ urlpatterns = [
         name="instance-workspace-availability",
     ),
     path("workspaces/", InstanceWorkSpaceEndpoint.as_view(), name="instance-workspace"),
+    path(
+        "workspaces/<uuid:workspace_id>/employees/",
+        InstanceWorkspaceEmployeeEndpoint.as_view(),
+        name="instance-workspace-employees",
+    ),
+    path(
+        "workspaces/<uuid:workspace_id>/employees/<uuid:pk>/",
+        InstanceWorkspaceEmployeeDetailEndpoint.as_view(),
+        name="instance-workspace-employee-detail",
+    ),
 ]
