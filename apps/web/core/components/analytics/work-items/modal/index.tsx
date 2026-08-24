@@ -4,17 +4,12 @@
  * See the LICENSE file for details.
  */
 
-import React, { useEffect, useState } from "react";
-import { observer } from "mobx-react";
-// plane package imports
-import { ModalPortal, EPortalWidth, EPortalPosition } from "@plane/propel/portal";
+import { lazy, Suspense, useEffect, useState } from "react";
 import type { ICycle, IModule, IProject } from "@plane/types";
-import { useAnalytics } from "@/hooks/store/use-analytics";
-// plane web components
-import { WorkItemsModalMainContent } from "./content";
-import { WorkItemsModalHeader } from "./header";
+// components
+import { LazyModalFallback } from "@/components/common/lazy-modal-fallback";
 
-type Props = {
+export type TWorkItemsModalProps = {
   isOpen: boolean;
   onClose: () => void;
   projectDetails?: IProject | undefined;
@@ -23,49 +18,24 @@ type Props = {
   isEpic?: boolean;
 };
 
-export const WorkItemsModal = observer(function WorkItemsModal(props: Props) {
-  const { isOpen, onClose, projectDetails, moduleDetails, cycleDetails, isEpic } = props;
-  const { updateIsEpic, isPeekView } = useAnalytics();
-  const [fullScreen, setFullScreen] = useState(false);
+const LazyWorkItemsModal = lazy(() =>
+  import("./root").then((module) => ({
+    default: module.WorkItemsModalContent,
+  }))
+);
 
-  const handleClose = () => {
-    setFullScreen(false);
-    onClose();
-  };
+export function WorkItemsModal(props: TWorkItemsModalProps) {
+  const [hasOpened, setHasOpened] = useState(props.isOpen);
 
   useEffect(() => {
-    updateIsEpic(isPeekView ? (isEpic ?? false) : false);
-  }, [isEpic, updateIsEpic, isPeekView]);
+    if (props.isOpen) setHasOpened(true);
+  }, [props.isOpen]);
+
+  if (!props.isOpen && !hasOpened) return null;
 
   return (
-    <ModalPortal
-      isOpen={isOpen}
-      onClose={handleClose}
-      width={fullScreen ? EPortalWidth.FULL : EPortalWidth.THREE_QUARTER}
-      position={EPortalPosition.RIGHT}
-      fullScreen={fullScreen}
-    >
-      <div
-        className={`flex h-full flex-col overflow-hidden border-subtle bg-surface-1 text-left ${
-          fullScreen ? "rounded-lg border" : "border-l"
-        }`}
-      >
-        <WorkItemsModalHeader
-          fullScreen={fullScreen}
-          handleClose={handleClose}
-          setFullScreen={setFullScreen}
-          title={projectDetails?.name ?? ""}
-          cycle={cycleDetails}
-          module={moduleDetails}
-        />
-        <WorkItemsModalMainContent
-          fullScreen={fullScreen}
-          projectDetails={projectDetails}
-          cycleDetails={cycleDetails}
-          moduleDetails={moduleDetails}
-          isEpic={isEpic}
-        />
-      </div>
-    </ModalPortal>
+    <Suspense fallback={<LazyModalFallback label="Loading work item analysis" />}>
+      <LazyWorkItemsModal {...props} />
+    </Suspense>
   );
-});
+}

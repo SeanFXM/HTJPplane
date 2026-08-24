@@ -4,14 +4,23 @@
  * See the LICENSE file for details.
  */
 
-import type { FC } from "react";
-import React from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { observer } from "mobx-react";
 // plane imports
 import type { TIssueServiceType, TWorkItemWidgets } from "@plane/types";
+// components
+import { LazyModalFallback } from "@/components/common/lazy-modal-fallback";
+// hooks
+import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 // local imports
 import { IssueDetailWidgetActionButtons } from "./action-buttons";
 import { IssueDetailWidgetCollapsibles } from "./issue-detail-widget-collapsibles";
-import { IssueDetailWidgetModals } from "./issue-detail-widget-modals";
+
+const LazyIssueDetailWidgetModals = lazy(() =>
+  import("./issue-detail-widget-modals").then((module) => ({
+    default: module.IssueDetailWidgetModals,
+  }))
+);
 
 type Props = {
   workspaceSlug: string;
@@ -23,7 +32,7 @@ type Props = {
   hideWidgets?: TWorkItemWidgets[];
 };
 
-export function IssueDetailWidgets(props: Props) {
+export const IssueDetailWidgets = observer(function IssueDetailWidgets(props: Props) {
   const {
     workspaceSlug,
     projectId,
@@ -33,6 +42,14 @@ export function IssueDetailWidgets(props: Props) {
     issueServiceType,
     hideWidgets,
   } = props;
+  const { isAnyModalOpen } = useIssueDetail(issueServiceType);
+  const [hasRenderedModals, setHasRenderedModals] = useState(isAnyModalOpen);
+
+  useEffect(() => {
+    if (isAnyModalOpen) setHasRenderedModals(true);
+  }, [isAnyModalOpen]);
+
+  const shouldRenderModals = renderWidgetModals && (isAnyModalOpen || hasRenderedModals);
 
   return (
     <>
@@ -54,15 +71,17 @@ export function IssueDetailWidgets(props: Props) {
           hideWidgets={hideWidgets}
         />
       </div>
-      {renderWidgetModals && (
-        <IssueDetailWidgetModals
-          workspaceSlug={workspaceSlug}
-          projectId={projectId}
-          issueId={issueId}
-          issueServiceType={issueServiceType}
-          hideWidgets={hideWidgets}
-        />
+      {shouldRenderModals && (
+        <Suspense fallback={<LazyModalFallback label="Loading work item actions" />}>
+          <LazyIssueDetailWidgetModals
+            workspaceSlug={workspaceSlug}
+            projectId={projectId}
+            issueId={issueId}
+            issueServiceType={issueServiceType}
+            hideWidgets={hideWidgets}
+          />
+        </Suspense>
       )}
     </>
   );
-}
+});

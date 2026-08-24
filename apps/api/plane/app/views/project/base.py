@@ -8,7 +8,8 @@ import json
 
 # Django imports
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models import Exists, F, OuterRef, Prefetch, Q, Subquery, Count
+from django.db.models import BigIntegerField, Count, Exists, F, Max, OuterRef, Prefetch, Q, Subquery, Value
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 # Third Party imports
@@ -34,6 +35,7 @@ from plane.db.models import (
     ProjectMember,
     ProjectNetwork,
     ProjectUserProperty,
+    IssueSequence,
     State,
     DEFAULT_STATES,
     Workspace,
@@ -55,6 +57,12 @@ class ProjectViewSet(BaseViewSet):
             project_id=OuterRef("pk"),
             workspace__slug=self.kwargs.get("slug"),
         ).values("sort_order")
+        max_issue_sequence = (
+            IssueSequence.objects.filter(project_id=OuterRef("pk"))
+            .values("project_id")
+            .annotate(max_sequence=Max("sequence"))
+            .values("max_sequence")[:1]
+        )
         return self.filter_queryset(
             super()
             .get_queryset()
@@ -85,6 +93,13 @@ class ProjectViewSet(BaseViewSet):
                 ).values("anchor")
             )
             .annotate(sort_order=Subquery(sort_order))
+            .annotate(
+                next_work_item_sequence=Coalesce(
+                    Subquery(max_issue_sequence, output_field=BigIntegerField()),
+                    Value(0),
+                )
+                + Value(1)
+            )
             .prefetch_related(
                 Prefetch(
                     "project_projectmember",

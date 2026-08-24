@@ -13,7 +13,7 @@ import { useTranslation } from "@plane/i18n";
 import { AddWorkItemIcon } from "@plane/propel/icons";
 import type { TIssue } from "@plane/types";
 // components
-import { CreateUpdateIssueModal } from "@/components/issues/issue-modal/modal";
+import { CreateUpdateIssueModal, preloadCreateUpdateIssueModal } from "@/components/issues/issue-modal/modal";
 import { SidebarAddButton } from "@/components/sidebar/add-button";
 // hooks
 import { useCommandPalette } from "@/hooks/store/use-command-palette";
@@ -47,6 +47,7 @@ export const SidebarQuickActions = observer(function SidebarQuickActions() {
   const workspaceDraftIssue = workspaceSlug ? (storedValue?.[workspaceSlug] ?? undefined) : undefined;
 
   const handleMouseEnter = () => {
+    if (!disabled) preloadCreateUpdateIssueModal();
     // if enter before time out clear the timeout
     if (timeoutRef?.current) {
       clearTimeout(timeoutRef.current);
@@ -69,14 +70,16 @@ export const SidebarQuickActions = observer(function SidebarQuickActions() {
 
   return (
     <>
-      <CreateUpdateIssueModal
-        isOpen={isDraftIssueModalOpen}
-        onClose={() => setIsDraftIssueModalOpen(false)}
-        data={workspaceDraftIssue ?? {}}
-        onSubmit={() => removeWorkspaceDraftIssue()}
-        fetchIssueDetails={false}
-        isDraft
-      />
+      {isDraftIssueModalOpen && (
+        <CreateUpdateIssueModal
+          isOpen
+          onClose={() => setIsDraftIssueModalOpen(false)}
+          data={workspaceDraftIssue ?? {}}
+          onSubmit={() => removeWorkspaceDraftIssue()}
+          fetchIssueDetails={false}
+          isDraft
+        />
+      )}
       <div className="flex cursor-pointer items-center justify-between gap-2">
         <SidebarAddButton
           label={
@@ -89,6 +92,8 @@ export const SidebarQuickActions = observer(function SidebarQuickActions() {
           disabled={disabled}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
+          onFocus={preloadCreateUpdateIssueModal}
+          onTouchStart={preloadCreateUpdateIssueModal}
           data-ph-element={SIDEBAR_TRACKER_ELEMENTS.CREATE_WORK_ITEM_BUTTON}
         />
       </div>

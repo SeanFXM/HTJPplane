@@ -80,7 +80,7 @@ Railway 上从 ~11 个服务降到 **3 个**(应用 + Postgres + Redis)。
    - 内部单工作区默认：`ENABLE_SIGNUP=0`、`DISABLE_WORKSPACE_CREATION=1`、`ENABLE_SPACE=0`
    - Pages 仍依赖 Live 协作；确认不再使用 Pages 后才能设置 `ENABLE_LIVE=0`
    - `VITE_MODULE_PILOT_PROJECT_IDS=`：Modules 试点项目 UUID，多个用逗号分隔；留空即全部隐藏
-   - 成本旋钮:`GUNICORN_WORKERS=1`、`CELERY_WORKER_CONCURRENCY=2`
+   - 延迟优先默认:`GUNICORN_WORKERS=2`、`CELERY_WORKER_CONCURRENCY=2`；容器低于 1.5GB 时可把 API worker 降为 1
 4. 不要手动设 `PORT` / `SITE_ADDRESS` —— Railway 注入 `PORT`,`start.sh` 会让 Caddy 监听它。
 5. 健康检查路径填 `/health`；它会同时确认 Admin 产物已挂载，且 API 能完成数据库查询。
 
@@ -120,6 +120,8 @@ VITE_ADMIN_BASE_PATH=/god-mode pnpm --filter=admin build
 node apps/admin/verify-production-build.mjs apps/admin/build/client /god-mode/
 # 或一次性检查产物、Nginx、Caddy 和 Railway 健康探针：
 pnpm verify:admin-routing
+# 检查压缩、静态缓存、API worker 与 ASGI 数据库连接约束：
+node deployments/railway/verify-performance-config.mjs
 ```
 
 ---
@@ -179,7 +181,7 @@ pnpm turbo run build --filter=web --filter=admin
 ## 6. 取舍与注意事项
 
 - **单容器 = 不能分别扩缩**:某个进程崩了 supervisor 会重启它,但整容器重启会影响全部。对小团队完全够用;真要高并发时再把 api / live 拆回独立服务即可。
-- **内存上限**:给这个容器至少配 **1.5–2GB**。`GUNICORN_WORKERS` 和 `CELERY_WORKER_CONCURRENCY` 是主要旋钮,先小后大。
+- **内存上限**:给这个容器至少配 **1.5–2GB**。默认 2 个 API worker 优先保障交互延迟；内存压力持续偏高时可把 `GUNICORN_WORKERS` 降为 1。`CELERY_WORKER_CONCURRENCY` 也是主要内存旋钮。
 - **构建时间**:一个镜像里 build 了 4 个前端 + 后端,首次构建较久(BuildKit 的 pnpm-store 缓存会让依赖只下一次)。这是**构建期**成本,不是 24h 运行成本。
 - **这套 Dockerfile 尚未在 CI 跑过**:按第 3.3 节先本地 `docker build` 验证再上线。
 - 队列代码只认 AMQP([`apps/api/plane/settings/common.py`](../../apps/api/plane/settings/common.py) 第 300 行),所以 `AMQP_URL` 必填 —— 但用 CloudAMQP 免费版即可,不必自托管 RabbitMQ。
@@ -188,11 +190,12 @@ pnpm turbo run build --filter=web --filter=admin
 
 ## 文件清单
 
-| 文件                                       | 作用                                             |
-| ------------------------------------------ | ------------------------------------------------ |
-| [`Dockerfile.aio`](./Dockerfile.aio)       | 从本 fork 源码构建的单容器多阶段镜像             |
-| [`supervisor.conf`](./supervisor.conf)     | 容器内进程编排(api/worker/beat/space/live/caddy) |
-| [`Caddyfile`](./Caddyfile)                 | 单一入口:静态托管 web/admin + 反代其余           |
-| [`start.sh`](./start.sh)                   | 启动:校验 env、派生默认值、拉起 supervisor       |
-| [`plane.env.example`](./plane.env.example) | 需要在 Railway 配的环境变量清单                  |
-| [`railway.json`](./railway.json)           | Railway config-as-code(指向本 Dockerfile)        |
+| 文件                                                               | 作用                                             |
+| ------------------------------------------------------------------ | ------------------------------------------------ |
+| [`Dockerfile.aio`](./Dockerfile.aio)                               | 从本 fork 源码构建的单容器多阶段镜像             |
+| [`supervisor.conf`](./supervisor.conf)                             | 容器内进程编排(api/worker/beat/space/live/caddy) |
+| [`Caddyfile`](./Caddyfile)                                         | 单一入口:静态托管 web/admin + 反代其余           |
+| [`start.sh`](./start.sh)                                           | 启动:校验 env、派生默认值、拉起 supervisor       |
+| [`plane.env.example`](./plane.env.example)                         | 需要在 Railway 配的环境变量清单                  |
+| [`railway.json`](./railway.json)                                   | Railway config-as-code(指向本 Dockerfile)        |
+| [`verify-performance-config.mjs`](./verify-performance-config.mjs) | 部署层性能配置回归检查                           |

@@ -210,6 +210,16 @@ if os.environ.get("ENABLE_READ_REPLICA", "0") == "1":
     MIDDLEWARE.append("plane.middleware.db_routing.ReadReplicaRoutingMiddleware")
 
 
+# Production is served by Django 4.2 through ASGI/Uvicorn. Django explicitly
+# does not support persistent database connections in ASGI mode, so keep the
+# request-scoped default instead of relying on an unsupported connection
+# lifecycle. Add an external pooler when connection setup becomes a measured
+# bottleneck.
+for database_config in DATABASES.values():
+    database_config["CONN_MAX_AGE"] = 0
+    database_config["CONN_HEALTH_CHECKS"] = False
+
+
 # Redis Config
 REDIS_URL = os.environ.get("REDIS_URL")
 REDIS_SSL = REDIS_URL and "rediss" in REDIS_URL

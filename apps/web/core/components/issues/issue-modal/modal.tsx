@@ -4,14 +4,26 @@
  * See the LICENSE file for details.
  */
 
-import React from "react";
+import { lazy, Suspense } from "react";
 import { observer } from "mobx-react";
-import { useParams } from "next/navigation";
 // plane imports
 import type { EIssuesStoreType, TIssue } from "@plane/types";
-// plane web imports
-import { IssueModalProvider } from "@/plane-web/components/issues/issue-modal/provider";
-import { CreateUpdateIssueModalBase } from "./base";
+// components
+import { LazyModalFallback } from "@/components/common/lazy-modal-fallback";
+
+const loadCreateUpdateIssueModal = () => import("./modal-content");
+
+export const preloadCreateUpdateIssueModal = () => {
+  // Intent preloading is speculative. Let the real modal load surface any
+  // network error instead of creating an unhandled rejection on hover.
+  void loadCreateUpdateIssueModal().catch(() => undefined);
+};
+
+const LazyCreateUpdateIssueModal = lazy(() =>
+  loadCreateUpdateIssueModal().then((module) => ({
+    default: module.CreateUpdateIssueModalContent,
+  }))
+);
 
 export interface IssuesModalProps {
   data?: Partial<TIssue>;
@@ -36,23 +48,11 @@ export interface IssuesModalProps {
 }
 
 export const CreateUpdateIssueModal = observer(function CreateUpdateIssueModal(props: IssuesModalProps) {
-  // router params
-  const { cycleId, moduleId } = useParams();
-  // derived values
-  const dataForPreload = {
-    ...props.data,
-    cycle_id: props.data?.cycle_id ? props.data?.cycle_id : cycleId ? cycleId.toString() : null,
-    module_ids: props.data?.module_ids ? props.data?.module_ids : moduleId ? [moduleId.toString()] : null,
-  };
-
   if (!props.isOpen) return null;
+
   return (
-    <IssueModalProvider
-      templateId={props.templateId}
-      dataForPreload={dataForPreload}
-      allowedProjectIds={props.allowedProjectIds}
-    >
-      <CreateUpdateIssueModalBase {...props} />
-    </IssueModalProvider>
+    <Suspense fallback={<LazyModalFallback label="Loading work item editor" />}>
+      <LazyCreateUpdateIssueModal {...props} />
+    </Suspense>
   );
 });

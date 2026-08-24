@@ -75,32 +75,33 @@ export class CoreRootStore {
   workspaceRoot: IWorkspaceRootStore;
   projectRoot: IProjectRootStore;
   memberRoot: IMemberRootStore;
-  cycle: ICycleStore;
-  cycleFilter: ICycleFilterStore;
-  module: IModuleStore;
-  moduleFilter: IModuleFilterStore;
-  projectView: IProjectViewStore;
-  globalView: IGlobalViewStore;
   issue: IIssueRootStore;
   state: IStateStore;
   label: ILabelStore;
-  dashboard: IDashboardStore;
-  analytics: IAnalyticsStore;
-  projectPages: IProjectPageStore;
   router: IRouterStore;
   commandPalette: ICommandPaletteStore;
   theme: IThemeStore;
   instance: IInstanceStore;
   user: IUserStore;
-  projectInbox: IProjectInboxStore;
-  projectEstimate: IProjectEstimateStore;
-  multipleSelect: IMultipleSelectStore;
-  workspaceNotification: IWorkspaceNotificationStore;
-  favorite: IFavoriteStore;
-  stickyStore: IStickyStore;
-  editorAssetStore: IEditorAssetStore;
-  workItemFilters: IWorkItemFilterStore;
-  powerK: IPowerKStore;
+
+  private _cycle?: ICycleStore;
+  private _cycleFilter?: ICycleFilterStore;
+  private _module?: IModuleStore;
+  private _moduleFilter?: IModuleFilterStore;
+  private _projectView?: IProjectViewStore;
+  private _globalView?: IGlobalViewStore;
+  private _dashboard?: IDashboardStore;
+  private _analytics?: IAnalyticsStore;
+  private _projectPages?: IProjectPageStore;
+  private _projectInbox?: IProjectInboxStore;
+  private _projectEstimate?: IProjectEstimateStore;
+  private _multipleSelect?: IMultipleSelectStore;
+  private _workspaceNotification?: IWorkspaceNotificationStore;
+  private _favorite?: IFavoriteStore;
+  private _stickyStore?: IStickyStore;
+  private _editorAssetStore?: IEditorAssetStore;
+  private _workItemFilters?: IWorkItemFilterStore;
+  private _powerK?: IPowerKStore;
 
   constructor() {
     this.router = new RouterStore();
@@ -111,30 +112,103 @@ export class CoreRootStore {
     this.workspaceRoot = new WorkspaceRootStore(this as unknown as RootStore);
     this.projectRoot = new ProjectRootStore(this);
     this.memberRoot = new MemberRootStore(this as unknown as RootStore);
-    this.cycle = new CycleStore(this);
-    this.cycleFilter = new CycleFilterStore(this);
-    this.module = new ModulesStore(this);
-    this.moduleFilter = new ModuleFilterStore(this);
-    this.projectView = new ProjectViewStore(this);
-    this.globalView = new GlobalViewStore(this);
     this.issue = new IssueRootStore(this as unknown as RootStore);
     this.state = new StateStore(this as unknown as RootStore);
     this.label = new LabelStore(this);
-    this.dashboard = new DashboardStore(this);
-    this.multipleSelect = new MultipleSelectStore();
-    this.projectInbox = new ProjectInboxStore(this);
-    this.projectPages = new ProjectPageStore(this as unknown as RootStore);
-    this.projectEstimate = new ProjectEstimateStore(this);
-    this.workspaceNotification = new WorkspaceNotificationStore(this);
-    this.favorite = new FavoriteStore(this);
-    this.stickyStore = new StickyStore();
-    this.editorAssetStore = new EditorAssetStore();
-    this.analytics = new AnalyticsStore();
-    this.workItemFilters = new WorkItemFilterStore();
-    this.powerK = new PowerKStore();
+  }
+
+  get cycle(): ICycleStore {
+    return (this._cycle ??= new CycleStore(this));
+  }
+
+  get cycleFilter(): ICycleFilterStore {
+    return (this._cycleFilter ??= new CycleFilterStore(this));
+  }
+
+  get module(): IModuleStore {
+    return (this._module ??= new ModulesStore(this));
+  }
+
+  get moduleFilter(): IModuleFilterStore {
+    return (this._moduleFilter ??= new ModuleFilterStore(this));
+  }
+
+  get projectView(): IProjectViewStore {
+    return (this._projectView ??= new ProjectViewStore(this));
+  }
+
+  get globalView(): IGlobalViewStore {
+    return (this._globalView ??= new GlobalViewStore(this));
+  }
+
+  get dashboard(): IDashboardStore {
+    return (this._dashboard ??= new DashboardStore(this));
+  }
+
+  get analytics(): IAnalyticsStore {
+    return (this._analytics ??= new AnalyticsStore());
+  }
+
+  get projectPages(): IProjectPageStore {
+    return (this._projectPages ??= new ProjectPageStore(this as unknown as RootStore));
+  }
+
+  get projectInbox(): IProjectInboxStore {
+    return (this._projectInbox ??= new ProjectInboxStore(this));
+  }
+
+  get projectEstimate(): IProjectEstimateStore {
+    return (this._projectEstimate ??= new ProjectEstimateStore(this));
+  }
+
+  get multipleSelect(): IMultipleSelectStore {
+    return (this._multipleSelect ??= new MultipleSelectStore());
+  }
+
+  get workspaceNotification(): IWorkspaceNotificationStore {
+    return (this._workspaceNotification ??= new WorkspaceNotificationStore(this));
+  }
+
+  get favorite(): IFavoriteStore {
+    return (this._favorite ??= new FavoriteStore(this));
+  }
+
+  get stickyStore(): IStickyStore {
+    return (this._stickyStore ??= new StickyStore());
+  }
+
+  get editorAssetStore(): IEditorAssetStore {
+    return (this._editorAssetStore ??= new EditorAssetStore());
+  }
+
+  get workItemFilters(): IWorkItemFilterStore {
+    return (this._workItemFilters ??= new WorkItemFilterStore());
+  }
+
+  get powerK(): IPowerKStore {
+    return (this._powerK ??= new PowerKStore());
   }
 
   resetOnSignOut() {
+    this._cycle = undefined;
+    this._cycleFilter = undefined;
+    this._module = undefined;
+    this._moduleFilter = undefined;
+    this._projectView = undefined;
+    this._globalView = undefined;
+    this._dashboard = undefined;
+    this._analytics = undefined;
+    this._projectPages = undefined;
+    this._projectInbox = undefined;
+    this._projectEstimate = undefined;
+    this._multipleSelect = undefined;
+    this._workspaceNotification = undefined;
+    this._favorite = undefined;
+    this._stickyStore = undefined;
+    this._editorAssetStore = undefined;
+    this._workItemFilters = undefined;
+    this._powerK = undefined;
+
     // Reset to the company default so the next login starts from a known preference baseline.
     localStorage.setItem("theme", "light");
     localStorage.setItem(LANGUAGE_STORAGE_KEY, DEFAULT_LANGUAGE);
@@ -145,25 +219,8 @@ export class CoreRootStore {
     this.workspaceRoot = new WorkspaceRootStore(this as unknown as RootStore);
     this.projectRoot = new ProjectRootStore(this);
     this.memberRoot = new MemberRootStore(this as unknown as RootStore);
-    this.cycle = new CycleStore(this);
-    this.cycleFilter = new CycleFilterStore(this);
-    this.module = new ModulesStore(this);
-    this.moduleFilter = new ModuleFilterStore(this);
-    this.projectView = new ProjectViewStore(this);
-    this.globalView = new GlobalViewStore(this);
     this.issue = new IssueRootStore(this as unknown as RootStore);
     this.state = new StateStore(this as unknown as RootStore);
     this.label = new LabelStore(this);
-    this.dashboard = new DashboardStore(this);
-    this.projectInbox = new ProjectInboxStore(this);
-    this.projectPages = new ProjectPageStore(this as unknown as RootStore);
-    this.multipleSelect = new MultipleSelectStore();
-    this.projectEstimate = new ProjectEstimateStore(this);
-    this.workspaceNotification = new WorkspaceNotificationStore(this);
-    this.favorite = new FavoriteStore(this);
-    this.stickyStore = new StickyStore();
-    this.editorAssetStore = new EditorAssetStore();
-    this.workItemFilters = new WorkItemFilterStore();
-    this.powerK = new PowerKStore();
   }
 }

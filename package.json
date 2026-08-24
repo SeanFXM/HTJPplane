@@ -19,8 +19,9 @@
     "check:api-static": "python3 apps/api/check_syntax.py",
     "check:i18n-critical": "pnpm --filter=@plane/i18n check:critical-keys",
     "check:types": "turbo run check:types",
-    "release:check": "pnpm check:api-static && pnpm check:i18n-critical && pnpm check:types && VITE_ADMIN_BASE_PATH=/god-mode pnpm build && node deployments/railway/verify-admin-routing.mjs",
+    "release:check": "pnpm check:api-static && pnpm check:i18n-critical && pnpm check:types && VITE_ADMIN_BASE_PATH=/god-mode pnpm build && node deployments/railway/verify-admin-routing.mjs && node deployments/railway/verify-performance-config.mjs",
     "verify:admin-routing": "VITE_ADMIN_BASE_PATH=/god-mode pnpm --filter=admin build && node deployments/railway/verify-admin-routing.mjs",
+    "verify:performance": "pnpm --filter=web verify:performance && node deployments/railway/verify-performance-config.mjs",
     "prepare": "husky"
   },
   "devDependencies": {

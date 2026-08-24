@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+import { useEffect } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // PLane
@@ -17,6 +18,7 @@ import { ModuleGanttBlock } from "@/components/modules";
 import { useModule } from "@/hooks/store/use-module";
 import { useModuleFilter } from "@/hooks/store/use-module-filter";
 import { useProject } from "@/hooks/store/use-project";
+import { useTimeLineChart } from "@/hooks/use-timeline-chart";
 
 export const ModulesListGanttChartView = observer(function ModulesListGanttChartView() {
   // router
@@ -25,6 +27,11 @@ export const ModulesListGanttChartView = observer(function ModulesListGanttChart
   const { currentProjectDetails } = useProject();
   const { getFilteredModuleIds, updateModuleDetails } = useModule();
   const { currentProjectDisplayFilters: displayFilters } = useModuleFilter();
+  const { initGantt } = useTimeLineChart(GANTT_TIMELINE_TYPE.MODULE);
+
+  useEffect(() => {
+    initGantt();
+  }, [initGantt]);
 
   // derived values
   const filteredModuleIds = projectId ? getFilteredModuleIds(projectId.toString()) : undefined;
