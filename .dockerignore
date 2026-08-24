@@ -50,6 +50,9 @@ storybook-static/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*
+**/.env
+**/.env.*
 .secrets
 tmp/
 temp/

@@ -36,6 +36,7 @@ FROM node-base AS web-builder
 WORKDIR /app
 RUN pnpm add -g turbo@2.8.12
 COPY . .
+RUN node deployments/railway/verify-aio-safety.mjs
 RUN turbo prune --scope=web --docker
 
 FROM node-base AS web-installer

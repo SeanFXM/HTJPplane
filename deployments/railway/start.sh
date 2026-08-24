@@ -11,23 +11,19 @@ echo "------------------------------------------------"
 
 # --- required vars (incl. secrets — NO insecure default, fail hard) ---------
 missing=0
-for key in DATABASE_URL REDIS_URL AMQP_URL SECRET_KEY LIVE_SERVER_SECRET_KEY; do
+for key in \
+	DOMAIN_NAME DATABASE_URL REDIS_URL AMQP_URL \
+	SECRET_KEY LIVE_SERVER_SECRET_KEY \
+	AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_S3_BUCKET_NAME AWS_S3_ENDPOINT_URL; do
 	if [ -z "${!key}" ]; then
 		echo "  ❌ $key is not set"
 		missing=1
 	fi
 done
 if [ "$missing" = "1" ]; then
-	echo "Aborting: required vars missing. Set DATABASE_URL, REDIS_URL, AMQP_URL, and"
-	echo "the secrets SECRET_KEY / LIVE_SERVER_SECRET_KEY. Generate a secret with:"
-	echo "    python -c 'import secrets; print(secrets.token_hex(32))'"
+	echo "Aborting: one or more required AIO variables are missing."
 	exit 1
 fi
-
-# S3-compatible object storage (Cloudflare R2 / AWS S3 / etc.)
-for key in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_S3_BUCKET_NAME AWS_S3_ENDPOINT_URL; do
-	[ -z "${!key}" ] && echo "  ⚠️  $key not set — file uploads will fail until configured"
-done
 
 # --- Caddy listen address: Railway injects $PORT ----------------------------
 export SITE_ADDRESS=":${PORT:-80}"
@@ -36,6 +32,9 @@ export SITE_ADDRESS=":${PORT:-80}"
 export USE_MINIO="${USE_MINIO:-0}"
 export GUNICORN_WORKERS="${GUNICORN_WORKERS:-1}"
 export CELERY_WORKER_CONCURRENCY="${CELERY_WORKER_CONCURRENCY:-2}"
+export ENABLE_MIGRATOR="${ENABLE_MIGRATOR:-1}"
+export ENABLE_WORKER="${ENABLE_WORKER:-1}"
+export ENABLE_BEAT="${ENABLE_BEAT:-1}"
 export FILE_SIZE_LIMIT="${FILE_SIZE_LIMIT:-5242880}"
 # SECRET_KEY / LIVE_SERVER_SECRET_KEY are validated as required above — no default.
 export API_KEY_RATE_LIMIT="${API_KEY_RATE_LIMIT:-60/minute}"
@@ -48,10 +47,16 @@ if [ -n "$DOMAIN_NAME" ]; then
 	proto="${APP_PROTOCOL:-https}"
 	export WEB_URL="${WEB_URL:-$proto://$DOMAIN_NAME}"
 	export APP_DOMAIN="${APP_DOMAIN:-$DOMAIN_NAME}"
-	export CORS_ALLOWED_ORIGINS="${CORS_ALLOWED_ORIGINS:-http://$DOMAIN_NAME,https://$DOMAIN_NAME}"
+	export LIVE_BASE_URL="${LIVE_BASE_URL:-$proto://$DOMAIN_NAME}"
+	export CORS_ALLOWED_ORIGINS="${CORS_ALLOWED_ORIGINS:-$proto://$DOMAIN_NAME}"
 fi
 
-echo "✅ Booting: SITE_ADDRESS=$SITE_ADDRESS  GUNICORN_WORKERS=$GUNICORN_WORKERS  CELERY_WORKER_CONCURRENCY=$CELERY_WORKER_CONCURRENCY  ENABLE_SPACE=${ENABLE_SPACE:-1}  ENABLE_LIVE=${ENABLE_LIVE:-1}"
+# Live calls the API server-to-server. In AIO both processes share the same
+# container, so keep this traffic on loopback and avoid a public round-trip.
+export API_BASE_URL="${API_BASE_URL:-http://127.0.0.1:3004}"
+export LIVE_BASE_PATH="${LIVE_BASE_PATH:-/live}"
+
+echo "✅ Booting: SITE_ADDRESS=$SITE_ADDRESS  GUNICORN_WORKERS=$GUNICORN_WORKERS  CELERY_WORKER_CONCURRENCY=$CELERY_WORKER_CONCURRENCY  ENABLE_MIGRATOR=$ENABLE_MIGRATOR  ENABLE_WORKER=$ENABLE_WORKER  ENABLE_BEAT=$ENABLE_BEAT  ENABLE_SPACE=${ENABLE_SPACE:-1}  ENABLE_LIVE=${ENABLE_LIVE:-1}"
 echo "------------------------------------------------"
 
 exec /usr/local/bin/supervisord -c /etc/supervisor/conf.d/supervisor.conf
