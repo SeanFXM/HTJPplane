@@ -5,9 +5,12 @@
 import pytest
 from rest_framework import status
 import uuid
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from plane.db.models import (
+    IssueSequence,
     Project,
     ProjectMember,
     ProjectUserProperty,
@@ -275,6 +278,7 @@ class TestProjectAPIGet(TestProjectBase):
 
         # Add user as project member
         ProjectMember.objects.create(project=project, member=create_user, role=20, is_active=True)
+        IssueSequence.objects.create(project=project, sequence=7)
 
         url = self.get_project_url(workspace.slug, details=True)
         response = session_client.get(url)
@@ -284,6 +288,29 @@ class TestProjectAPIGet(TestProjectBase):
         assert len(data) == 1
         assert data[0]["name"] == "Detailed Project"
         assert data[0]["description"] == "A detailed test project"
+        assert data[0]["next_work_item_sequence"] == 8
+
+    @pytest.mark.django_db
+    def test_list_detail_projects_fetches_sequences_without_n_plus_one(
+        self, session_client, workspace, create_user
+    ):
+        for index in range(3):
+            project = Project.objects.create(
+                name=f"Sequence Project {index}",
+                identifier=f"SP{index}",
+                workspace=workspace,
+            )
+            ProjectMember.objects.create(project=project, member=create_user, role=20, is_active=True)
+            IssueSequence.objects.create(project=project, sequence=index + 2)
+
+        url = self.get_project_url(workspace.slug, details=True)
+        with CaptureQueriesContext(connection) as queries:
+            response = session_client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.json()) == 3
+        sequence_queries = [query for query in queries.captured_queries if '"issue_sequences"' in query["sql"]]
+        assert len(sequence_queries) == 1
 
     @pytest.mark.django_db
     def test_retrieve_project_success(self, session_client, workspace, create_user):

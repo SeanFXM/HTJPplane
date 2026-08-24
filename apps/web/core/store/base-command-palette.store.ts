@@ -65,7 +65,7 @@ export abstract class BaseCommandPaletteStore implements IBaseCommandPaletteStor
   createIssueStoreType: TCreateModalStoreTypes = EIssuesStoreType.PROJECT;
   createWorkItemAllowedProjectIds: IBaseCommandPaletteStore["createWorkItemAllowedProjectIds"] = undefined;
   profileSettingsModal: IBaseCommandPaletteStore["profileSettingsModal"] = {
-    activeTab: "general",
+    activeTab: null,
     isOpen: false,
   };
   allStickiesModal: boolean = false;

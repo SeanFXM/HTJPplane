@@ -12,15 +12,22 @@ import type { IBaseTimelineStore } from "@/plane-web/store/timeline/base-timelin
 
 export interface IModulesTimeLineStore extends IBaseTimelineStore {
   isDependencyEnabled: boolean;
+  dispose: () => void;
 }
 
 export class ModulesTimeLineStore extends BaseTimeLineStore implements IModulesTimeLineStore {
+  private readonly blocksAutorunDisposer: () => void;
+
   constructor(_rootStore: RootStore) {
     super(_rootStore);
 
-    autorun(() => {
+    this.blocksAutorunDisposer = autorun(() => {
       const getModuleById = this.rootStore.module.getModuleById;
       this.updateBlocks(getModuleById);
     });
   }
+
+  dispose = () => {
+    this.blocksAutorunDisposer();
+  };
 }

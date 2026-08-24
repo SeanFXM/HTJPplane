@@ -12,15 +12,22 @@ import { BaseTimeLineStore } from "@/plane-web/store/timeline/base-timeline.stor
 
 export interface IIssuesTimeLineStore extends IBaseTimelineStore {
   isDependencyEnabled: boolean;
+  dispose: () => void;
 }
 
 export class IssuesTimeLineStore extends BaseTimeLineStore implements IIssuesTimeLineStore {
+  private readonly blocksAutorunDisposer: () => void;
+
   constructor(_rootStore: RootStore) {
     super(_rootStore);
 
-    autorun(() => {
+    this.blocksAutorunDisposer = autorun(() => {
       const getIssueById = this.rootStore.issue.issues.getIssueById;
       this.updateBlocks(getIssueById);
     });
   }
+
+  dispose = () => {
+    this.blocksAutorunDisposer();
+  };
 }

@@ -5,10 +5,10 @@
  */
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { observer } from "mobx-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import useSWR from "swr";
 // ui
 import { LogOut } from "lucide-react";
@@ -41,6 +41,8 @@ import { useProjectState } from "@/hooks/store/use-project-state";
 import { useWorkspace } from "@/hooks/store/use-workspace";
 import { useUser, useUserPermissions } from "@/hooks/store/user";
 import { usePlatformOS } from "@/hooks/use-platform-os";
+// local imports
+import { useIdlePrefetchQueue } from "./prefetch-queue";
 
 interface IWorkspaceAuthWrapper {
   children: ReactNode;
@@ -48,14 +50,56 @@ interface IWorkspaceAuthWrapper {
   loadingFallback?: ReactNode;
 }
 
-const DEFERRED_WORKSPACE_PREFETCH_DELAY = 150;
+type TWorkspacePrefetchResource =
+  | "members"
+  | "favorites"
+  | "states"
+  | "sidebar-preferences"
+  | "project-navigation-preferences";
+
+const getWorkspacePrefetchQueue = (pathname: string, workspaceSlug: string): TWorkspacePrefetchResource[] => {
+  const normalizedPathname = pathname.replace(/\/+$/, "");
+  const workspaceRoot = `/${workspaceSlug}`;
+  const relativePathname = normalizedPathname.startsWith(workspaceRoot)
+    ? normalizedPathname.slice(workspaceRoot.length)
+    : normalizedPathname;
+  const isSettingsRoute = relativePathname === "/settings" || relativePathname.startsWith("/settings/");
+  const isProjectsAppRoute = !isSettingsRoute;
+  const isProjectDetailRoute = relativePathname.startsWith("/projects/");
+  const needsWorkspaceMembers =
+    isProjectsAppRoute ||
+    relativePathname === "/settings/members" ||
+    /^\/settings\/projects\/[^/]+\/members(?:\/|$)/.test(relativePathname);
+  const workspaceStateRoutes = [
+    "",
+    "/active-cycles",
+    "/analytics",
+    "/browse",
+    "/drafts",
+    "/notifications",
+    "/profile",
+    "/workspace-views",
+  ];
+  const needsWorkspaceStates = workspaceStateRoutes.some(
+    (route) => relativePathname === route || (route !== "" && relativePathname.startsWith(`${route}/`))
+  );
+  const queue: TWorkspacePrefetchResource[] = [];
+
+  if (isProjectsAppRoute) queue.push("sidebar-preferences");
+  if (isProjectDetailRoute) queue.push("project-navigation-preferences");
+  if (needsWorkspaceMembers) queue.push("members");
+  if (isProjectsAppRoute) queue.push("favorites");
+  if (needsWorkspaceStates) queue.push("states");
+
+  return queue;
+};
 
 export const WorkspaceAuthWrapper = observer(function WorkspaceAuthWrapper(props: IWorkspaceAuthWrapper) {
   const { children, isLoading: isParentLoading = false, loadingFallback } = props;
-  const [shouldLoadDeferredWorkspaceData, setShouldLoadDeferredWorkspaceData] = useState(false);
   const { t } = useTranslation();
   // router params
   const { workspaceSlug } = useParams();
+  const pathname = usePathname();
   // store hooks
   const { signOut, data: currentUser } = useUser();
   const { fetchPartialProjects } = useProject();
@@ -77,28 +121,15 @@ export const WorkspaceAuthWrapper = observer(function WorkspaceAuthWrapper(props
   const currentWorkspace =
     (allWorkspaces && allWorkspaces.find((workspace) => workspace?.slug === workspaceSlug)) || undefined;
   const currentWorkspaceInfo = workspaceSlug && workspaceInfoBySlug(workspaceSlug.toString());
-
-  useEffect(() => {
-    if (!workspaceSlug || !currentWorkspace) {
-      setShouldLoadDeferredWorkspaceData(false);
-      return;
-    }
-
-    const deferredLoad = () => setShouldLoadDeferredWorkspaceData(true);
-
-    if (typeof window === "undefined") return;
-
-    if ("requestIdleCallback" in window) {
-      const idleCallbackId = window.requestIdleCallback(deferredLoad, {
-        timeout: DEFERRED_WORKSPACE_PREFETCH_DELAY,
-      });
-
-      return () => window.cancelIdleCallback(idleCallbackId);
-    }
-
-    const timeoutId = globalThis.setTimeout(deferredLoad, DEFERRED_WORKSPACE_PREFETCH_DELAY);
-    return () => globalThis.clearTimeout(timeoutId);
-  }, [workspaceSlug, currentWorkspace]);
+  const workspaceSlugString = workspaceSlug?.toString() ?? "";
+  const workspacePrefetchQueue = useMemo(
+    () => getWorkspacePrefetchQueue(pathname, workspaceSlugString),
+    [pathname, workspaceSlugString]
+  );
+  const readyWorkspacePrefetches = useIdlePrefetchQueue(
+    workspacePrefetchQueue,
+    currentWorkspace ? workspaceSlugString : ""
+  );
 
   // fetching user workspace information
   useSWR(
@@ -120,35 +151,41 @@ export const WorkspaceAuthWrapper = observer(function WorkspaceAuthWrapper(props
   );
   // fetch workspace members
   useSWR(
-    workspaceSlug && currentWorkspace && shouldLoadDeferredWorkspaceData
+    workspaceSlug && currentWorkspace && readyWorkspacePrefetches.has("members")
       ? WORKSPACE_MEMBERS(workspaceSlug.toString())
       : null,
-    workspaceSlug && currentWorkspace && shouldLoadDeferredWorkspaceData
+    workspaceSlug && currentWorkspace && readyWorkspacePrefetches.has("members")
       ? () => fetchWorkspaceMembers(workspaceSlug.toString())
       : null,
     { revalidateIfStale: false, revalidateOnFocus: false }
   );
   // fetch workspace favorite
   useSWR(
-    workspaceSlug && currentWorkspace && canPerformWorkspaceMemberActions && shouldLoadDeferredWorkspaceData
+    workspaceSlug && currentWorkspace && canPerformWorkspaceMemberActions && readyWorkspacePrefetches.has("favorites")
       ? WORKSPACE_FAVORITE(workspaceSlug.toString())
       : null,
-    workspaceSlug && currentWorkspace && canPerformWorkspaceMemberActions && shouldLoadDeferredWorkspaceData
+    workspaceSlug && currentWorkspace && canPerformWorkspaceMemberActions && readyWorkspacePrefetches.has("favorites")
       ? () => fetchFavorite(workspaceSlug.toString())
       : null,
     { revalidateIfStale: false, revalidateOnFocus: false }
   );
   // fetch workspace states
   useSWR(
-    workspaceSlug && shouldLoadDeferredWorkspaceData ? WORKSPACE_STATES(workspaceSlug.toString()) : null,
-    workspaceSlug && shouldLoadDeferredWorkspaceData ? () => fetchWorkspaceStates(workspaceSlug.toString()) : null,
+    workspaceSlug && currentWorkspace && readyWorkspacePrefetches.has("states")
+      ? WORKSPACE_STATES(workspaceSlug.toString())
+      : null,
+    workspaceSlug && currentWorkspace && readyWorkspacePrefetches.has("states")
+      ? () => fetchWorkspaceStates(workspaceSlug.toString())
+      : null,
     { revalidateIfStale: false, revalidateOnFocus: false }
   );
 
   // fetch workspace sidebar preferences
   useSWR(
-    workspaceSlug && shouldLoadDeferredWorkspaceData ? WORKSPACE_SIDEBAR_PREFERENCES(workspaceSlug.toString()) : null,
-    workspaceSlug && shouldLoadDeferredWorkspaceData
+    workspaceSlug && currentWorkspace && readyWorkspacePrefetches.has("sidebar-preferences")
+      ? WORKSPACE_SIDEBAR_PREFERENCES(workspaceSlug.toString())
+      : null,
+    workspaceSlug && currentWorkspace && readyWorkspacePrefetches.has("sidebar-preferences")
       ? () => fetchSidebarNavigationPreferences(workspaceSlug.toString())
       : null,
     { revalidateIfStale: false, revalidateOnFocus: false }
@@ -156,10 +193,10 @@ export const WorkspaceAuthWrapper = observer(function WorkspaceAuthWrapper(props
 
   // fetch workspace project navigation preferences
   useSWR(
-    workspaceSlug && shouldLoadDeferredWorkspaceData
+    workspaceSlug && currentWorkspace && readyWorkspacePrefetches.has("project-navigation-preferences")
       ? WORKSPACE_PROJECT_NAVIGATION_PREFERENCES(workspaceSlug.toString())
       : null,
-    workspaceSlug && shouldLoadDeferredWorkspaceData
+    workspaceSlug && currentWorkspace && readyWorkspacePrefetches.has("project-navigation-preferences")
       ? () => fetchProjectNavigationPreferences(workspaceSlug.toString())
       : null,
     { revalidateIfStale: false, revalidateOnFocus: false }

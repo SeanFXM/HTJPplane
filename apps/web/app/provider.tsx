@@ -6,14 +6,18 @@
 
 import { lazy, Suspense } from "react";
 import { useTheme } from "next-themes";
-import { SWRConfig } from "swr";
+import useSWR, { SWRConfig } from "swr";
 // Plane Imports
 import { WEB_SWR_CONFIG } from "@plane/constants";
 import { TranslationProvider } from "@plane/i18n";
 import { Toast } from "@plane/propel/toast";
 // helpers
 import { resolveGeneralTheme } from "@plane/utils";
+// hooks
+import { useInstance } from "@/hooks/store/use-instance";
+import { useUser } from "@/hooks/store/user";
 // polyfills
+// eslint-disable-next-line import/no-unassigned-import -- browser polyfills must run before the app wrappers mount
 import "@/lib/polyfills";
 // mobx store provider
 import { StoreProvider } from "@/lib/store-context";
@@ -39,6 +43,24 @@ export interface IAppProvider {
   children: React.ReactNode;
 }
 
+function AppBootstrapPrefetch() {
+  const { fetchInstanceInfo } = useInstance();
+  const { fetchCurrentUser } = useUser();
+
+  // Start independent bootstrap requests together. The wrappers below reuse
+  // these SWR keys, so they keep their existing loading and error behavior
+  // without serializing user loading behind the instance request.
+  useSWR("INSTANCE_INFORMATION", async () => await fetchInstanceInfo(), {
+    revalidateOnFocus: false,
+  });
+  useSWR("USER_INFORMATION", async () => await fetchCurrentUser(), {
+    revalidateOnFocus: false,
+    shouldRetryOnError: false,
+  });
+
+  return null;
+}
+
 export function AppProvider(props: IAppProvider) {
   const { children } = props;
   // themes
@@ -46,7 +68,8 @@ export function AppProvider(props: IAppProvider) {
 
   return (
     <StoreProvider>
-      <>
+      <SWRConfig value={WEB_SWR_CONFIG}>
+        <AppBootstrapPrefetch />
         <AppProgressBar />
         <TranslationProvider>
           <Toast theme={resolveGeneralTheme(resolvedTheme)} />
@@ -54,12 +77,12 @@ export function AppProvider(props: IAppProvider) {
             <InstanceWrapper>
               <Suspense>
                 <ChatSupportModal />
-                <SWRConfig value={WEB_SWR_CONFIG}>{children}</SWRConfig>
+                {children}
               </Suspense>
             </InstanceWrapper>
           </StoreWrapper>
         </TranslationProvider>
-      </>
+      </SWRConfig>
     </StoreProvider>
   );
 }

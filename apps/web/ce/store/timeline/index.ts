@@ -17,6 +17,7 @@ export interface ITimelineStore {
   modulesTimeLineStore: IModulesTimeLineStore;
   projectTimeLineStore: IBaseTimelineStore;
   groupedTimeLineStore: IBaseTimelineStore;
+  dispose: () => void;
 }
 
 export class TimeLineStore implements ITimelineStore {
@@ -32,4 +33,9 @@ export class TimeLineStore implements ITimelineStore {
     this.projectTimeLineStore = new BaseTimeLineStore(rootStore);
     this.groupedTimeLineStore = new BaseTimeLineStore(rootStore);
   }
+
+  dispose = () => {
+    this.issuesTimeLineStore.dispose();
+    this.modulesTimeLineStore.dispose();
+  };
 }

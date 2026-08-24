@@ -30,7 +30,10 @@ export SITE_ADDRESS=":${PORT:-80}"
 
 # --- sensible defaults (override any of these in Railway) -------------------
 export USE_MINIO="${USE_MINIO:-0}"
-export GUNICORN_WORKERS="${GUNICORN_WORKERS:-1}"
+# Two API workers avoid head-of-line blocking when one request is doing CPU or
+# database work. A 1.5-2GB AIO service can safely serve a small internal team
+# with this default; memory-constrained deployments can still override it to 1.
+export GUNICORN_WORKERS="${GUNICORN_WORKERS:-2}"
 export CELERY_WORKER_CONCURRENCY="${CELERY_WORKER_CONCURRENCY:-2}"
 export ENABLE_MIGRATOR="${ENABLE_MIGRATOR:-1}"
 export ENABLE_WORKER="${ENABLE_WORKER:-1}"

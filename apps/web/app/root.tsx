@@ -28,16 +28,36 @@ import { LogoSpinner } from "@/components/common/logo-spinner";
 // local
 import { CustomErrorComponent } from "./error";
 import { AppProvider } from "./provider";
-// fonts
-// eslint-disable-next-line import/no-unassigned-import -- font side effects
-import "@fontsource-variable/inter";
 import interVariableWoff2 from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
-// eslint-disable-next-line import/no-unassigned-import -- font side effects
-import "@fontsource/material-symbols-rounded";
-// eslint-disable-next-line import/no-unassigned-import -- font side effects
-import "@fontsource/ibm-plex-mono";
+import ibmPlexMonoWoff2 from "@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2?url";
+import materialSymbolsRoundedWoff2 from "@fontsource/material-symbols-rounded/files/material-symbols-rounded-latin-400-normal.woff2?url";
 
 const APP_TITLE = "Workspace Management";
+const FONT_FACE_STYLES = `
+  @font-face {
+    font-family: "Inter Variable";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url("${interVariableWoff2}") format("woff2-variations");
+  }
+
+  @font-face {
+    font-family: "IBM Plex Mono";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url("${ibmPlexMonoWoff2}") format("woff2");
+  }
+
+  @font-face {
+    font-family: "Material Symbols Rounded";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url("${materialSymbolsRoundedWoff2}") format("woff2");
+  }
+`;
 
 export const links: LinksFunction = () => [
   { rel: "icon", type: "image/png", sizes: "32x32", href: favicon32 },
@@ -74,6 +94,9 @@ export function Layout({ children }: { children: ReactNode }) {
         <meta name="apple-mobile-web-app-title" content="Workspace Management" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
+        {/* This is a build-time constant made only from Vite asset URLs. Raw
+            style text prevents React from escaping quotes inside a CSS raw-text element. */}
+        <style dangerouslySetInnerHTML={{ __html: FONT_FACE_STYLES }} />
         <Meta />
         <Links />
       </head>

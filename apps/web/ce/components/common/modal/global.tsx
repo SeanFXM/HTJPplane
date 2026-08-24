@@ -6,6 +6,10 @@
 
 import { lazy, Suspense } from "react";
 import { observer } from "mobx-react";
+// components
+import { LazyModalFallback } from "@/components/common/lazy-modal-fallback";
+// hooks
+import { useCommandPalette } from "@/hooks/store/use-command-palette";
 
 const ProfileSettingsModal = lazy(() =>
   import("@/components/settings/profile/modal").then((module) => ({
@@ -24,8 +28,13 @@ type TGlobalModalsProps = {
  * - Profile settings modal
  */
 export const GlobalModals = observer(function GlobalModals(_props: TGlobalModalsProps) {
+  const { profileSettingsModal } = useCommandPalette();
+  const shouldRenderProfileSettings = profileSettingsModal.isOpen || profileSettingsModal.activeTab !== null;
+
+  if (!shouldRenderProfileSettings) return null;
+
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<LazyModalFallback label="Loading profile settings" />}>
       <ProfileSettingsModal />
     </Suspense>
   );

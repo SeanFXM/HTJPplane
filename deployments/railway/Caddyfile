@@ -17,6 +17,10 @@
 		max_size {$FILE_SIZE_LIMIT:5242880}
 	}
 
+	# Compress text responses at the edge of the container. Caddy negotiates
+	# zstd when the client supports it and falls back to gzip for older clients.
+	encode zstd gzip
+
 	# Railway readiness: require both the mounted Admin artifact and a Django
 	# process that can execute a database query before the deployment is active.
 	handle /health {
@@ -45,11 +49,48 @@
 		reverse_proxy localhost:3004
 	}
 
+	# Content-addressed bundles bypass the SPA fallbacks. If a browser asks for
+	# a bundle from an older deployment, file_server returns a real 404 instead
+	# of serving index.html with a JavaScript URL and an immutable cache header.
+	handle_path /god-mode/assets/* {
+		root * /app/admin/assets
+		route {
+			try_files {path} =404
+			header Cache-Control "public, max-age=31536000, immutable"
+			file_server
+		}
+	}
+	handle /assets/* {
+		root * /app/web
+		route {
+			try_files {path} =404
+			header Cache-Control "public, max-age=31536000, immutable"
+			file_server
+		}
+	}
+	handle /workbox-*.js {
+		root * /app/web
+		route {
+			try_files {path} =404
+			header Cache-Control "public, max-age=31536000, immutable"
+			file_server
+		}
+	}
+	handle /sw.js {
+		root * /app/web
+		route {
+			try_files {path} =404
+			header Cache-Control "no-cache"
+			file_server
+		}
+	}
+
 	# Admin panel (static SPA).
 	redir /god-mode /god-mode/ 308
 	handle_path /god-mode/* {
 		root * /app/admin
 		try_files {path} {path}/ /index.html
+		header Cache-Control "no-cache"
 		header X-Plane-App admin
 		file_server
 	}
@@ -58,6 +99,7 @@
 	handle_path /* {
 		root * /app/web
 		try_files {path} {path}/ /index.html
+		header Cache-Control "no-cache"
 		file_server
 	}
 }

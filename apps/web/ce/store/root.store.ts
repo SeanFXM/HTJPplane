@@ -10,11 +10,15 @@ import type { ITimelineStore } from "./timeline";
 import { TimeLineStore } from "./timeline";
 
 export class RootStore extends CoreRootStore {
-  timelineStore: ITimelineStore;
+  private _timelineStore?: ITimelineStore;
 
-  constructor() {
-    super();
+  get timelineStore(): ITimelineStore {
+    return (this._timelineStore ??= new TimeLineStore(this));
+  }
 
-    this.timelineStore = new TimeLineStore(this);
+  override resetOnSignOut() {
+    this._timelineStore?.dispose();
+    this._timelineStore = undefined;
+    super.resetOnSignOut();
   }
 }

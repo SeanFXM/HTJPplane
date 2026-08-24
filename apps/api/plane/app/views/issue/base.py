@@ -150,14 +150,6 @@ class IssueListEndpoint(BaseAPIView):
         # issue queryset
         issue_queryset = issue_queryset_grouper(queryset=issue_queryset, group_by=group_by, sub_group_by=sub_group_by)
 
-        recent_visited_task.delay(
-            slug=slug,
-            project_id=project_id,
-            entity_name="project",
-            entity_identifier=project_id,
-            user_id=request.user.id,
-        )
-
         if self.fields or self.expand:
             issues = IssueSerializer(queryset, many=True, fields=self.fields, expand=self.expand).data
         else:
@@ -293,13 +285,6 @@ class IssueViewSet(BaseViewSet):
         # issue queryset
         issue_queryset = issue_queryset_grouper(queryset=issue_queryset, group_by=group_by, sub_group_by=sub_group_by)
 
-        recent_visited_task.delay(
-            slug=slug,
-            project_id=project_id,
-            entity_name="project",
-            entity_identifier=project_id,
-            user_id=request.user.id,
-        )
         if (
             ProjectMember.objects.filter(
                 workspace__slug=slug,
