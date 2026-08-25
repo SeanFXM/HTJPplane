@@ -10,7 +10,7 @@ import re
 # Django imports
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponseRedirect
-from django.db import IntegrityError
+from django.db import IntegrityError, connection, transaction
 from django.db.models import (
     Case,
     CharField,
@@ -25,6 +25,7 @@ from django.db.models import (
     Subquery,
 )
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.conf import settings
 
 # Third party imports
@@ -63,6 +64,7 @@ from plane.bgtasks.issue_activities_task import issue_activity
 from plane.db.models import (
     Issue,
     IssueActivity,
+    IssueAssignee,
     FileAsset,
     IssueComment,
     IssueLink,
@@ -71,6 +73,11 @@ from plane.db.models import (
     ProjectMember,
     CycleIssue,
     Workspace,
+    WorkspaceMember,
+    State,
+    HotoneTaskStateCommand,
+    APIToken,
+    User,
 )
 from plane.settings.storage import S3Storage
 from plane.bgtasks.storage_metadata_task import get_asset_object_metadata
@@ -488,12 +495,37 @@ class IssueListCreateAPIEndpoint(BaseAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class HotoneIssueCommandPermission(ProjectEntityPermission):
+    """Let a validated service command reach its transactional authorization.
+
+    Project soft deletion also soft-deletes ProjectMember rows asynchronously.
+    The ordinary project permission therefore cannot authorize a late cancel or
+    an idempotent replay.  Only the narrow Hotone PATCH envelope bypasses that
+    pre-flight membership lookup; the base view boundary and command handler
+    both revalidate the exact service token before any ledger write.
+    """
+
+    def has_permission(self, request, view):
+        snapshot = getattr(request, "_plane_api_token_snapshot", None)
+        hotone_service_command = bool(
+            request.method == "PATCH"
+            and isinstance(snapshot, tuple)
+            and len(snapshot) == 3
+            and snapshot[1] is True
+            and request.auth
+            and request.headers.get("X-Hotone-Command-ID")
+            and request.headers.get("X-Hotone-Expected-Updated-At")
+            and request.headers.get("X-Hotone-Actor-ID")
+        )
+        return hotone_service_command or super().has_permission(request, view)
+
+
 class IssueDetailAPIEndpoint(BaseAPIView):
     """Issue Detail Endpoint"""
 
     model = Issue
     webhook_event = "issue"
-    permission_classes = [ProjectEntityPermission]
+    permission_classes = [HotoneIssueCommandPermission]
     serializer_class = IssueSerializer
     use_read_replica = True
 
@@ -720,6 +752,18 @@ class IssueDetailAPIEndpoint(BaseAPIView):
         Partially update an existing work item with the provided fields.
         Supports external ID validation to prevent conflicts.
         """
+        command_id = request.headers.get("X-Hotone-Command-ID")
+        expected_updated_at = request.headers.get("X-Hotone-Expected-Updated-At")
+        if command_id is not None or expected_updated_at is not None:
+            return self._patch_hotone_state_command(
+                request=request,
+                slug=slug,
+                project_id=project_id,
+                pk=pk,
+                command_id=command_id,
+                expected_updated_at=expected_updated_at,
+            )
+
         issue = Issue.objects.get(workspace__slug=slug, project_id=project_id, pk=pk)
         project = Project.objects.get(pk=project_id)
         current_instance = json.dumps(IssueSerializer(issue).data, cls=DjangoJSONEncoder)
@@ -763,6 +807,582 @@ class IssueDetailAPIEndpoint(BaseAPIView):
             )
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def _patch_hotone_state_command(
+        self,
+        *,
+        request,
+        slug,
+        project_id,
+        pk,
+        command_id,
+        expected_updated_at,
+    ):
+        """Atomically compare-and-set one state and durably replay its result."""
+        command_mode = request.headers.get("X-Hotone-Command-Mode")
+        if command_mode not in {"apply", "cancel"}:
+            return Response(
+                {"error": "Hotone command mode must be apply or cancel"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        cancel_only = command_mode == "cancel"
+        try:
+            canonical_command_id = str(uuid.UUID(command_id or ""))
+            canonical_task_id = str(uuid.UUID(str(pk)))
+            canonical_project_id = str(uuid.UUID(str(project_id)))
+            canonical_actor_id = str(uuid.UUID(request.headers.get("X-Hotone-Actor-ID") or ""))
+        except (AttributeError, TypeError, ValueError):
+            return Response(
+                {"error": "Invalid Hotone command identifiers"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if (
+            canonical_command_id != command_id
+            or canonical_task_id != str(pk)
+            or canonical_project_id != str(project_id)
+            or canonical_actor_id != request.headers.get("X-Hotone-Actor-ID")
+        ):
+            return Response(
+                {"error": "Hotone command identifiers must be canonical UUIDs"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if (
+            not isinstance(expected_updated_at, str)
+            or len(expected_updated_at) > 64
+            or (expected_version := parse_datetime(expected_updated_at)) is None
+            or timezone.is_naive(expected_version)
+        ):
+            return Response(
+                {"error": "Invalid Hotone expected task version"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not isinstance(request.data, dict) or set(request.data) != {"state"}:
+            return Response(
+                {"error": "Hotone state commands accept only state"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            target_state_id = str(uuid.UUID(request.data.get("state") or ""))
+        except (AttributeError, TypeError, ValueError):
+            return Response(
+                {"error": "Invalid Hotone target state"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if target_state_id != request.data.get("state"):
+            return Response(
+                {"error": "Hotone target state must be a canonical UUID"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            # UUID-derived transaction locks make command-id reuse deterministic,
+            # including the adversarial case where one key targets two issues.
+            advisory_key = uuid.UUID(canonical_command_id).int & ((1 << 63) - 1)
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT pg_advisory_xact_lock(%s)", [advisory_key])
+
+            existing = (
+                HotoneTaskStateCommand.objects.select_for_update().filter(command_id=canonical_command_id).first()
+            )
+            if existing is not None:
+                if (
+                    self._lock_hotone_base_service_token(
+                        request=request,
+                        service_actor_id=existing.service_actor_id,
+                        expected_workspace_id=existing.workspace_id,
+                    )
+                    is None
+                ):
+                    return Response(
+                        {"error": "Hotone service credential is no longer active"},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                if not self._hotone_command_matches(
+                    existing,
+                    request=request,
+                    slug=slug,
+                    project_id=canonical_project_id,
+                    task_id=canonical_task_id,
+                    state_id=target_state_id,
+                    expected_updated_at=expected_version,
+                    actor_id=canonical_actor_id,
+                ):
+                    return Response(
+                        {"error": "Hotone command ID was reused for another request"},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                return Response(existing.response_body, status=existing.response_status)
+
+            service_token = self._lock_hotone_base_service_token(
+                request=request,
+                service_actor_id=request.user.id,
+            )
+            if service_token is None:
+                return Response(
+                    {"error": "Hotone service credential is no longer active"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            # Every new command follows one hierarchy lock order: credential,
+            # service user, workspace, project, principals, memberships, issue,
+            # assignees, then states.  The command advisory lock is always first.
+            workspace = Workspace.all_objects.select_for_update().filter(pk=service_token.workspace_id).first()
+            project = (
+                Project.all_objects.select_for_update()
+                .filter(
+                    pk=canonical_project_id,
+                    workspace_id=service_token.workspace_id,
+                )
+                .first()
+            )
+            route_matches_workspace = bool(
+                workspace is not None and self._hotone_workspace_matches_route(workspace=workspace, slug=slug)
+            )
+
+            if cancel_only:
+                if not route_matches_workspace:
+                    return Response(
+                        {"error": "Hotone command scope was not found"},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+                # Freeze an unrecorded command as cancelled under the same
+                # advisory lock used by normal execution. A delayed original
+                # apply can only replay this ledger row, even if the Issue or
+                # its membership rows are currently deleted and later
+                # restored with the same UUIDs. Cancellation needs only the
+                # workspace-bound base credential, never active project scope.
+                body = {
+                    "error": "Hotone cancelled the unrecorded command after local actor revocation",
+                    "code": "HOTONE_COMMAND_CANCELLED",
+                }
+                self._store_hotone_command_values(
+                    command_id=canonical_command_id,
+                    workspace_id=service_token.workspace_id,
+                    workspace_slug=slug,
+                    project_id=canonical_project_id,
+                    issue_id=canonical_task_id,
+                    actor_id=canonical_actor_id,
+                    service_actor_id=request.user.id,
+                    target_state_id=target_state_id,
+                    expected_updated_at=expected_version,
+                    response_status=status.HTTP_409_CONFLICT,
+                    response_body=body,
+                )
+                return Response(body, status=status.HTTP_409_CONFLICT)
+
+            # Scope inactivity is terminal and is checked before membership.
+            # Project.delete() may already have soft-deleted every related
+            # membership; that must still produce a durable replayable result.
+            if (
+                not route_matches_workspace
+                or project is None
+                or workspace.deleted_at is not None
+                or project.deleted_at is not None
+                or project.archived_at is not None
+            ):
+                body = {
+                    "error": "Hotone command scope is no longer active",
+                    "code": "HOTONE_SCOPE_NOT_FOUND",
+                }
+                self._store_hotone_command_values(
+                    command_id=canonical_command_id,
+                    workspace_id=service_token.workspace_id,
+                    workspace_slug=slug,
+                    project_id=canonical_project_id,
+                    issue_id=canonical_task_id,
+                    actor_id=canonical_actor_id,
+                    service_actor_id=request.user.id,
+                    target_state_id=target_state_id,
+                    expected_updated_at=expected_version,
+                    response_status=status.HTTP_404_NOT_FOUND,
+                    response_body=body,
+                )
+                return Response(body, status=status.HTTP_404_NOT_FOUND)
+
+            actor, service_scope_is_active, actor_scope_is_active = self._lock_hotone_principals_and_memberships(
+                workspace_id=workspace.id,
+                project_id=project.id,
+                service_actor_id=request.user.id,
+                actor_id=canonical_actor_id,
+            )
+            if not service_scope_is_active:
+                return Response(
+                    {"error": "Hotone service membership is no longer active"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            issue = (
+                Issue.issue_objects.select_for_update(of=("self",))
+                .select_related("project", "workspace")
+                .filter(
+                    workspace_id=workspace.id,
+                    workspace__deleted_at__isnull=True,
+                    project_id=project.id,
+                    project__deleted_at__isnull=True,
+                    project__archived_at__isnull=True,
+                    pk=canonical_task_id,
+                )
+                .first()
+            )
+            if issue is None:
+                body = {
+                    "error": "Hotone work item was not found",
+                    "code": "HOTONE_TASK_NOT_FOUND",
+                }
+                self._store_hotone_command_values(
+                    command_id=canonical_command_id,
+                    workspace_id=workspace.id,
+                    workspace_slug=workspace.slug,
+                    project_id=project.id,
+                    issue_id=canonical_task_id,
+                    actor_id=canonical_actor_id,
+                    service_actor_id=request.user.id,
+                    target_state_id=target_state_id,
+                    expected_updated_at=expected_version,
+                    response_status=status.HTTP_404_NOT_FOUND,
+                    response_body=body,
+                )
+                return Response(body, status=status.HTTP_404_NOT_FOUND)
+            assignee_ids = list(
+                IssueAssignee.objects.select_for_update()
+                .filter(issue_id=issue.id)
+                .order_by("assignee_id")
+                .values_list("assignee_id", flat=True)
+            )
+            locked_states = {
+                str(value.id): value
+                for value in State.objects.select_for_update()
+                .filter(
+                    workspace_id=issue.workspace_id,
+                    project_id=issue.project_id,
+                    pk__in={issue.state_id, target_state_id},
+                )
+                .order_by("id")
+            }
+            target_state = locked_states.get(target_state_id)
+            if target_state is None:
+                body = {
+                    "error": "Hotone target state no longer exists",
+                    "code": "HOTONE_STATE_NOT_FOUND",
+                }
+                self._store_hotone_command(
+                    command_id=canonical_command_id,
+                    issue=issue,
+                    actor_id=canonical_actor_id,
+                    service_actor_id=request.user.id,
+                    target_state_id=target_state_id,
+                    expected_updated_at=expected_version,
+                    response_status=status.HTTP_404_NOT_FOUND,
+                    response_body=body,
+                )
+                return Response(body, status=status.HTTP_404_NOT_FOUND)
+            if not actor_scope_is_active or assignee_ids != [actor.id]:
+                body = {
+                    "error": "Hotone actor is no longer the sole work-item owner",
+                    "code": "HOTONE_ACTOR_CONFLICT",
+                }
+                self._store_hotone_command(
+                    command_id=canonical_command_id,
+                    issue=issue,
+                    actor_id=canonical_actor_id,
+                    service_actor_id=request.user.id,
+                    target_state_id=target_state.id,
+                    expected_updated_at=expected_version,
+                    response_status=status.HTTP_409_CONFLICT,
+                    response_body=body,
+                )
+                return Response(body, status=status.HTTP_409_CONFLICT)
+            if issue.updated_at != expected_version:
+                body = {
+                    "error": "Work item changed after it was loaded",
+                    "code": "HOTONE_VERSION_CONFLICT",
+                }
+                self._store_hotone_command(
+                    command_id=canonical_command_id,
+                    issue=issue,
+                    actor_id=canonical_actor_id,
+                    service_actor_id=request.user.id,
+                    target_state_id=target_state.id,
+                    expected_updated_at=expected_version,
+                    response_status=status.HTTP_409_CONFLICT,
+                    response_body=body,
+                )
+                return Response(body, status=status.HTTP_409_CONFLICT)
+
+            if issue.state_id == target_state.id:
+                response_body = self._hotone_command_response(issue, target_state, actor.id)
+                self._store_hotone_command(
+                    command_id=canonical_command_id,
+                    issue=issue,
+                    actor_id=canonical_actor_id,
+                    service_actor_id=request.user.id,
+                    target_state_id=target_state.id,
+                    expected_updated_at=expected_version,
+                    response_status=status.HTTP_200_OK,
+                    response_body=response_body,
+                )
+                return Response(response_body, status=status.HTTP_200_OK)
+            old_state = locked_states.get(str(issue.state_id))
+            if old_state is None:
+                body = {
+                    "error": "The current work-item state no longer exists",
+                    "code": "HOTONE_CURRENT_STATE_CONFLICT",
+                }
+                self._store_hotone_command(
+                    command_id=canonical_command_id,
+                    issue=issue,
+                    actor_id=canonical_actor_id,
+                    service_actor_id=request.user.id,
+                    target_state_id=target_state.id,
+                    expected_updated_at=expected_version,
+                    response_status=status.HTTP_409_CONFLICT,
+                    response_body=body,
+                )
+                return Response(body, status=status.HTTP_409_CONFLICT)
+            serializer = IssueSerializer(
+                issue,
+                data={"state": target_state_id},
+                context={"project_id": issue.project_id, "workspace_id": issue.workspace_id},
+                partial=True,
+            )
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            Issue.all_objects.filter(pk=issue.id).update(updated_by_id=actor.id)
+            issue.refresh_from_db()
+            response_body = self._hotone_command_response(issue, target_state, actor.id)
+            activity = IssueActivity.objects.create(
+                issue_id=issue.id,
+                project_id=issue.project_id,
+                workspace_id=issue.workspace_id,
+                actor_id=actor.id,
+                verb="updated",
+                field="state",
+                old_value=old_state.name,
+                new_value=target_state.name,
+                old_identifier=old_state.id,
+                new_identifier=target_state.id,
+                comment="updated the state to",
+                epoch=int(timezone.now().timestamp()),
+            )
+            self._store_hotone_command(
+                command_id=canonical_command_id,
+                issue=issue,
+                actor_id=canonical_actor_id,
+                service_actor_id=request.user.id,
+                target_state_id=target_state.id,
+                expected_updated_at=expected_version,
+                response_status=status.HTTP_200_OK,
+                response_body=response_body,
+                activity_id=activity.id,
+            )
+            return Response(response_body, status=status.HTTP_200_OK)
+
+    @staticmethod
+    def _lock_hotone_base_service_token(
+        *,
+        request,
+        service_actor_id,
+        expected_workspace_id=None,
+    ):
+        """Lock and revalidate the exact authentication-time service token.
+
+        This is deliberately independent of workspace/project memberships so
+        a late cancellation or replay remains possible after a real soft-delete
+        cascade.  Active-scope authorization is a separate apply-only step.
+        """
+        snapshot = getattr(request, "_plane_api_token_snapshot", None)
+        if (
+            str(request.user.id) != str(service_actor_id)
+            or not isinstance(snapshot, tuple)
+            or len(snapshot) != 3
+            or snapshot[1] is not True
+            or str(snapshot[2]) != str(service_actor_id)
+        ):
+            return None
+        token_id = snapshot[0]
+        token_query = APIToken.objects.select_for_update().filter(
+            Q(expired_at__gt=timezone.now()) | Q(expired_at__isnull=True),
+            id=token_id,
+            token=request.auth,
+            is_service=True,
+            is_active=True,
+            user_id=service_actor_id,
+            workspace_id__isnull=False,
+        )
+        if expected_workspace_id is not None:
+            token_query = token_query.filter(workspace_id=expected_workspace_id)
+        service_token = token_query.only("id", "user_id", "workspace_id").first()
+        if service_token is None:
+            return None
+        service_user_is_active = User.objects.select_for_update().filter(pk=service_actor_id, is_active=True).exists()
+        return service_token if service_user_is_active else None
+
+    @staticmethod
+    def _hotone_workspace_matches_route(*, workspace, slug) -> bool:
+        if workspace.slug == slug:
+            return True
+        if workspace.deleted_at is None:
+            return False
+        deletion_suffix = workspace.slug.removeprefix(f"{slug}__")
+        return deletion_suffix != workspace.slug and deletion_suffix.isdigit()
+
+    @staticmethod
+    def _lock_hotone_principals_and_memberships(
+        *,
+        workspace_id,
+        project_id,
+        service_actor_id,
+        actor_id,
+    ):
+        """Lock users and memberships in one deterministic hierarchy order."""
+        principal_ids = sorted({str(service_actor_id), str(actor_id)})
+        users = {
+            str(user.id): user
+            for user in User.objects.select_for_update().filter(pk__in=principal_ids, is_active=True).order_by("id")
+        }
+        workspace_member_ids = set(
+            str(member_id)
+            for member_id in WorkspaceMember.objects.select_for_update()
+            .filter(
+                workspace_id=workspace_id,
+                member_id__in=principal_ids,
+                is_active=True,
+                role__gte=15,
+            )
+            .order_by("member_id")
+            .values_list("member_id", flat=True)
+        )
+        project_member_ids = set(
+            str(member_id)
+            for member_id in ProjectMember.objects.select_for_update()
+            .filter(
+                project_id=project_id,
+                member_id__in=principal_ids,
+                is_active=True,
+                role__gte=15,
+            )
+            .order_by("member_id")
+            .values_list("member_id", flat=True)
+        )
+        service_actor_key = str(service_actor_id)
+        actor_key = str(actor_id)
+        service_scope_is_active = bool(
+            service_actor_key in users
+            and service_actor_key in workspace_member_ids
+            and service_actor_key in project_member_ids
+        )
+        actor_scope_is_active = bool(
+            actor_key in users and actor_key in workspace_member_ids and actor_key in project_member_ids
+        )
+        return users.get(actor_key), service_scope_is_active, actor_scope_is_active
+
+    @staticmethod
+    def _hotone_command_matches(
+        existing,
+        *,
+        request,
+        slug,
+        project_id,
+        task_id,
+        state_id,
+        expected_updated_at,
+        actor_id,
+    ) -> bool:
+        return bool(
+            str(existing.workspace_slug) == str(slug)
+            and str(existing.project_id) == project_id
+            and str(existing.issue_id) == task_id
+            and str(existing.actor_id) == actor_id
+            and str(existing.service_actor_id) == str(request.user.id)
+            and str(existing.target_state_id) == state_id
+            and existing.expected_updated_at == expected_updated_at
+        )
+
+    @staticmethod
+    def _store_hotone_command(
+        *,
+        command_id,
+        issue,
+        actor_id,
+        service_actor_id,
+        target_state_id,
+        expected_updated_at,
+        response_status,
+        response_body,
+        activity_id=None,
+    ):
+        return IssueDetailAPIEndpoint._store_hotone_command_values(
+            command_id=command_id,
+            workspace_id=issue.workspace_id,
+            workspace_slug=issue.workspace.slug,
+            project_id=issue.project_id,
+            issue_id=issue.id,
+            actor_id=actor_id,
+            service_actor_id=service_actor_id,
+            target_state_id=target_state_id,
+            expected_updated_at=expected_updated_at,
+            response_status=response_status,
+            response_body=response_body,
+            activity_id=activity_id,
+        )
+
+    @staticmethod
+    def _store_hotone_command_values(
+        *,
+        command_id,
+        workspace_id,
+        workspace_slug,
+        project_id,
+        issue_id,
+        actor_id,
+        service_actor_id,
+        target_state_id,
+        expected_updated_at,
+        response_status,
+        response_body,
+        activity_id=None,
+    ):
+        return HotoneTaskStateCommand.objects.create(
+            command_id=command_id,
+            workspace_id=workspace_id,
+            workspace_slug=workspace_slug,
+            project_id=project_id,
+            issue_id=issue_id,
+            actor_id=actor_id,
+            service_actor_id=service_actor_id,
+            target_state_id=target_state_id,
+            expected_updated_at=expected_updated_at,
+            response_status=response_status,
+            response_body=response_body,
+            activity_id=activity_id,
+        )
+
+    @staticmethod
+    def _hotone_command_response(issue, state, actor_id):
+        def date_value(value):
+            return value.isoformat() if value is not None else None
+
+        updated_at = issue.updated_at.isoformat()
+        if updated_at.endswith("+00:00"):
+            updated_at = updated_at[:-6] + "Z"
+        return {
+            "id": str(issue.id),
+            "name": issue.name,
+            "sequence_id": issue.sequence_id,
+            "project": str(issue.project_id),
+            "state": {
+                "id": str(state.id),
+                "name": state.name,
+                "group": state.group,
+                "color": state.color,
+            },
+            "priority": issue.priority or "none",
+            "start_date": date_value(issue.start_date),
+            "target_date": date_value(issue.target_date),
+            "updated_at": updated_at,
+            "assignees": [str(actor_id)],
+        }
 
     @work_item_docs(
         operation_id="delete_work_item",
@@ -1104,9 +1724,9 @@ class IssueLinkListCreateAPIEndpoint(BaseAPIView):
         return self.paginate(
             request=request,
             queryset=(self.get_queryset()),
-            on_results=lambda issue_links: IssueLinkSerializer(
-                issue_links, many=True, fields=self.fields, expand=self.expand
-            ).data,
+            on_results=lambda issue_links: (
+                IssueLinkSerializer(issue_links, many=True, fields=self.fields, expand=self.expand).data
+            ),
         )
 
     @issue_link_docs(
@@ -1213,9 +1833,9 @@ class IssueLinkDetailAPIEndpoint(BaseAPIView):
             return self.paginate(
                 request=request,
                 queryset=(self.get_queryset()),
-                on_results=lambda issue_links: IssueLinkSerializer(
-                    issue_links, many=True, fields=self.fields, expand=self.expand
-                ).data,
+                on_results=lambda issue_links: (
+                    IssueLinkSerializer(issue_links, many=True, fields=self.fields, expand=self.expand).data
+                ),
             )
         issue_link = self.get_queryset().get(pk=pk)
         serializer = IssueLinkSerializer(issue_link, fields=self.fields, expand=self.expand)
@@ -1368,9 +1988,9 @@ class IssueCommentListCreateAPIEndpoint(BaseAPIView):
         return self.paginate(
             request=request,
             queryset=(self.get_queryset()),
-            on_results=lambda issue_comments: IssueCommentSerializer(
-                issue_comments, many=True, fields=self.fields, expand=self.expand
-            ).data,
+            on_results=lambda issue_comments: (
+                IssueCommentSerializer(issue_comments, many=True, fields=self.fields, expand=self.expand).data
+            ),
         )
 
     @issue_comment_docs(
@@ -1685,9 +2305,9 @@ class IssueActivityListAPIEndpoint(BaseAPIView):
         return self.paginate(
             request=request,
             queryset=(issue_activities),
-            on_results=lambda issue_activity: IssueActivitySerializer(
-                issue_activity, many=True, fields=self.fields, expand=self.expand
-            ).data,
+            on_results=lambda issue_activity: (
+                IssueActivitySerializer(issue_activity, many=True, fields=self.fields, expand=self.expand).data
+            ),
         )
 
 

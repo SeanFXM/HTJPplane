@@ -23,6 +23,7 @@ from plane.license.api.permissions import InstanceAdminPermission
 from plane.authentication.session import BaseSessionAuthentication
 from plane.utils.exception_logger import log_exception
 from plane.utils.paginator import BasePaginator
+from plane.utils.credential_redaction import redact_api_credentials
 
 
 class TimezoneMixin:
@@ -101,7 +102,8 @@ class BaseAPIView(TimezoneMixin, APIView, BasePaginator):
             if settings.DEBUG:
                 from django.db import connection
 
-                print(f"{request.method} - {request.get_full_path()} of Queries: {len(connection.queries)}")
+                safe_path = redact_api_credentials(request.path)
+                print(f"{request.method} - {safe_path} of Queries: {len(connection.queries)}")
             return response
 
         except Exception as exc:

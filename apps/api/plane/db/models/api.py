@@ -74,3 +74,27 @@ class APIActivityLog(BaseModel):
 
     def __str__(self):
         return str(self.token_identifier)
+
+
+class HotoneTaskStateCommand(BaseModel):
+    """Durable, idempotent result of one Hotone work-item CAS command."""
+
+    command_id = models.UUIDField(unique=True, db_index=True, editable=False)
+    workspace_id = models.UUIDField(db_index=True)
+    workspace_slug = models.CharField(max_length=80)
+    project_id = models.UUIDField(db_index=True)
+    issue_id = models.UUIDField(db_index=True)
+    actor_id = models.UUIDField(db_index=True)
+    service_actor_id = models.UUIDField(db_index=True)
+    target_state_id = models.UUIDField()
+    activity_id = models.UUIDField(null=True, blank=True)
+    expected_updated_at = models.DateTimeField()
+    response_status = models.PositiveSmallIntegerField()
+    response_body = models.JSONField(default=dict)
+
+    class Meta:
+        db_table = "hotone_task_state_commands"
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["issue_id", "created_at"], name="hotone_cmd_issue_created_idx"),
+        ]
