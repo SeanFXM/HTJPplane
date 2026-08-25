@@ -10,15 +10,16 @@ import logging
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import IntegrityError
+from django.db.models import Q
 from django.urls import resolve
 from django.utils import timezone
 
 # Third party imports
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, PermissionDenied
 from rest_framework.generics import GenericAPIView
 
 # Module imports
@@ -28,9 +29,55 @@ from plane.api.rate_limit import ApiKeyRateThrottle, ServiceTokenRateThrottle
 from plane.utils.exception_logger import log_exception
 from plane.utils.paginator import BasePaginator
 from plane.utils.core.mixins import ReadReplicaControlMixin
+from plane.utils.credential_redaction import redact_api_credentials
 
 
 logger = logging.getLogger("plane.api")
+
+
+class ServiceTokenWriteBoundaryMixin:
+    """Keep the Hotone integration credential read-only by default.
+
+    Both APIViews and DRF ViewSets use APIKeyAuthentication in Plane.  The
+    boundary belongs above those two base classes so adding a writable ViewSet
+    cannot silently turn the dedicated service token into a general employee
+    or workspace administration credential.
+    """
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        if request.method in SAFE_METHODS or not request.auth:
+            return
+        snapshot = getattr(request, "_plane_api_token_snapshot", None)
+        if not isinstance(snapshot, tuple) or len(snapshot) != 3:
+            raise PermissionDenied("API token write classification is unavailable")
+        token_id, authenticated_as_service, authenticated_user_id = snapshot
+        current_token = (
+            APIToken.objects.filter(
+                Q(expired_at__gt=timezone.now()) | Q(expired_at__isnull=True),
+                id=token_id,
+                token=request.auth,
+                user_id=authenticated_user_id,
+                user__is_active=True,
+                is_active=True,
+                is_service=authenticated_as_service,
+            )
+            .only("id", "is_service")
+            .first()
+        )
+        if current_token is None:
+            raise PermissionDenied("API token changed after authentication")
+        if not authenticated_as_service:
+            return
+        hotone_command = bool(
+            request.method == "PATCH"
+            and self.__class__.__name__ == "IssueDetailAPIEndpoint"
+            and request.headers.get("X-Hotone-Command-ID")
+            and request.headers.get("X-Hotone-Expected-Updated-At")
+            and request.headers.get("X-Hotone-Actor-ID")
+        )
+        if not hotone_command:
+            raise PermissionDenied("Service tokens are read-only outside Hotone task commands")
 
 
 class TimezoneMixin:
@@ -47,7 +94,13 @@ class TimezoneMixin:
             timezone.deactivate()
 
 
-class BaseAPIView(TimezoneMixin, GenericAPIView, ReadReplicaControlMixin, BasePaginator):
+class BaseAPIView(
+    ServiceTokenWriteBoundaryMixin,
+    TimezoneMixin,
+    GenericAPIView,
+    ReadReplicaControlMixin,
+    BasePaginator,
+):
     authentication_classes = [APIKeyAuthentication]
 
     permission_classes = [IsAuthenticated]
@@ -119,7 +172,11 @@ class BaseAPIView(TimezoneMixin, GenericAPIView, ReadReplicaControlMixin, BasePa
             if settings.DEBUG:
                 from django.db import connection
 
-                print(f"{request.method} - {request.get_full_path()} of Queries: {len(connection.queries)}")
+                safe_path = redact_api_credentials(
+                    request.path,
+                    request.headers.get("X-Api-Key"),
+                )
+                print(f"{request.method} - {safe_path} of Queries: {len(connection.queries)}")
             return response
         except Exception as exc:
             response = self.handle_exception(exc)
@@ -164,7 +221,13 @@ class BaseAPIView(TimezoneMixin, GenericAPIView, ReadReplicaControlMixin, BasePa
         return expand if expand else None
 
 
-class BaseViewSet(TimezoneMixin, ReadReplicaControlMixin, ModelViewSet, BasePaginator):
+class BaseViewSet(
+    ServiceTokenWriteBoundaryMixin,
+    TimezoneMixin,
+    ReadReplicaControlMixin,
+    ModelViewSet,
+    BasePaginator,
+):
     model = None
 
     authentication_classes = [APIKeyAuthentication]
@@ -248,7 +311,11 @@ class BaseViewSet(TimezoneMixin, ReadReplicaControlMixin, ModelViewSet, BasePagi
             if settings.DEBUG:
                 from django.db import connection
 
-                print(f"{request.method} - {request.get_full_path()} of Queries: {len(connection.queries)}")
+                safe_path = redact_api_credentials(
+                    request.path,
+                    request.headers.get("X-Api-Key"),
+                )
+                print(f"{request.method} - {safe_path} of Queries: {len(connection.queries)}")
 
             return response
         except Exception as exc:

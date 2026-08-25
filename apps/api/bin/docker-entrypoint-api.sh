@@ -46,4 +46,7 @@ if [ "${RUN_EMBEDDED_CELERY_WORKER:-0}" = "1" ]; then
   trap 'kill "${CELERY_WORKER_PID}" 2>/dev/null || true' EXIT
 fi
 
-exec gunicorn -w "${GUNICORN_WORKERS:-2}" -k uvicorn.workers.UvicornWorker plane.asgi:application --bind 0.0.0.0:"${PORT:-8000}" --max-requests 1200 --max-requests-jitter 1000 --access-logfile -
+# Gunicorn request-line logs cannot redact credentials embedded in a malformed
+# path/query/user-agent. Keep them disabled and use RequestLoggerMiddleware,
+# which emits the same operational metadata after credential redaction.
+exec gunicorn -w "${GUNICORN_WORKERS:-2}" -k uvicorn.workers.UvicornWorker plane.asgi:application --bind 0.0.0.0:"${PORT:-8000}" --max-requests 1200 --max-requests-jitter 1000
