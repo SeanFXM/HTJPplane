@@ -32,6 +32,7 @@ class APIKeyAuthentication(authentication.BaseAuthentication):
                 Q(Q(expired_at__gt=timezone.now()) | Q(expired_at__isnull=True)),
                 token=token,
                 is_active=True,
+                user__is_active=True,
             )
         except APIToken.DoesNotExist:
             raise AuthenticationFailed("Given API token is not valid")
@@ -39,7 +40,7 @@ class APIKeyAuthentication(authentication.BaseAuthentication):
         # save api token last used
         api_token.last_used = timezone.now()
         api_token.save(update_fields=["last_used"])
-        return (api_token.user, api_token.token)
+        return api_token
 
     def authenticate(self, request):
         token = self.get_api_token(request=request)
@@ -47,5 +48,13 @@ class APIKeyAuthentication(authentication.BaseAuthentication):
             return None
 
         # Validate the API token
-        user, token = self.validate_api_token(token)
-        return user, token
+        api_token = self.validate_api_token(token)
+        # Preserve the auth-time row identity/classification. Unsafe request
+        # boundaries re-read this exact row and fail closed if it was deleted,
+        # disabled, expired, or reclassified after authentication.
+        request._plane_api_token_snapshot = (
+            str(api_token.id),
+            bool(api_token.is_service),
+            str(api_token.user_id),
+        )
+        return api_token.user, api_token.token

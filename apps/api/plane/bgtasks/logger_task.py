@@ -14,6 +14,7 @@ from celery import shared_task
 from plane.settings.mongo import MongoConnection
 from plane.utils.exception_logger import log_exception
 from plane.db.models import APIActivityLog
+from plane.utils.credential_redaction import sanitize_api_activity_payload
 
 
 logger = logging.getLogger("plane.worker")
@@ -69,7 +70,7 @@ def log_to_mongo(log_document: Dict[str, Any]) -> bool:
         return False
 
     try:
-        mongo_collection.insert_one(log_document)
+        mongo_collection.insert_one(sanitize_api_activity_payload(log_document))
         return True
     except Exception as e:
         log_exception(e)
@@ -81,7 +82,7 @@ def log_to_postgres(log_data: Dict[str, Any]) -> bool:
     Fallback to logging to PostgreSQL if MongoDB is unavailable.
     """
     try:
-        APIActivityLog.objects.create(**log_data)
+        APIActivityLog.objects.create(**sanitize_api_activity_payload(log_data))
         return True
     except Exception as e:
         log_exception(e)
